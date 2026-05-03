@@ -36,15 +36,15 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50">
-      <div className="bg-white rounded-xl shadow-sm border border-zinc-200 p-8 w-full max-w-sm">
+    <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="bg-card rounded-xl shadow-sm border border-border p-8 w-full max-w-sm">
         <div className="mb-6">
-          <h1 className="text-lg font-semibold text-zinc-900">Admin Panel</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">Mongolian Writing App</p>
+          <h1 className="text-lg font-semibold text-foreground">Admin Panel</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Mongolian Writing App</p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-zinc-700" htmlFor="email">
+            <label className="text-sm font-medium text-foreground" htmlFor="email">
               Email
             </label>
             <input
@@ -52,7 +52,7 @@ export default function LoginPage() {
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-100 transition"
+              className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition"
               placeholder="admin@example.com"
               required
               autoComplete="email"
@@ -60,7 +60,7 @@ export default function LoginPage() {
             />
           </div>
           <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-zinc-700" htmlFor="password">
+            <label className="text-sm font-medium text-foreground" htmlFor="password">
               Password
             </label>
             <input
@@ -68,12 +68,12 @@ export default function LoginPage() {
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}
-              className="rounded-lg border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-100 transition"
+              className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition"
               required
               autoComplete="current-password"
             />
           </div>
-          {error && <p className="text-sm text-red-600">{error}</p>}
+          {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={loading} className="w-full mt-1">
             {loading ? 'Signing in…' : 'Sign in'}
           </Button>
