@@ -78,11 +78,11 @@ export const ReviewPanel = forwardRef<ReviewPanelRef, Props>(function ReviewPane
   return (
     <div className="space-y-5">
       {/* Section 1: AI flags (shown only when flags exist) */}
-      {item.ai_flags.length > 0 && (
+      {item.ai_review_issues.length > 0 && (
         <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
           <h2 className="text-sm font-semibold mb-2 text-yellow-800">AI тэмдэглэл</h2>
           <div className="flex flex-wrap gap-1.5">
-            {item.ai_flags.map((code) => (
+            {item.ai_review_issues.map((code) => (
               <span
                 key={code}
                 className="rounded border border-yellow-300 bg-white px-2 py-0.5 text-xs font-medium text-yellow-900"

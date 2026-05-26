@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useReviewItem, useSubmitReview } from '@/hooks/useReviewItem';
@@ -25,6 +26,7 @@ const TOAST_MESSAGES: Record<ReviewAction['action'], string> = {
 export default function ReviewDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const queryClient = useQueryClient();
 
   const { data: item, isLoading, isError } = useReviewItem(id);
 
@@ -191,6 +193,7 @@ export default function ReviewDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6 items-start">
         <TaskPreview
           task={displayTask}
+          variantId={item.variant_id}
           isEditMode={isEditMode}
           isSaving={updateMutation.isPending}
           editDraft={editDraft}
@@ -198,6 +201,7 @@ export default function ReviewDetailPage() {
           onDraftChange={(patch) => setEditDraft((prev) => ({ ...prev, ...patch }))}
           onSaveEdit={handleSaveEdit}
           onCancelEdit={handleCancelEdit}
+          onMediaAccepted={() => queryClient.invalidateQueries({ queryKey: ['review-item', id] })}
         />
 
         <ReviewPanel

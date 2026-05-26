@@ -3,18 +3,15 @@ import type { ReviewItem, ReviewStatus, TaskVariant } from "./types";
 function deriveStatus(variant: TaskVariant): ReviewStatus {
   const s = variant.stage?.toLowerCase() ?? "";
   if (s === "validated") return "human_approved";
-  if (s.startsWith("rejected")) return "human_rejected";
+  if (s === "rejected") return "human_rejected";
   if (s === "needs_revision") return "needs_revision";
   if (s === "flagged") return "ai_flagged";
 
-  const flags = variant.ai_flags ?? [];
-  if (flags.length > 0) return "ai_flagged";
+  if (variant.ai_review_severity === "ok") return "ai_passed";
+  if (variant.ai_review_severity === "minor" || variant.ai_review_severity === "blocker") return "ai_flagged";
+  if (variant.ai_review_issues.length > 0) return "ai_flagged";
 
-  const scores = variant.ai_scores ?? {};
-  const { spelling, distractor, pedagogical } = scores;
-  if (spelling === null && distractor === null && pedagogical === null) return "pending";
-  if (spelling && distractor && pedagogical) return "ai_passed";
-  return "ai_flagged";
+  return "pending";
 }
 
 export function variantToReviewItem(v: TaskVariant): ReviewItem {
@@ -42,11 +39,14 @@ export function variantToReviewItem(v: TaskVariant): ReviewItem {
       feedback_text: v.feedback_text ?? "",
       initial_text: v.initial_text ?? undefined,
     },
-    ai_scores: v.ai_scores ?? { spelling: null, distractor: null, pedagogical: null },
-    ai_flags: v.ai_flags ?? [],
-    status: deriveStatus(v),
-    created_at: v.created_at ?? new Date().toISOString(),
-    reviewed_by: v.reviewed_by,
-    reviewer_note: v.reviewer_note,
+    ai_review_severity:  v.ai_review_severity,
+    ai_review_issues:    v.ai_review_issues ?? [],
+    ai_fix_suggestion:   v.ai_fix_suggestion,
+    status:              deriveStatus(v),
+    created_at:          v.created_at ?? new Date().toISOString(),
+    reviewer_notes:      v.reviewer_notes,
+    flag_reason:         v.flag_reason,
+    revision_reason:     v.revision_reason,
+    rejection_reason:    v.rejection_reason,
   };
 }

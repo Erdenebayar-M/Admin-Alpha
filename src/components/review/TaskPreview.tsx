@@ -2,6 +2,12 @@
 
 import { cn } from '@/lib/utils';
 import type { TaskContent } from '@/lib/types';
+import { MediaGenerator } from './MediaGenerator';
+
+// Handles both full https:// R2 URLs and legacy /content/... local paths
+function resolveAssetUrl(url: string): string {
+  return url.startsWith('http') ? url : `http://localhost:3000${url}`;
+}
 
 const SKILL_LABELS: Record<string, string> = {
   S1: 'Үсэг-авиа ялгалт',
@@ -54,6 +60,7 @@ function formatReviewDays(days: number[]): string {
 
 interface Props {
   task: TaskContent;
+  variantId: string;
   isEditMode: boolean;
   isSaving: boolean;
   editDraft: Partial<TaskContent>;
@@ -61,6 +68,7 @@ interface Props {
   onDraftChange: (patch: Partial<TaskContent>) => void;
   onSaveEdit: () => void;
   onCancelEdit: () => void;
+  onMediaAccepted: () => void;
 }
 
 const inputClass =
@@ -69,6 +77,7 @@ const textareaClass = `${inputClass} resize-none`;
 
 export function TaskPreview({
   task,
+  variantId,
   isEditMode,
   isSaving,
   editDraft,
@@ -76,6 +85,7 @@ export function TaskPreview({
   onDraftChange,
   onSaveEdit,
   onCancelEdit,
+  onMediaAccepted,
 }: Props) {
   const title = (isEditMode && editDraft.title !== undefined) ? editDraft.title : task.title;
   const promptText = (isEditMode && editDraft.prompt_text !== undefined) ? editDraft.prompt_text : task.prompt_text;
@@ -301,23 +311,22 @@ export function TaskPreview({
         <Field label="Media">
           <div className="space-y-2">
             {task.audio_url && (
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-muted-foreground w-12">Audio</span>
-                <a
-                  href={task.audio_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs text-blue-600 underline underline-offset-2 hover:text-blue-700 truncate"
-                >
+              <div className="flex flex-col gap-1">
+                <audio
+                  controls
+                  src={resolveAssetUrl(task.audio_url)}
+                  className="w-full h-8"
+                />
+                <span className="font-mono text-xs text-muted-foreground truncate">
                   {task.audio_url}
-                </a>
+                </span>
               </div>
             )}
             {task.image_url && (
               <div className="flex items-start gap-2">
                 <span className="text-xs text-muted-foreground w-12 pt-0.5">Image</span>
                 <img
-                  src={task.image_url}
+                  src={resolveAssetUrl(task.image_url)}
                   alt="Task image"
                   className="rounded-md border border-border max-h-40 object-contain"
                 />
@@ -326,6 +335,13 @@ export function TaskPreview({
           </div>
         </Field>
       )}
+
+      {/* ── Generate media ─────────────────────────────────────────────────── */}
+      <MediaGenerator
+        task={task}
+        variantId={variantId}
+        onMediaAccepted={onMediaAccepted}
+      />
     </div>
   );
 }

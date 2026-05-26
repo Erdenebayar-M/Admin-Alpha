@@ -3,6 +3,7 @@ import type {
   ContentStats,
   ReviewAction,
   TaskContent,
+  TaskOptions,
   TaskVariant,
   TaskListResponse,
   TaskVariantResponse,
@@ -115,6 +116,100 @@ export async function editVariant(
     stage,
     updates,
   });
+}
+
+export interface GenerateImageResult {
+  temp_id: string;
+  base64: string;
+}
+
+export interface GenerateAudioResult {
+  temp_id: string;
+  base64: string;
+}
+
+export async function generateImage(prompt: string): Promise<GenerateImageResult> {
+  const { data } = await client.post<{ success: boolean; data: { temp_id: string; base64: string } }>(
+    '/generate-image',
+    { prompt },
+  );
+  return { temp_id: data.data.temp_id, base64: data.data.base64 };
+}
+
+export async function generateAudio(
+  text: string,
+  slot: 'dictation' | 'prompt',
+  voice?: string,
+): Promise<GenerateAudioResult> {
+  const { data } = await client.post<{ success: boolean; data: { temp_id: string; base64: string } }>(
+    '/generate-audio',
+    { text, slot, ...(voice ? { voice } : {}) },
+  );
+  return { temp_id: data.data.temp_id, base64: data.data.base64 };
+}
+
+export async function acceptImage(
+  tempId: string,
+  taskId: string,
+  variantId: string,
+  stage?: string,
+): Promise<void> {
+  await client.post('/accept-image', {
+    temp_id: tempId,
+    task_id: taskId,
+    variant_id: variantId,
+    ...(stage ? { stage } : {}),
+  });
+}
+
+export async function acceptAudio(
+  tempId: string,
+  taskId: string,
+  variantId: string,
+  slot: 'dictation' | 'prompt',
+  stage?: string,
+): Promise<void> {
+  await client.post('/accept-audio', {
+    temp_id: tempId,
+    task_id: taskId,
+    variant_id: variantId,
+    slot,
+    ...(stage ? { stage } : {}),
+  });
+}
+
+export interface CreateTaskPayload {
+  task_type: string;
+  title: string;
+  prompt_text: string;
+  correct_answer: string;
+  options: TaskOptions;
+  primary_skill: string;
+  secondary_skill: string | null;
+  level_target: string;
+  error_targets: string[];
+  grade_band: string[];
+  difficulty: number;
+  estimated_time_seconds: number;
+  review_after_days: number[];
+  lesson_slot_fit: string;
+  feedback_text: string;
+  initial_text?: string;
+  audio_url?: string | null;
+  image_url?: string | null;
+}
+
+export interface CreateTaskResult {
+  task_id: string;
+  variant_id: string;
+}
+
+export async function createTask(payload: CreateTaskPayload): Promise<CreateTaskResult> {
+  const { data } = await client.post<{ success: boolean; data: CreateTaskResult }>(
+    '/tasks',
+    payload,
+  );
+  return data.data;
 }
 
 // No backend bulk endpoint — callers should loop approveVariant

@@ -37,15 +37,23 @@ export interface TaskContent {
 export interface TaskVariant extends TaskContent {
   id: string;
   stage: string;
-  ai_flags: string[];
-  ai_scores: {
-    spelling: boolean | null;
-    distractor: boolean | null;
-    pedagogical: boolean | null;
-  };
+  ai_review_severity: string | null;
+  ai_review_issues: string[];
+  ai_fix_suggestion: string | null;
+  ai_reviewed_at: string | null;
+  reviewer_notes: string | null;
+  flag_reason: string | null;
+  revision_reason: string | null;
+  rejection_reason: string | null;
   created_at: string;
-  reviewer_note?: string;
-  reviewed_by?: string;
+  updated_at: string;
+}
+
+export interface PaginationMeta {
+  page: number;
+  per_page: number;
+  total: number;
+  has_next: boolean;
 }
 
 export interface TaskListResponse {
@@ -54,6 +62,7 @@ export interface TaskListResponse {
     stage: string;
     total: number;
     tasks: TaskVariant[];
+    meta: PaginationMeta;
   };
 }
 
@@ -79,16 +88,15 @@ export interface ReviewItem {
   id: string;
   variant_id: string;
   task: TaskContent;
-  ai_scores: {
-    spelling: boolean | null;
-    distractor: boolean | null;
-    pedagogical: boolean | null;
-  };
-  ai_flags: string[];
+  ai_review_severity: string | null;
+  ai_review_issues: string[];
+  ai_fix_suggestion: string | null;
   status: ReviewStatus;
   created_at: string;
-  reviewed_by?: string;
-  reviewer_note?: string;
+  reviewer_notes: string | null;
+  flag_reason: string | null;
+  revision_reason: string | null;
+  rejection_reason: string | null;
 }
 
 export interface ReviewAction {
@@ -106,5 +114,4 @@ export interface ContentStats {
     rejected: number;
     needs_revision: number;
   };
-  llm_review: unknown;
 }

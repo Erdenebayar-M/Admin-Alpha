@@ -43,7 +43,7 @@ interface Props {
 
 export function TaskQueueCard({ item, selected = false, onSelect }: Props) {
   const { task } = item;
-  const flagLabels = item.ai_flags
+  const flagLabels = item.ai_review_issues
     .map((code) => FLAG_LABELS[code] ?? code)
     .filter((v, i, arr) => arr.indexOf(v) === i);
 
@@ -86,7 +86,7 @@ export function TaskQueueCard({ item, selected = false, onSelect }: Props) {
             {task.prompt_text}
           </p>
 
-          {item.ai_flags.length > 0 && (
+          {item.ai_review_issues.length > 0 && (
             <div className="flex flex-wrap gap-1">
               {flagLabels.map((label, i) => (
                 <span

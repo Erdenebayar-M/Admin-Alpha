@@ -70,7 +70,7 @@ export function useSubmitReview(taskId: string) {
         return {
           ...old,
           status: statusMap[action.action],
-          reviewer_note: action.note || undefined,
+          reviewer_notes: action.note ?? null,
         };
       });
 
