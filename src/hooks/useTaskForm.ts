@@ -56,7 +56,7 @@ export const INITIAL_FORM: FormState = {
   difficulty: "1",
   estimated_time_seconds: "30",
   review_after_days: "1, 3, 7",
-  lesson_slot_fit: "practice",
+  lesson_slot_fit: "CORE",
   feedback_text: "",
   initial_text: "",
   incorrect_text: "",
@@ -290,25 +290,18 @@ export function useTaskForm() {
     const tt = form.task_type;
     const currentGroups = tt ? (TASK_TYPE_INFO[tt]?.groups ?? []) : [];
 
-    // TT3 uses correct_text instead of correct_answer; all others need correct_answer
-    if (tt === "TT3") {
+    // Correction types use correct_text instead of correct_answer
+    if (currentGroups.includes("correction")) {
       if (!form.incorrect_text.trim()) e.incorrect_text = "Буруу текст оруулна уу";
       if (!form.correct_text.trim()) e.correct_text = "Зөв текст оруулна уу";
     } else if (!form.correct_answer.trim()) {
       e.correct_answer = "Зөв хариулт оруулна уу";
     }
 
-    // Dictation: audio_text auto-derived from correct_answer, no separate validation needed
-
-    // Multiple choice types need expected_answers (except TT11 true/false which auto-fills)
-    if (currentGroups.includes("multiple_choice") && tt !== "TT11") {
+    // Choice and fill types need expected_answers (wrong choices)
+    if (currentGroups.includes("choice") || currentGroups.includes("fill")) {
       const lines = parseLines(form.expected_answers);
       if (lines.length < 2) e.expected_answers = "Хамгийн багадаа 2 хариулт оруулна уу";
-    }
-
-    // Rewrite needs initial_text (source text)
-    if (currentGroups.includes("rewrite")) {
-      if (!form.initial_text.trim()) e.initial_text = "Эх бичвэр оруулна уу";
     }
 
     return e;
