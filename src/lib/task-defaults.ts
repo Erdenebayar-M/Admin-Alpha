@@ -1,5 +1,57 @@
 export type OptionGroup = "choice" | "fill" | "dictation" | "correction" | "self_check" | "copy";
 
+export interface TaskBlueprint {
+  primary_skill: string;
+  secondary_skill?: string;
+  level_target: string;
+  error_targets: string[];
+}
+
+// Skill, level, and error defaults per task type derived from Task_Bank_Blueprint docs.
+export const TASK_TYPE_BLUEPRINT: Record<string, TaskBlueprint> = {
+  // G12
+  TT_LISTEN_CHOOSE:            { primary_skill: "S1",                           level_target: "M0", error_targets: ["A1"] },
+  TT_LETTER_FILL:              { primary_skill: "S1",                           level_target: "M0", error_targets: ["A2"] },
+  TT_IMAGE_WORD_MATCH:         { primary_skill: "S2",                           level_target: "M0", error_targets: ["B1"] },
+  TT_COPY_WRITE:               { primary_skill: "S2",                           level_target: "M0", error_targets: ["B3"] },
+  TT_CHOOSE_CORRECT:           { primary_skill: "S3",                           level_target: "M1", error_targets: ["C1"] },
+  TT_FILL_WRITE:               { primary_skill: "S3",                           level_target: "M1", error_targets: ["C1", "C2"] },
+  TT_MISSING_LETTER:           { primary_skill: "S4",                           level_target: "M1", error_targets: ["C4"] },
+  TT_WORD_SET_DICTATION:       { primary_skill: "S7",                           level_target: "M1", error_targets: ["H1", "B1"] },
+  TT_CAPITAL_PUNCTUATION:      { primary_skill: "S6",                           level_target: "M1", error_targets: ["G1", "G2"] },
+  TT_SIMPLE_SUFFIX:            { primary_skill: "S5",                           level_target: "M1", error_targets: ["E1", "E2"] },
+  TT_FIND_ERROR:               { primary_skill: "S8",                           level_target: "M1", error_targets: ["H4"] },
+  TT_SELF_CHECK:               { primary_skill: "S8",                           level_target: "M1", error_targets: ["H4"] },
+  TT_TWO_WORD_DICTATION:       { primary_skill: "S7",                           level_target: "M1", error_targets: ["H1"] },
+  TT_WORD_ENDING:              { primary_skill: "S2",                           level_target: "M1", error_targets: ["D5"] },
+  TT_SENTENCE_FILL:            { primary_skill: "S6",                           level_target: "M1", error_targets: ["G2"] },
+  TT_MIXED_REVIEW:             { primary_skill: "S2", secondary_skill: "S3",   level_target: "M1", error_targets: ["B1", "C1"] },
+  // G24
+  TT_WORD_FORM_CHOOSE:         { primary_skill: "S2",                           level_target: "M1", error_targets: ["B1", "B3"] },
+  TT_LONG_VOWEL_FILL:          { primary_skill: "S3",                           level_target: "M1", error_targets: ["C1"] },
+  TT_REDUCED_VOWEL:            { primary_skill: "S4",                           level_target: "M1", error_targets: ["C4"] },
+  TT_SUFFIX_CHOOSE:            { primary_skill: "S5",                           level_target: "M2", error_targets: ["E2"] },
+  TT_SHORT_SENTENCE_DICTATION: { primary_skill: "S7",                           level_target: "M2", error_targets: ["H1", "B4"] },
+  TT_FIX_ERROR:                { primary_skill: "S8",                           level_target: "M2", error_targets: ["H4"] },
+  TT_CONSONANT_CONFUSION:      { primary_skill: "S1",                           level_target: "M1", error_targets: ["D3"] },
+  TT_WORD_FORM_FIX:            { primary_skill: "S2",                           level_target: "M2", error_targets: [] },
+  TT_LONG_VOWEL_IN_SENTENCE:   { primary_skill: "S3",                           level_target: "M2", error_targets: ["C1", "C2"] },
+  TT_REDUCED_VOWEL_IN_SENTENCE:{ primary_skill: "S4",                           level_target: "M2", error_targets: ["C4", "C5"] },
+  TT_CASE_SUFFIX:              { primary_skill: "S5",                           level_target: "M2", error_targets: ["E2"] },
+  TT_BASIC_COMMA:              { primary_skill: "S6",                           level_target: "M2", error_targets: ["G1", "G2"] },
+  TT_TWO_SENTENCE_DICTATION:   { primary_skill: "S7",                           level_target: "M2", error_targets: ["H1"] },
+  TT_FIND_OMITTED_LETTER:      { primary_skill: "S8",                           level_target: "M2", error_targets: ["B1"] },
+  TT_MIXED_WORD_SET:           { primary_skill: "S2", secondary_skill: "S3",   level_target: "M2", error_targets: ["B1", "C1"] },
+  TT_SUFFIX_WRITE:             { primary_skill: "S5",                           level_target: "M2", error_targets: ["E7"] },
+  TT_SENTENCE_BOUNDARY:        { primary_skill: "S6",                           level_target: "M2", error_targets: ["G2"] },
+  TT_MINI_TEXT_DICTATION:      { primary_skill: "S7",                           level_target: "M3", error_targets: ["H1", "B4"] },
+  TT_OWN_WRITING_CORRECTION:   { primary_skill: "S8",                           level_target: "M3", error_targets: ["H4"] },
+  TT_LONG_VOWEL_CHALLENGE:     { primary_skill: "S3",                           level_target: "M3", error_targets: ["C1", "C2"] },
+  TT_COMPOUND_SUFFIX:          { primary_skill: "S5",                           level_target: "M3", error_targets: ["E2", "E7"] },
+  TT_MIXED_CHECKPOINT:         { primary_skill: "S2", secondary_skill: "S7",   level_target: "M2", error_targets: [] },
+  TT_EXPLAINED_CORRECTION:     { primary_skill: "S8",                           level_target: "M3", error_targets: ["H4"] },
+};
+
 export interface TaskTypeInfo {
   label: string;
   shortLabel: string;

@@ -2,43 +2,31 @@
 
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Field, ToggleChip, ComboSelect } from "./shared";
 import type { FormState, ValidationErrors } from "@/hooks/useTaskForm";
 import {
-  GRADE_BANDS,
-  GRADE_BAND_LABELS,
   SKILLS,
   SKILL_LABELS,
   LEVELS,
   LEVEL_LABELS,
   LESSON_SLOTS,
   LESSON_SLOT_LABELS,
+  ERROR_CODES,
+  ERROR_LABELS,
 } from "@/lib/task-defaults";
 
 interface ClassificationFormProps {
   form: FormState;
   set: <K extends keyof FormState>(key: K, value: FormState[K]) => void;
-  toggleGradeBand: (gb: string) => void;
+  toggleList: (key: "grade_band" | "error_targets", item: string) => void;
   errors: ValidationErrors;
 }
 
-export function ClassificationForm({ form, set, toggleGradeBand, errors }: ClassificationFormProps) {
+export function ClassificationForm({ form, set, toggleList, errors }: ClassificationFormProps) {
   return (
     <div className="space-y-4">
       <Separator />
-
-      <Field label="Анги" required error={errors.grade_band}>
-        <div className="flex gap-2">
-          {GRADE_BANDS.map((gb) => (
-            <ToggleChip
-              key={gb}
-              label={`${gb} — ${GRADE_BAND_LABELS[gb]}`}
-              selected={form.grade_band.includes(gb)}
-              onClick={() => toggleGradeBand(gb)}
-            />
-          ))}
-        </div>
-      </Field>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Field label="Үндсэн чадвар" required error={errors.primary_skill}>
@@ -89,6 +77,38 @@ export function ClassificationForm({ form, set, toggleGradeBand, errors }: Class
           />
         </Field>
       </div>
+
+      <Field label="Алдааны төрөл">
+        <div className="flex flex-wrap gap-1.5">
+          {ERROR_CODES.map((code) => {
+            const active = form.error_targets.includes(code);
+            return (
+              <button
+                key={code}
+                type="button"
+                onClick={() => toggleList("error_targets", code)}
+                className="flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs transition-colors"
+                style={active ? undefined : undefined}
+              >
+                <Badge
+                  variant={active ? "default" : "outline"}
+                  className="pointer-events-none text-[10px]"
+                >
+                  {code}
+                </Badge>
+                <span className={active ? "text-foreground" : "text-muted-foreground"}>
+                  {ERROR_LABELS[code]}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+        {form.error_targets.length === 0 && (
+          <p className="mt-1 text-[11px] text-muted-foreground">
+            Даалгаврын төрлөөс автоматаар тогтооно. Гараар өөрчлөх боломжтой.
+          </p>
+        )}
+      </Field>
     </div>
   );
 }

@@ -12,14 +12,20 @@ import {
 interface TaskTypeSelectorProps {
   value: string;
   onChange: (taskType: string) => void;
+  gradeBand?: string;
 }
 
-export function TaskTypeSelector({ value, onChange }: TaskTypeSelectorProps) {
+export function TaskTypeSelector({ value, onChange, gradeBand }: TaskTypeSelectorProps) {
   const grouped = CATEGORY_ORDER.map((cat) => ({
     category: cat,
     label: CATEGORY_LABELS[cat],
-    types: TASK_TYPES.filter((t) => TASK_TYPE_INFO[t].category === cat),
-  }));
+    types: TASK_TYPES.filter((t) => {
+      const info = TASK_TYPE_INFO[t];
+      if (info.category !== cat) return false;
+      if (!gradeBand) return true;
+      return info.gradeBand === gradeBand || info.gradeBand === "both";
+    }),
+  })).filter((g) => g.types.length > 0);
 
   return (
     <div className="space-y-5">

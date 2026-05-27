@@ -8,6 +8,7 @@ import type { TaskOptions } from "@/lib/types";
 import { acceptAudio, acceptImage } from "@/lib/api";
 import {
   TASK_TYPE_INFO,
+  TASK_TYPE_BLUEPRINT,
   computeDefaults,
   parseNumberList,
   parseLines,
@@ -175,20 +176,46 @@ export function useTaskForm() {
 
   const setTaskType = useCallback((type: string) => {
     setForm((prev) => {
-      const next = { ...prev, task_type: type, allow_partial: false };
-      return next;
-    });
-    // apply defaults after state update
-    setForm((prev) => {
-      if (!prev.task_type || prev.grade_band.length === 0) return prev;
-      const defaults = computeDefaults(prev.task_type, prev.grade_band);
-      const updates: Partial<FormState> = {};
-      for (const [k, v] of Object.entries(defaults)) {
-        if (!dirtyFields.current.has(k)) {
-          (updates as Record<string, unknown>)[k] = v;
+      const blueprint = TASK_TYPE_BLUEPRINT[type];
+      const next: FormState = { ...prev, task_type: type, allow_partial: false };
+
+      // Always apply blueprint-derived values when task type changes
+      if (blueprint) {
+        next.primary_skill = blueprint.primary_skill;
+        next.secondary_skill = blueprint.secondary_skill ?? "";
+        next.level_target = blueprint.level_target;
+        next.error_targets = blueprint.error_targets;
+      }
+
+      // Apply compute defaults for difficulty/time/slot (only if not user-dirty)
+      if (next.grade_band.length > 0) {
+        const defaults = computeDefaults(type, next.grade_band);
+        for (const [k, v] of Object.entries(defaults)) {
+          if (k !== "level_target" && !dirtyFields.current.has(k)) {
+            (next as Record<string, unknown>)[k] = v;
+          }
         }
       }
-      return { ...prev, ...updates };
+
+      return next;
+    });
+  }, []);
+
+  const setGradeBand = useCallback((gb: string) => {
+    setForm((prev) => {
+      const next: FormState = { ...prev, grade_band: [gb] };
+      // Clear task type if incompatible with newly selected grade band
+      if (next.task_type) {
+        const info = TASK_TYPE_INFO[next.task_type];
+        if (info && info.gradeBand !== "both" && info.gradeBand !== gb) {
+          next.task_type = "";
+          next.primary_skill = "";
+          next.secondary_skill = "";
+          next.level_target = "";
+          next.error_targets = [];
+        }
+      }
+      return next;
     });
   }, []);
 
@@ -368,6 +395,7 @@ export function useTaskForm() {
     set,
     toggleList,
     setTaskType,
+    setGradeBand,
     toggleGradeBand,
     applyDefaults,
     reset,
