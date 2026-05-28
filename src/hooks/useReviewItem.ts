@@ -12,15 +12,12 @@ import { variantToReviewItem } from "@/lib/variant-mapper";
 import type { ReviewAction, ReviewItem } from "@/lib/types";
 
 export function useReviewItem(taskId: string) {
-  // taskId arriving here is 'G12-008-v1' — strip variant suffix for the API call
-  const baseTaskId = taskId.replace(/-v\d+$/, ""); // 'G12-008'
-
   return useQuery({
     queryKey: ["review-item", taskId],
     queryFn: async (): Promise<ReviewItem> => {
-      const variants = await getTaskVariant(baseTaskId);
-      if (!variants.length) throw new Error(`Task "${baseTaskId}" not found`);
-      // find the specific variant, fall back to first
+      // taskId is the draft UUID — backend UUID lookup returns the specific variant
+      const variants = await getTaskVariant(taskId);
+      if (!variants.length) throw new Error(`Task "${taskId}" not found`);
       const match = variants.find((v) => v.id === taskId) ?? variants[0];
       return variantToReviewItem(match);
     },
@@ -30,7 +27,6 @@ export function useReviewItem(taskId: string) {
 }
 
 export function useSubmitReview(taskId: string) {
-  const baseTaskId = taskId.replace(/-v\d+$/, ""); // 'G12-008'
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -39,7 +35,9 @@ export function useSubmitReview(taskId: string) {
         "review-item",
         taskId,
       ]);
-      const variantId = item?.variant_id ?? taskId; // 'G12-008-v1'
+      const variantId = item?.variant_id ?? taskId;
+      // Use logical task_id from the loaded item (e.g. "G12-TT_LETTER_FILL"), not the URL UUID
+      const baseTaskId = item?.task.task_id ?? taskId;
       const note = action.note ?? "";
 
       if (action.action === "approve") {

@@ -214,3 +214,42 @@ export async function createTask(payload: CreateTaskPayload): Promise<CreateTask
 
 // No backend bulk endpoint — callers should loop approveVariant
 export { type ReviewAction, type TaskContent };
+
+// ─── Generate tasks ───────────────────────────────────────────────────────────
+
+export interface GenerateSpec {
+  id: string;
+  task_type: string;
+  mongolian_name: string;
+  grade_band: string[];
+  primary_skill: string;
+  difficulty: number;
+  estimated_time_seconds: number;
+  lesson_slot_fit: string;
+}
+
+export interface GenerateTaskResult {
+  task_id: string;
+  passed: number;
+  rejected: number;
+  drafts_created: number;
+  ai_blocked: number;
+  cost_usd: number;
+}
+
+export async function getGenerateSpecs(): Promise<GenerateSpec[]> {
+  const { data } = await client.get<{ success: boolean; data: { specs: GenerateSpec[] } }>('/generate/specs');
+  return data.data.specs;
+}
+
+export async function generateTasks(
+  task_ids: string[],
+  max_items: number,
+  max_cost: number,
+): Promise<{ results: GenerateTaskResult[]; total_cost_usd: number }> {
+  const { data } = await client.post<{
+    success: boolean;
+    data: { results: GenerateTaskResult[]; total_cost_usd: number };
+  }>('/generate', { task_ids, max_items, max_cost });
+  return data.data;
+}

@@ -19,7 +19,7 @@ export function variantToReviewItem(v: TaskVariant): ReviewItem {
     id: v.id,
     variant_id: v.id,
     task: {
-      task_id: String(v.id).replace(/-v\d+$/, ""),
+      task_id: v.task_id,
       task_type: v.task_type ?? "",
       title: v.title ?? "",
       prompt_text: v.prompt_text ?? "",
