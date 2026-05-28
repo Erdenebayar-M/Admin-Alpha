@@ -5,6 +5,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --color-status-dark-red: #90251D;
+  --color-status-bright-red: #E91D26;
+  --color-status-light-green: #8FC740;
+  --color-status-soft-green: #69BF68;
+  --color-status-red: #DC2B33;
+  --color-status-green: #48A145;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
@@ -126,5 +132,13 @@
   }
   html {
     @apply font-sans;
+  }
+  button,
+  [role="button"],
+  a {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
   }
 }

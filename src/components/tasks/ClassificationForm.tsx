@@ -2,8 +2,8 @@
 
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Badge } from "@/components/ui/badge";
-import { Field, ToggleChip, ComboSelect } from "./shared";
+import { cn } from "@/lib/utils";
+import { Field, ComboSelect } from "./shared";
 import type { FormState, ValidationErrors } from "@/hooks/useTaskForm";
 import {
   SKILLS,
@@ -12,7 +12,7 @@ import {
   LEVEL_LABELS,
   LESSON_SLOTS,
   LESSON_SLOT_LABELS,
-  ERROR_CODES,
+  ERROR_GROUPS,
   ERROR_LABELS,
 } from "@/lib/task-defaults";
 
@@ -79,29 +79,34 @@ export function ClassificationForm({ form, set, toggleList, errors }: Classifica
       </div>
 
       <Field label="Алдааны төрөл">
-        <div className="flex flex-wrap gap-1.5">
-          {ERROR_CODES.map((code) => {
-            const active = form.error_targets.includes(code);
-            return (
-              <button
-                key={code}
-                type="button"
-                onClick={() => toggleList("error_targets", code)}
-                className="flex items-center gap-1 rounded-md border px-2 py-0.5 text-xs transition-colors"
-                style={active ? undefined : undefined}
-              >
-                <Badge
-                  variant={active ? "default" : "outline"}
-                  className="pointer-events-none text-[10px]"
-                >
-                  {code}
-                </Badge>
-                <span className={active ? "text-foreground" : "text-muted-foreground"}>
-                  {ERROR_LABELS[code]}
-                </span>
-              </button>
-            );
-          })}
+        <div className="space-y-3">
+          {ERROR_GROUPS.map((group) => (
+            <div key={group.key}>
+              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
+                {group.label} — {group.description}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {group.codes.map((code) => {
+                  const active = form.error_targets.includes(code);
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => toggleList("error_targets", code)}
+                      className={cn(
+                        "rounded border px-2.5 py-1 text-xs font-medium transition-colors",
+                        active
+                          ? "border-foreground bg-foreground text-background"
+                          : "border-border text-foreground hover:border-foreground/40 hover:bg-muted/50",
+                      )}
+                    >
+                      {ERROR_LABELS[code]}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
         </div>
         {form.error_targets.length === 0 && (
           <p className="mt-1 text-[11px] text-muted-foreground">

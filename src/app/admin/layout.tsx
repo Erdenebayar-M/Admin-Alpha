@@ -1,18 +1,50 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { GenerateModal } from '@/components/modals/GenerateModal';
 import { useModalStore } from '@/lib/modal-store';
+import { cn } from '@/lib/utils';
+
+const NAV_LINKS = [
+  { href: '/admin/review', label: 'Хяналт' },
+  { href: '/admin/tasks', label: 'Даалгаврууд' },
+];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { setOpenGenerate, setOpenCreate } = useModalStore();
+  const { setOpenGenerate } = useModalStore();
+  const pathname = usePathname();
+  const router = useRouter();
 
   return (
     <div className="min-h-screen flex flex-col">
       <header className="sticky top-0 z-30 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex h-12 items-center justify-between px-6">
-          {/* Brand */}
-          <span className="text-sm font-bold tracking-tight text-foreground">Админ</span>
+          {/* Brand + nav */}
+          <div className="flex items-center gap-6">
+            <span className="text-sm font-bold tracking-tight text-foreground">Админ</span>
+            <nav className="flex gap-1">
+              {NAV_LINKS.map(({ href, label }) => {
+                const active = pathname.startsWith(href);
+                return (
+                  <Link
+                    key={href}
+                    href={href}
+                    className={cn(
+                      'rounded-md px-3 py-1.5 text-xs font-medium transition-colors',
+                      active
+                        ? 'bg-foreground text-background'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                    )}
+                  >
+                    {label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
 
           {/* Action buttons + utils */}
           <div className="flex items-center gap-2">
@@ -29,7 +61,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
             <button
               type="button"
-              onClick={() => setOpenCreate(true)}
+              onClick={() => router.push('/admin/tasks/create')}
               className="flex items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
             >
               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -48,6 +80,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <main className="flex-1">
         {children}
       </main>
+
+      <GenerateModal />
     </div>
   );
 }

@@ -118,20 +118,6 @@ export function TemplateManager({
           </Select>
         )}
 
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="h-8 text-xs"
-          onClick={() => {
-            if (!onDuplicateLast()) {
-              // no last task
-            }
-          }}
-        >
-          Сүүлийн даалгаврыг хуулах
-        </Button>
-
         {showSaveOption && !saving && (
           <Button
             type="button"

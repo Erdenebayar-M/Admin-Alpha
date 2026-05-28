@@ -279,26 +279,13 @@ function CorrectionContent({ form, set, errors }: SubProps) {
           />
         </Field>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Алдааны төрөл" hint="Ямар төрлийн алдаа вэ?">
-          <ComboSelect
-            value={form.error_type}
-            onChange={(v) => set("error_type", v)}
-            placeholder="Сонгох…"
-            options={[
-              { value: "", label: "—" },
-              ...ERROR_CODES.map((c) => ({ value: c, label: `${c} — ${ERROR_LABELS[c]}` })),
-            ]}
-          />
-        </Field>
-        <Field label="Санамж" hint="Сурагчид тусална (заавал биш)">
-          <Input
-            value={form.hint}
-            onChange={(e) => set("hint", e.target.value)}
-            placeholder="Жнэ: 'уу' ба 'у'-г ялга"
-          />
-        </Field>
-      </div>
+      <Field label="Санамж" hint="Сурагчид тусална (заавал биш)">
+        <Input
+          value={form.hint}
+          onChange={(e) => set("hint", e.target.value)}
+          placeholder="Жнэ: 'уу' ба 'у'-г ялга"
+        />
+      </Field>
       <Field label="Анхны оруулга" hint="Сурагчийн хариултыг урьдчилан бөглөх (заавал биш)">
         <Input
           value={form.initial_text}
@@ -720,26 +707,6 @@ function MetadataSection({ form, set, toggleList, groups }: Pick<ContentFormProp
     <>
       <Separator />
       <p className="text-sm font-semibold">Мета өгөгдөл</p>
-
-      <Field label="Алдааны зорилтууд">
-        <div className="flex flex-wrap gap-2">
-          {ERROR_CODES.map((code) => (
-            <ToggleChip
-              key={code}
-              label={`${code} — ${ERROR_LABELS[code]}`}
-              selected={form.error_targets.includes(code)}
-              onClick={() => toggleList("error_targets", code)}
-            />
-          ))}
-        </div>
-        {form.error_targets.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            {form.error_targets.map((code) => (
-              <Badge key={code} variant="secondary">{code}</Badge>
-            ))}
-          </div>
-        )}
-      </Field>
 
       <div className={`grid gap-4 ${showPartial ? "grid-cols-2" : "grid-cols-1"}`}>
         <Field label="Зарцуулах хугацаа (секунд)" hint="Даалгаврын хугацаа">

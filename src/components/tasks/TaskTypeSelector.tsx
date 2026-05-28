@@ -1,7 +1,6 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 import {
   TASK_TYPE_INFO,
   CATEGORY_LABELS,
@@ -28,13 +27,13 @@ export function TaskTypeSelector({ value, onChange, gradeBand }: TaskTypeSelecto
   })).filter((g) => g.types.length > 0);
 
   return (
-    <div className="space-y-5">
+    <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
       {grouped.map(({ category, label, types }) => (
         <div key={category}>
-          <p className="mb-2.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-foreground">
             {label}
           </p>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <div className="flex flex-wrap gap-1.5">
             {types.map((t) => {
               const info = TASK_TYPE_INFO[t];
               const selected = value === t;
@@ -44,26 +43,13 @@ export function TaskTypeSelector({ value, onChange, gradeBand }: TaskTypeSelecto
                   type="button"
                   onClick={() => onChange(t)}
                   className={cn(
-                    "flex flex-col items-start gap-1 rounded-lg border p-3 text-left transition-all",
+                    "rounded-md border px-2.5 py-1.5 text-sm font-medium leading-tight transition-all",
                     selected
-                      ? "border-primary bg-primary/5 ring-2 ring-primary"
-                      : "border-border hover:border-foreground/20 hover:bg-muted/50",
+                      ? "border-primary bg-primary/5 ring-1 ring-primary text-foreground"
+                      : "border-border bg-background text-foreground hover:border-foreground/30 hover:bg-muted/50",
                   )}
                 >
-                  <div className="flex w-full items-center justify-between">
-                    <Badge
-                      variant={selected ? "default" : "secondary"}
-                      className="text-[10px] font-bold"
-                    >
-                      {info.shortLabel}
-                    </Badge>
-                  </div>
-                  <span className="text-sm font-medium leading-tight">
-                    {info.label}
-                  </span>
-                  <span className="text-[11px] leading-snug text-muted-foreground">
-                    {info.description}
-                  </span>
+                  {info.label}
                 </button>
               );
             })}

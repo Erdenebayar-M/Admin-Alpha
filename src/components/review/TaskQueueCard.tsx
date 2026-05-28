@@ -18,12 +18,12 @@ const FLAG_LABELS: Record<string, string> = {
 };
 
 const STATUS_STYLES: Record<ReviewItem["status"], string> = {
-  ai_flagged:     "bg-yellow-100 text-yellow-800 border-yellow-200",
-  pending:        "bg-gray-100 text-gray-600 border-gray-200",
-  ai_passed:      "bg-blue-100 text-blue-700 border-blue-200",
-  human_approved: "bg-green-100 text-green-700 border-green-200",
-  human_rejected: "bg-red-100 text-red-700 border-red-200",
-  needs_revision: "bg-orange-100 text-orange-700 border-orange-200",
+  ai_flagged:     "bg-[#E91D26] text-white border-[#E91D26]",
+  pending:        "bg-gray-500 text-white border-gray-500",
+  ai_passed:      "bg-[#69BF68] text-white border-[#69BF68]",
+  human_approved: "bg-[#48A145] text-white border-[#48A145]",
+  human_rejected: "bg-[#90251D] text-white border-[#90251D]",
+  needs_revision: "bg-[#DC2B33] text-white border-[#DC2B33]",
 };
 
 const STATUS_LABELS: Record<ReviewItem["status"], string> = {

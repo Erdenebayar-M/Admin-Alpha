@@ -106,6 +106,7 @@ export interface ReviewAction {
 
 export interface LiveTask extends TaskContent {
   is_diagnostic: boolean;
+  created_at: string;
 }
 
 export interface LiveTaskListResponse {

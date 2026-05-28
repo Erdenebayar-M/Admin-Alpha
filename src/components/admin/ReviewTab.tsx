@@ -1,13 +1,24 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useReviewQueue } from "@/hooks/useReviewQueue";
-import { TaskQueueCard, TaskQueueCardSkeleton } from "@/components/review/TaskQueueCard";
-import { approveVariant, getContentStats } from "@/lib/api";
+import { approveVariant } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
+import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import type { ReviewItem } from "@/lib/types";
+
+const SKILL_NAMES: Record<string, string> = {
+  S1: "Үсэг-авиа ялгалт",
+  S2: "Үгийн зөв бичлэг",
+  S3: "Урт/богино эгшиг",
+  S4: "Балархай эгшиг",
+  S5: "Залгавар/нөхцөл",
+  S6: "Өгүүлбэрийн тэмдэглэгээ",
+  S7: "Сонсголоор буулгах",
+  S8: "Алдаа засах",
+};
 
 type Tab = "all" | "needs-review" | "ai-passed" | "done";
 type SortOrder = "flagged-first" | "newest" | "oldest";
@@ -19,6 +30,24 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "done", label: "Дуусгасан" },
 ];
 
+const STATUS_STYLES: Record<ReviewItem["status"], string> = {
+  ai_flagged:     "bg-[#E91D26] text-white",
+  pending:        "bg-gray-500 text-white",
+  ai_passed:      "bg-[#69BF68] text-white",
+  human_approved: "bg-[#48A145] text-white",
+  human_rejected: "bg-[#90251D] text-white",
+  needs_revision: "bg-[#DC2B33] text-white",
+};
+
+const STATUS_LABELS: Record<ReviewItem["status"], string> = {
+  ai_flagged:     "AI тэмдэглэсэн",
+  pending:        "Хүлээгдэж буй",
+  ai_passed:      "AI дамжсан",
+  human_approved: "Батлагдсан",
+  human_rejected: "Татгалзсан",
+  needs_revision: "Засах шаардлагатай",
+};
+
 const STATUS_PRIORITY: Partial<Record<ReviewItem["status"], number>> = {
   ai_flagged: 0,
   pending: 1,
@@ -26,14 +55,10 @@ const STATUS_PRIORITY: Partial<Record<ReviewItem["status"], number>> = {
 
 function filterByTab(items: ReviewItem[], tab: Tab): ReviewItem[] {
   switch (tab) {
-    case "needs-review":
-      return items.filter((i) => i.status === "ai_flagged" || i.status === "pending");
-    case "ai-passed":
-      return items.filter((i) => i.status === "ai_passed");
-    case "done":
-      return items.filter((i) => i.status === "human_approved" || i.status === "human_rejected");
-    default:
-      return items;
+    case "needs-review": return items.filter((i) => i.status === "ai_flagged" || i.status === "pending");
+    case "ai-passed":    return items.filter((i) => i.status === "ai_passed");
+    case "done":         return items.filter((i) => i.status === "human_approved" || i.status === "human_rejected");
+    default:             return items;
   }
 }
 
@@ -41,43 +66,22 @@ function sortItems(items: ReviewItem[], order: SortOrder): ReviewItem[] {
   const arr = [...items];
   switch (order) {
     case "flagged-first":
-      return arr.sort((a, b) => {
-        const pa = STATUS_PRIORITY[a.status] ?? 2;
-        const pb = STATUS_PRIORITY[b.status] ?? 2;
-        return pa - pb;
-      });
+      return arr.sort((a, b) => (STATUS_PRIORITY[a.status] ?? 2) - (STATUS_PRIORITY[b.status] ?? 2));
     case "newest":
-      return arr.sort(
-        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
-      );
+      return arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
     case "oldest":
-      return arr.sort(
-        (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
-      );
+      return arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
   }
 }
 
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: "yellow" | "green";
-}) {
+function PromptCell({ text }: { text: string }) {
+  if (!text) return null;
   return (
-    <div className="rounded-lg border border-border bg-card px-4 py-3">
-      <p className="mb-0.5 text-xs text-muted-foreground">{label}</p>
-      <p
-        className={cn(
-          "tabular-nums text-2xl font-semibold",
-          accent === "yellow" && "text-yellow-600",
-          accent === "green" && "text-green-600",
-        )}
-      >
-        {value}
-      </p>
+    <div className="group relative">
+      <span className="line-clamp-1 cursor-default text-xs text-muted-foreground">{text}</span>
+      <div className="pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-72 rounded-md border border-border bg-popover p-3 text-xs leading-relaxed text-foreground shadow-lg group-hover:block">
+        {text}
+      </div>
     </div>
   );
 }
@@ -89,17 +93,9 @@ export function ReviewTab() {
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [sort, setSort] = useState<SortOrder>("flagged-first");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [toast, setToast] = useState<{ message: string; visible: boolean }>({
-    message: "",
-    visible: false,
-  });
+  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
 
   const { data: allItems = [], isLoading } = useReviewQueue();
-  const { data: stats } = useQuery({
-    queryKey: ["content-stats"],
-    queryFn: getContentStats,
-    staleTime: 30_000,
-  });
 
   const showToast = useCallback((message: string, duration = 2500) => {
     setToast({ message, visible: true });
@@ -108,20 +104,7 @@ export function ReviewTab() {
 
   const tabItems = useMemo(() => filterByTab(allItems, activeTab), [allItems, activeTab]);
   const visibleItems = useMemo(() => sortItems(tabItems, sort), [tabItems, sort]);
-
-  const pendingCount = useMemo(
-    () => allItems.filter((i) => i.status === "pending").length,
-    [allItems],
-  );
-  const flaggedCount = useMemo(
-    () => allItems.filter((i) => i.status === "ai_flagged").length,
-    [allItems],
-  );
-  const approvedTodayCount = stats?.pipeline.approved_today ?? 0;
-  const aiPassedInView = useMemo(
-    () => visibleItems.filter((i) => i.status === "ai_passed").length,
-    [visibleItems],
-  );
+  const aiPassedInView = useMemo(() => visibleItems.filter((i) => i.status === "ai_passed").length, [visibleItems]);
 
   function handleSelect(id: string, checked: boolean) {
     setSelectedIds((prev) => {
@@ -141,67 +124,46 @@ export function ReviewTab() {
       const items = allItems.filter((i) => ids.includes(i.id));
       await Promise.all(items.map((i) => approveVariant(i.task.task_id, i.variant_id)));
     },
-    onMutate: (ids) => {
-      showToast(`${ids.length} зүйл батлаж байна…`, 2000);
-    },
+    onMutate: (ids) => showToast(`${ids.length} зүйл батлаж байна…`, 2000),
     onSuccess: (_, ids) => {
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["content-stats"] });
       setSelectedIds(new Set());
       setTimeout(() => showToast(`${ids.length} батлагдлаа`), 300);
     },
-    onError: () => {
-      showToast("Олноор батлахад алдаа гарлаа. Дахин оролдоно уу.");
-    },
+    onError: () => showToast("Олноор батлахад алдаа гарлаа. Дахин оролдоно уу."),
   });
 
   const hasSelection = selectedIds.size > 0;
 
   return (
     <div className={cn("px-4 py-6", hasSelection && "pb-24")}>
-      {/* Stats row */}
-      <div className="mb-6 grid grid-cols-3 gap-3">
-        <StatCard label="Хүлээж буй" value={isLoading ? "—" : String(pendingCount)} />
-        <StatCard
-          label="AI тэмдэглэсэн"
-          value={isLoading ? "—" : String(flaggedCount)}
-          accent="yellow"
-        />
-        <StatCard
-          label="Өнөөдөр батлагдсан"
-          value={isLoading ? "—" : String(approvedTodayCount)}
-          accent="green"
-        />
-      </div>
-
-      {/* Filter tabs */}
-      <div className="flex gap-1 border-b border-border">
-        {TABS.map((tab) => {
-          const count = isLoading ? null : filterByTab(allItems, tab.id).length;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={cn(
-                "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
-                activeTab === tab.id
-                  ? "border-foreground text-foreground"
-                  : "border-transparent text-muted-foreground hover:text-foreground",
-              )}
-            >
-              {tab.label}
-              {count !== null && (
-                <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">{count}</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Toolbar */}
-      <div className="mb-3 mt-3 flex min-h-[28px] items-center justify-between gap-3">
-        <div>
+      {/* Filter tabs + sort */}
+      <div className="mb-3 flex items-center justify-between gap-3 border-b border-border">
+        <div className="flex gap-1">
+          {TABS.map((tab) => {
+            const count = isLoading ? null : filterByTab(allItems, tab.id).length;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "-mb-px border-b-2 px-3 py-2 text-sm font-medium transition-colors",
+                  activeTab === tab.id
+                    ? "border-foreground text-foreground"
+                    : "border-transparent text-muted-foreground hover:text-foreground",
+                )}
+              >
+                {tab.label}
+                {count !== null && (
+                  <span className="ml-1.5 rounded-full bg-muted px-1.5 py-0.5 text-xs">{count}</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        <div className="flex items-center gap-2 pb-2 shrink-0">
           {!isLoading && aiPassedInView > 0 && (
             <button
               type="button"
@@ -211,16 +173,10 @@ export function ReviewTab() {
               AI дамжсан бүгдийг сонгох ({aiPassedInView})
             </button>
           )}
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <label htmlFor="review-sort" className="text-xs text-muted-foreground">
-            Эрэмбэлэх:
-          </label>
           <select
-            id="review-sort"
             value={sort}
             onChange={(e) => setSort(e.target.value as SortOrder)}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
+            className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-foreground/30"
           >
             <option value="flagged-first">AI тэмдэглэснийг эхэнд</option>
             <option value="newest">Шинийг эхэнд</option>
@@ -229,26 +185,89 @@ export function ReviewTab() {
         </div>
       </div>
 
-      {/* Queue list — clicking opens detail modal */}
-      <div className="space-y-2">
-        {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => <TaskQueueCardSkeleton key={i} />)
-        ) : visibleItems.length === 0 ? (
-          <p className="py-12 text-center text-sm text-muted-foreground">
-            Энэ ангилалд зүйл байхгүй.
-          </p>
-        ) : (
-          visibleItems.map((item) => (
-            <TaskQueueCard
-              key={item.id}
-              item={item}
-              selected={selectedIds.has(item.id)}
-              onSelect={handleSelect}
-              onOpen={openReviewDetail}
-            />
-          ))
-        )}
-      </div>
+      {/* Table */}
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="h-10 animate-pulse rounded bg-muted" />
+          ))}
+        </div>
+      ) : visibleItems.length === 0 ? (
+        <p className="py-12 text-center text-sm text-muted-foreground">
+          Энэ ангилалд зүйл байхгүй.
+        </p>
+      ) : (
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border bg-muted/50">
+              <tr>
+                <th className="w-8 px-3 py-2.5" />
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Төрөл</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Гарчиг</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Анги</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Чадвар</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Төлөв</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {visibleItems.map((item) => (
+                <tr
+                  key={item.id}
+                  onClick={() => openReviewDetail(item.id)}
+                  className={cn(
+                    "cursor-pointer transition-colors hover:bg-muted/50",
+                    selectedIds.has(item.id) && "bg-blue-50/40 dark:bg-blue-950/20",
+                  )}
+                >
+                  <td
+                    className="px-3 py-2.5"
+                    onClick={(e) => { e.stopPropagation(); handleSelect(item.id, !selectedIds.has(item.id)); }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedIds.has(item.id)}
+                      onChange={() => handleSelect(item.id, !selectedIds.has(item.id))}
+                      className="h-4 w-4 cursor-pointer rounded border-border"
+                      aria-label={`Select ${item.task.task_id}`}
+                    />
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="font-medium text-sm leading-tight">
+                      {TASK_TYPE_INFO[item.task.task_type]?.label ?? item.task.task_type}
+                    </div>
+                    <span className="mt-0.5 inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                      {item.task.task_type}
+                    </span>
+                  </td>
+                  <td className="max-w-[180px] px-3 py-2.5">
+                    <span className="line-clamp-1 font-medium">{item.task.title}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex flex-wrap gap-1">
+                      {item.task.grade_band.map((g) => (
+                        <span key={g} className="rounded border border-border px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="text-xs font-medium text-foreground">
+                      {SKILL_NAMES[item.task.primary_skill] ?? item.task.primary_skill}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">{item.task.primary_skill}</div>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className={cn("inline-flex items-center rounded px-2 py-0.5 text-xs font-medium", STATUS_STYLES[item.status])}>
+                      {STATUS_LABELS[item.status]}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       {/* Bulk action bar */}
       <div
@@ -273,7 +292,7 @@ export function ReviewTab() {
             type="button"
             onClick={() => bulkMutation.mutate([...selectedIds])}
             disabled={bulkMutation.isPending}
-            className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors disabled:pointer-events-none disabled:opacity-60"
+            className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-80 transition-opacity disabled:pointer-events-none disabled:opacity-40"
           >
             {bulkMutation.isPending ? "Батлаж байна…" : `Олноор батлах (${selectedIds.size})`}
           </button>

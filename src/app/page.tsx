@@ -1,10 +1,5 @@
-import AdminLayout from './admin/layout'
-import AdminPage from './admin/page'
+import { redirect } from 'next/navigation';
 
 export default function Home() {
-  return (
-    <AdminLayout>
-      <AdminPage />
-    </AdminLayout>
-  )
+  redirect('/admin/review');
 }

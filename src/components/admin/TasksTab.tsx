@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { getLiveTasks, getContentStats, type LiveTaskFilters } from "@/lib/api";
-import { useReviewQueue } from "@/hooks/useReviewQueue";
-import { StatusTrackBar, type PipelineStage } from "@/components/admin/StatusTrackBar";
+import { getLiveTasks, type LiveTaskFilters } from "@/lib/api";
+import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
+import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import type { LiveTask } from "@/lib/types";
 
 const SKILL_NAMES: Record<string, string> = {
@@ -23,64 +23,14 @@ function difficultyStars(n: number) {
   return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
-function TaskCard({
-  task,
-  selected,
-  onSelect,
-}: {
-  task: LiveTask;
-  selected: boolean;
-  onSelect: (id: string) => void;
-}) {
+function DescriptionCell({ text }: { text: string }) {
+  if (!text) return null;
   return (
-    <button
-      type="button"
-      onClick={() => onSelect(task.task_id)}
-      className={cn(
-        "block w-full rounded-lg border p-4 text-left transition-all",
-        selected
-          ? "border-green-400 bg-green-50/40 dark:bg-green-950/20 shadow-sm ring-2 ring-green-400/30"
-          : "border-border bg-card hover:bg-muted/50",
-      )}
-    >
-      <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
-        <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">{task.task_type}</span>
-        <div className="flex gap-1">
-          {task.grade_band.map((g) => (
-            <span
-              key={g}
-              className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
-            >
-              {g}
-            </span>
-          ))}
-        </div>
-        {task.is_diagnostic && (
-          <span className="rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-xs text-blue-700">
-            Оношилгоо
-          </span>
-        )}
+    <div className="group relative">
+      <span className="line-clamp-1 cursor-default text-xs text-muted-foreground">{text}</span>
+      <div className="pointer-events-none absolute left-0 top-full z-50 mt-1 hidden w-72 rounded-md border border-border bg-popover p-3 text-xs leading-relaxed text-foreground shadow-lg group-hover:block">
+        {text}
       </div>
-      <p className="mb-1 text-sm font-medium line-clamp-1">{task.title || task.prompt_text}</p>
-      <p className="mb-2 line-clamp-2 text-xs text-muted-foreground">{task.prompt_text}</p>
-      <div className="flex items-center gap-3 text-xs text-muted-foreground">
-        <span>{SKILL_NAMES[task.primary_skill] ?? task.primary_skill}</span>
-        <span className="text-yellow-500">{difficultyStars(task.difficulty)}</span>
-      </div>
-    </button>
-  );
-}
-
-function TaskCardSkeleton() {
-  return (
-    <div className="animate-pulse rounded-lg border border-border bg-card p-4">
-      <div className="mb-2 flex gap-1.5">
-        <div className="h-4 w-20 rounded bg-muted" />
-        <div className="h-4 w-8 rounded bg-muted" />
-      </div>
-      <div className="mb-1 h-4 w-3/4 rounded bg-muted" />
-      <div className="mb-2 h-3 w-full rounded bg-muted" />
-      <div className="h-3 w-1/3 rounded bg-muted" />
     </div>
   );
 }
@@ -89,98 +39,41 @@ type GradeFilter = "all" | "G12" | "G24";
 
 export function TasksTab() {
   const [grade, setGrade] = useState<GradeFilter>("all");
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [toastVisible, setToastVisible] = useState(false);
+  const { openTaskDetail, pageToast, clearPageToast } = useModalStore();
+
+  useEffect(() => {
+    if (!pageToast) return;
+    setToastVisible(true);
+    const hide = setTimeout(() => setToastVisible(false), 2800);
+    const clear = setTimeout(() => clearPageToast(), 3200);
+    return () => { clearTimeout(hide); clearTimeout(clear); };
+  }, [pageToast, clearPageToast]);
 
   const filters: LiveTaskFilters = grade !== "all" ? { grade } : {};
 
-  const { data: tasks = [], isLoading: tasksLoading } = useQuery({
+  const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["live-tasks", filters],
     queryFn: () => getLiveTasks(filters),
     staleTime: 30_000,
   });
 
-  const { data: reviewItems = [] } = useReviewQueue();
-
-  const { data: stats } = useQuery({
-    queryKey: ["content-stats"],
-    queryFn: getContentStats,
-    staleTime: 30_000,
-  });
-
-  // Pipeline stage counts
-  const pendingCount =
-    reviewItems.filter(
-      (i) => i.status === "pending" || i.status === "ai_passed" || i.status === "ai_flagged",
-    ).length;
-  const reviewedCount = reviewItems.filter(
-    (i) => i.status === "needs_revision" || i.status === "human_rejected",
-  ).length;
-
-  const stageCounts: Partial<Record<PipelineStage, number>> = {
-    ai: stats?.pipeline.stage1 ?? 0,
-    manual: 0,
-    pending: pendingCount,
-    reviewed: reviewedCount,
-    approved: tasks.length,
-  };
-
-  // Determine highlighted stage for selected task
-  // All live tasks are in "approved" stage
-  const highlightedStage: PipelineStage | null = selectedTaskId ? "approved" : null;
-
-  function handleTaskSelect(id: string) {
-    setSelectedTaskId((prev) => (prev === id ? null : id));
-  }
+  const availableTypes = Array.from(new Set(tasks.map((t) => t.task_type))).sort();
+  const filtered = (typeFilter === "all" ? tasks : tasks.filter((t) => t.task_type === typeFilter))
+    .slice()
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   return (
-    <div className="px-4 py-6">
-      {/* Status track bar */}
-      <div className="mb-6">
-        <StatusTrackBar
-          counts={stageCounts}
-          highlightedStage={highlightedStage}
-          onStageClick={() => {}}
-        />
-      </div>
-
-      {/* Selected task stage detail */}
-      {selectedTaskId && (
-        <div className="mb-5 rounded-lg border border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30 px-4 py-3">
-          <div className="flex items-center gap-2 text-sm">
-            <span className="h-2 w-2 rounded-full bg-green-500 shrink-0" />
-            <span className="font-medium text-green-800 dark:text-green-300">
-              Сонгосон даалгаврын статус:
-            </span>
-            <span className="text-green-700 dark:text-green-400">Баталгаажсан</span>
-            <span className="ml-auto font-mono text-xs text-green-600 dark:text-green-500">
-              {selectedTaskId}
-            </span>
-          </div>
-          <div className="mt-2 flex items-center gap-1 text-[11px] text-green-600 dark:text-green-500">
-            {(["AI үүсгэсэн", "Гараар үүсгэсэн", "Хянахыг хүлээж буй", "Хянасан"] as const).map(
-              (label, i) => (
-                <span key={label} className="flex items-center gap-1 opacity-50">
-                  {i > 0 && <span>→</span>}
-                  {label}
-                </span>
-              ),
-            )}
-            <span className="flex items-center gap-1 font-semibold opacity-100">
-              <span>→</span>
-              <span className="text-green-700 dark:text-green-300">Баталгаажсан ✓</span>
-            </span>
-          </div>
-        </div>
-      )}
-
-      {/* Grade filter */}
-      <div className="mb-5 flex items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
+    <div className="relative px-4 py-6">
+      {/* Filters */}
+      <div className="mb-5 flex flex-wrap items-center gap-3">
+        <div className="flex gap-2">
           {(["all", "G12", "G24"] as const).map((g) => (
             <button
               key={g}
               type="button"
-              onClick={() => setGrade(g)}
+              onClick={() => { setGrade(g); setTypeFilter("all"); }}
               className={cn(
                 "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
                 grade === g
@@ -192,32 +85,112 @@ export function TasksTab() {
             </button>
           ))}
         </div>
-        <span className="text-sm text-muted-foreground shrink-0">
-          {tasksLoading ? "—" : `${tasks.length} даалгавар`}
+
+        {availableTypes.length > 0 && (
+          <select
+            value={typeFilter}
+            onChange={(e) => setTypeFilter(e.target.value)}
+            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-foreground/30"
+          >
+            <option value="all">Бүх төрөл</option>
+            {availableTypes.map((t) => (
+              <option key={t} value={t}>
+                {TASK_TYPE_INFO[t]?.label ?? t}
+              </option>
+            ))}
+          </select>
+        )}
+
+        <span className="ml-auto shrink-0 text-sm text-muted-foreground">
+          {isLoading ? "—" : `${filtered.length} даалгавар`}
         </span>
       </div>
 
-      {/* Task grid */}
-      {tasksLoading ? (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <TaskCardSkeleton key={i} />
+      {/* Table */}
+      {isLoading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="h-10 animate-pulse rounded bg-muted" />
           ))}
         </div>
-      ) : tasks.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <p className="py-16 text-center text-sm text-muted-foreground">
           Батлагдсан даалгавар олдсонгүй.
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.task_id}
-              task={task}
-              selected={selectedTaskId === task.task_id}
-              onSelect={handleTaskSelect}
-            />
-          ))}
+        <div className="overflow-x-auto rounded-lg border border-border">
+          <table className="w-full text-sm">
+            <thead className="border-b border-border bg-muted/50">
+              <tr>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">ID</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Төрөл</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Анги</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Гарчиг</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Чадвар</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Хүндрэл</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {filtered.map((task: LiveTask) => (
+                <tr
+                  key={task.task_id}
+                  onClick={() => openTaskDetail(task.task_id)}
+                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                >
+                  <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
+                    {task.task_id.slice(0, 8)}…
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="font-medium text-sm leading-tight">
+                      {TASK_TYPE_INFO[task.task_type]?.label ?? task.task_type}
+                    </div>
+                    <span className="mt-0.5 inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                      {task.task_type}
+                    </span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="flex gap-1">
+                      {task.grade_band.map((g) => (
+                        <span
+                          key={g}
+                          className="rounded border border-border px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+                        >
+                          {g}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td className="max-w-[200px] px-3 py-2.5">
+                    <span className="line-clamp-1 font-medium">{task.title || task.prompt_text}</span>
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <div className="text-xs font-medium text-foreground">
+                      {SKILL_NAMES[task.primary_skill] ?? task.primary_skill}
+                    </div>
+                    <div className="text-[10px] text-muted-foreground">{task.primary_skill}</div>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-xs text-yellow-500">
+                    {difficultyStars(task.difficulty)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Page-level toast */}
+      {pageToast && (
+        <div
+          className={cn(
+            "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg px-5 py-3 text-sm font-medium shadow-lg transition-all duration-300",
+            toastVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
+            pageToast.type === "success"
+              ? "bg-foreground text-background"
+              : "bg-[#DC2B33] text-white",
+          )}
+        >
+          {pageToast.message}
         </div>
       )}
     </div>
