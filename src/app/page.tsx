@@ -1,5 +1,10 @@
-import { redirect } from 'next/navigation'
+import AdminLayout from './admin/layout'
+import AdminPage from './admin/page'
 
 export default function Home() {
-  redirect('/admin')
+  return (
+    <AdminLayout>
+      <AdminPage />
+    </AdminLayout>
+  )
 }

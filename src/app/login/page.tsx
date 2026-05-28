@@ -26,7 +26,7 @@ export default function LoginPage() {
         setError(data.error ?? 'Нэвтрэхэд алдаа гарлаа')
         return
       }
-      router.push('/admin/review')
+      router.push('/')
       router.refresh()
     } catch {
       setError('Сүлжээний алдаа — дахин оролдоно уу')
