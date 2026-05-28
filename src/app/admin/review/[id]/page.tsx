@@ -92,8 +92,8 @@ export default function ReviewDetailPage() {
     (action: ReviewAction) => {
       submitMutation.mutate(action, {
         onSuccess: () => {
-          showToast(TOAST_MESSAGES[action.action], 1800);
-          setTimeout(() => router.push('/admin/review'), 1800);
+          showToast(TOAST_MESSAGES[action.action], 2000);
+          setTimeout(() => router.push('/admin/review'), 300);
         },
       });
     },

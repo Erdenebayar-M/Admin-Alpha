@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useReviewQueue } from "@/hooks/useReviewQueue";
 import {
   TaskQueueCard,
   TaskQueueCardSkeleton,
 } from "@/components/review/TaskQueueCard";
-import { approveVariant } from "@/lib/api";
+import { approveVariant, getContentStats } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import type { ReviewItem } from "@/lib/types";
 
@@ -71,16 +71,6 @@ function sortItems(items: ReviewItem[], order: SortOrder): ReviewItem[] {
   }
 }
 
-function isToday(isoString: string): boolean {
-  const d = new Date(isoString);
-  const now = new Date();
-  return (
-    d.getFullYear() === now.getFullYear() &&
-    d.getMonth() === now.getMonth() &&
-    d.getDate() === now.getDate()
-  );
-}
-
 // ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function ReviewQueuePage() {
@@ -96,6 +86,11 @@ export default function ReviewQueuePage() {
 
   const { data: allItems = [], isLoading, error } = useReviewQueue();
   if (error) console.error("[ReviewQueue] fetch error:", error);
+  const { data: stats } = useQuery({
+    queryKey: ["content-stats"],
+    queryFn: getContentStats,
+    staleTime: 30_000,
+  });
 
   const showToast = useCallback((message: string, duration = 2500) => {
     setToast({ message, visible: true });
@@ -120,13 +115,7 @@ export default function ReviewQueuePage() {
     () => allItems.filter((i) => i.status === "ai_flagged").length,
     [allItems],
   );
-  const approvedTodayCount = useMemo(
-    () =>
-      allItems.filter(
-        (i) => i.status === "human_approved" && isToday(i.created_at),
-      ).length,
-    [allItems],
-  );
+  const approvedTodayCount = stats?.pipeline.approved_today ?? 0;
   const aiPassedInView = useMemo(
     () => visibleItems.filter((i) => i.status === "ai_passed").length,
     [visibleItems],
@@ -155,9 +144,7 @@ export default function ReviewQueuePage() {
     mutationFn: async (ids: string[]): Promise<void> => {
       const items = allItems.filter((i) => ids.includes(i.id));
       await Promise.all(
-        items.map((i) =>
-          approveVariant(i.variant_id.replace(/-v\d+$/, ''), i.variant_id),
-        ),
+        items.map((i) => approveVariant(i.task.task_id, i.variant_id)),
       );
     },
     onMutate: (ids) => {
@@ -168,8 +155,8 @@ export default function ReviewQueuePage() {
     },
     onSuccess: (_, ids) => {
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["content-stats"] });
       setSelectedIds(new Set());
-      // Brief delay so the "Approving…" toast fades before the success one appears
       setTimeout(() => showToast(`${ids.length} approved`), 300);
     },
     onError: () => {

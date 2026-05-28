@@ -105,6 +105,15 @@ export interface ReviewAction {
   edited_task?: Partial<TaskContent>;
 }
 
+export interface LiveTask extends TaskContent {
+  is_diagnostic: boolean;
+}
+
+export interface LiveTaskListResponse {
+  success: boolean;
+  data: { total: number; tasks: LiveTask[]; meta: PaginationMeta };
+}
+
 export interface ContentStats {
   pipeline: {
     stage1: number;
@@ -113,5 +122,6 @@ export interface ContentStats {
     flagged: number;
     rejected: number;
     needs_revision: number;
+    approved_today: number;
   };
 }

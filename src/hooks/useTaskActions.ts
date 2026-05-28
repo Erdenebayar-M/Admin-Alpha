@@ -6,12 +6,12 @@ import type { ReviewItem, TaskContent } from '@/lib/types';
 
 export function useUpdateTaskContent(itemId: string) {
   const queryClient = useQueryClient();
-  const baseTaskId = itemId.replace(/-v\d+$/, '');
 
   return useMutation({
     mutationFn: async (patch: Partial<TaskContent>): Promise<void> => {
       const item = queryClient.getQueryData<ReviewItem>(['review-item', itemId]);
       const variantId = item?.variant_id ?? itemId;
+      const baseTaskId = item?.task.task_id ?? itemId;
       await editVariant(baseTaskId, variantId, patch);
     },
     onSuccess: (_data, patch) => {

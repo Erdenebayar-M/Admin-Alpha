@@ -81,6 +81,8 @@ export function useSubmitReview(taskId: string) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["review-item", taskId] });
+      queryClient.invalidateQueries({ queryKey: ["content-stats"] });
     },
   });
 }

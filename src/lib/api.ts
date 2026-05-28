@@ -215,6 +215,39 @@ export async function createTask(payload: CreateTaskPayload): Promise<CreateTask
 // No backend bulk endpoint — callers should loop approveVariant
 export { type ReviewAction, type TaskContent };
 
+// ─── Live tasks (approved Task table) ────────────────────────────────────────
+
+import type { LiveTask, LiveTaskListResponse } from './types';
+
+export interface LiveTaskFilters {
+  grade?: 'G12' | 'G24';
+  type?: string;
+  skill?: string;
+}
+
+function normalizeLiveTask(t: LiveTask & { id?: string }): LiveTask {
+  // Backend returns Task.id as 'id'; map it to task_id for TaskContent compatibility
+  return { ...t, task_id: t.task_id ?? (t.id as string) };
+}
+
+export async function getLiveTasks(filters?: LiveTaskFilters): Promise<LiveTask[]> {
+  const { data } = await client.get<LiveTaskListResponse>('/live-tasks', { params: filters });
+  return data.data.tasks.map(normalizeLiveTask);
+}
+
+export async function getLiveTask(id: string): Promise<LiveTask> {
+  const { data } = await client.get<{ success: boolean; data: { task: LiveTask } }>(`/live-tasks/${id}`);
+  return normalizeLiveTask(data.data.task);
+}
+
+export async function updateLiveTask(id: string, updates: Partial<TaskContent>): Promise<void> {
+  await client.patch(`/live-tasks/${id}`, { updates });
+}
+
+export async function deleteLiveTask(id: string): Promise<void> {
+  await client.delete(`/live-tasks/${id}`);
+}
+
 // ─── Generate tasks ───────────────────────────────────────────────────────────
 
 export interface GenerateSpec {
