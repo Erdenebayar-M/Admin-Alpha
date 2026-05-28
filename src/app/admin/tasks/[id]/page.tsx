@@ -105,7 +105,7 @@ export default function LiveTaskDetailPage() {
       <div className="mb-6 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
           <Link href="/admin/tasks" className="hover:text-foreground transition-colors shrink-0">
-            Tasks
+            Даалгаврууд
           </Link>
           <span>/</span>
           <span className="font-mono text-foreground truncate">{task.task_type}</span>

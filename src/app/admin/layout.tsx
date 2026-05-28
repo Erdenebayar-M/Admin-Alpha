@@ -7,10 +7,10 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
-  { href: '/admin/review',       label: 'Review Queue' },
-  { href: '/admin/tasks',        label: 'Tasks' },
-  { href: '/admin/generate',     label: 'Generate' },
-  { href: '/admin/tasks/create', label: 'Create Task' },
+  { href: '/admin/review',       label: 'Хяналтын дараалал' },
+  { href: '/admin/tasks',        label: 'Даалгаврууд' },
+  { href: '/admin/generate',     label: 'Үүсгэх' },
+  { href: '/admin/tasks/create', label: 'Даалгавар үүсгэх' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -23,7 +23,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           {/* Brand + nav */}
           <div className="flex items-center gap-6">
             <span className="text-sm font-bold tracking-tight text-foreground">
-              Admin
+              Админ
             </span>
 
             <nav className="flex items-center gap-1">

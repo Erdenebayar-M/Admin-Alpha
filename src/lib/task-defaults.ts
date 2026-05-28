@@ -185,13 +185,12 @@ interface DefaultValues {
   level_target: string;
   estimated_time_seconds: string;
   lesson_slot_fit: string;
-  review_after_days: string;
 }
 
 export function computeDefaults(taskType: string, gradeBands: string[]): DefaultValues {
   const isG24 = gradeBands.includes("G24");
   const info = TASK_TYPE_INFO[taskType];
-  if (!info) return { difficulty: "1", level_target: "M0", estimated_time_seconds: "30", lesson_slot_fit: "CORE", review_after_days: "1, 3, 7" };
+  if (!info) return { difficulty: "1", level_target: "M0", estimated_time_seconds: "30", lesson_slot_fit: "CORE" };
 
   const group = info.groups[0];
   let difficulty: number, level: string, time: number, slot: string;
@@ -220,15 +219,7 @@ export function computeDefaults(taskType: string, gradeBands: string[]): Default
     level_target: level,
     estimated_time_seconds: String(time),
     lesson_slot_fit: slot,
-    review_after_days: "1, 3, 7",
   };
-}
-
-export function parseNumberList(raw: string): number[] {
-  return raw
-    .split(",")
-    .map((s) => parseInt(s.trim(), 10))
-    .filter((n) => !isNaN(n));
 }
 
 export function parseLines(raw: string): string[] {

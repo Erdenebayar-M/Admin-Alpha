@@ -104,12 +104,12 @@ function ResultRow({ r }: { r: GenerateTaskResult }) {
     <div className="flex items-center justify-between gap-4 py-2 text-sm">
       <span className="font-mono text-xs font-medium">{r.task_id}</span>
       <div className="flex items-center gap-3">
-        <span className="text-xs text-green-600">✓ {r.drafts_created} to review</span>
+        <span className="text-xs text-green-600">✓ {r.drafts_created} хянах</span>
         {r.ai_blocked > 0 && (
-          <span className="text-xs text-yellow-600">⚠ {r.ai_blocked} AI blocked</span>
+          <span className="text-xs text-yellow-600">⚠ {r.ai_blocked} AI хаасан</span>
         )}
         {r.rejected > 0 && (
-          <span className="text-xs text-red-500">✕ {r.rejected} invalid</span>
+          <span className="text-xs text-red-500">✕ {r.rejected} буруу</span>
         )}
         <span className="w-16 text-right text-xs text-muted-foreground">
           ${r.cost_usd.toFixed(4)}
@@ -181,7 +181,7 @@ export default function GeneratePage() {
       setSelectedIds(new Set());
     },
     onError: (err) => {
-      showToast((err as Error).message ?? "Generation failed. Please try again.");
+      showToast((err as Error).message ?? "Үүсгэхэд алдаа гарлаа. Дахин оролдоно уу.");
     },
   });
 
@@ -197,12 +197,12 @@ export default function GeneratePage() {
         (hasSelection || results) && "pb-28",
       )}
     >
-      <h1 className="mb-6 text-xl font-semibold">Generate Tasks</h1>
+      <h1 className="mb-6 text-xl font-semibold">Даалгавар үүсгэх</h1>
 
       {/* Controls */}
       <div className="mb-6 flex flex-wrap items-center gap-6">
         <div>
-          <p className="mb-1.5 text-xs text-muted-foreground">Variants per task</p>
+          <p className="mb-1.5 text-xs text-muted-foreground">Даалгавар бүрт хувилбарын тоо</p>
           <div className="flex gap-1">
             {([1, 2, 3] as const).map((n) => (
               <ToggleChip key={n} value={n} active={maxItems === n} onClick={setMaxItems}>
@@ -212,7 +212,7 @@ export default function GeneratePage() {
           </div>
         </div>
         <div>
-          <p className="mb-1.5 text-xs text-muted-foreground">Max cost cap</p>
+          <p className="mb-1.5 text-xs text-muted-foreground">Хамгийн их зардлын хязгаар</p>
           <div className="flex gap-1">
             {([1, 5, 10, 20] as const).map((n) => (
               <ToggleChip key={n} value={n} active={maxCost === n} onClick={setMaxCost}>
@@ -306,7 +306,7 @@ export default function GeneratePage() {
       {/* Results panel */}
       {results && (
         <div className="mt-8 rounded-xl border border-border bg-card p-5">
-          <h2 className="mb-3 text-sm font-semibold">Generation complete</h2>
+          <h2 className="mb-3 text-sm font-semibold">Үүсгэлт дуусгавар болов</h2>
           <div className="divide-y divide-border">
             {results.rows.map((r) => (
               <ResultRow key={r.task_id} r={r} />
@@ -314,7 +314,7 @@ export default function GeneratePage() {
           </div>
           <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
             <span className="text-xs text-muted-foreground">
-              Total cost:{" "}
+              Нийт зардал:{" "}
               <span className="font-medium text-foreground">
                 ${results.total_cost_usd.toFixed(4)}
               </span>
@@ -325,14 +325,14 @@ export default function GeneratePage() {
                 onClick={() => setResults(null)}
                 className="rounded-md border border-border px-3 py-1.5 text-xs font-medium hover:bg-muted transition-colors"
               >
-                Generate again
+                Дахин үүсгэх
               </button>
               <button
                 type="button"
                 onClick={() => router.push("/admin/review")}
                 className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 transition-opacity"
               >
-                View in Review Queue →
+                Хянах дараалалд харах →
               </button>
             </div>
           </div>
@@ -350,16 +350,16 @@ export default function GeneratePage() {
         <div className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium">
-              {selectedIds.size} task{selectedIds.size === 1 ? "" : "s"} selected
-              {" · "}up to {estimatedVariants} variant{estimatedVariants === 1 ? "" : "s"}
-              {" · "}max cost ${maxCost}
+              {selectedIds.size} даалгавар сонгогдсон
+              {" · "}хамгийн ихдээ {estimatedVariants} хувилбар
+              {" · "}хамгийн их зардал ${maxCost}
             </span>
             <button
               type="button"
               onClick={clearSelection}
               className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
             >
-              Clear
+              Цуцлах
             </button>
           </div>
           <button
@@ -368,7 +368,7 @@ export default function GeneratePage() {
             disabled={mutation.isPending}
             className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity disabled:pointer-events-none disabled:opacity-60"
           >
-            Generate
+            Үүсгэх
           </button>
         </div>
       </div>
@@ -402,7 +402,7 @@ export default function GeneratePage() {
             />
           </svg>
           <span className="text-sm font-medium text-muted-foreground">
-            Generating tasks… this may take a minute
+            Даалгавар үүсгэж байна… нэг минут орчим болж болно
           </span>
         </div>
       </div>

@@ -83,7 +83,6 @@ export function TemplateManager({
       lesson_slot_fit: currentForm.lesson_slot_fit,
       error_targets: currentForm.error_targets,
       estimated_time_seconds: currentForm.estimated_time_seconds,
-      review_after_days: currentForm.review_after_days,
     };
     const next = [tpl, ...templates];
     saveTemplates(next);

@@ -19,10 +19,10 @@ type SortOrder = "flagged-first" | "newest" | "oldest";
 // ─── Constants ───────────────────────────────────────────────────────────────
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: "all", label: "All" },
-  { id: "needs-review", label: "Needs Review" },
-  { id: "ai-passed", label: "AI Passed" },
-  { id: "done", label: "Done" },
+  { id: "all", label: "Бүгд" },
+  { id: "needs-review", label: "Хянах шаардлагатай" },
+  { id: "ai-passed", label: "AI дамжсан" },
+  { id: "done", label: "Дуусгасан" },
 ];
 
 const STATUS_PRIORITY: Partial<Record<ReviewItem["status"], number>> = {
@@ -149,7 +149,7 @@ export default function ReviewQueuePage() {
     },
     onMutate: (ids) => {
       showToast(
-        `Approving ${ids.length} item${ids.length === 1 ? "" : "s"}…`,
+        `${ids.length} зүйл батлаж байна…`,
         2000,
       );
     },
@@ -157,10 +157,10 @@ export default function ReviewQueuePage() {
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["content-stats"] });
       setSelectedIds(new Set());
-      setTimeout(() => showToast(`${ids.length} approved`), 300);
+      setTimeout(() => showToast(`${ids.length} батлагдлаа`), 300);
     },
     onError: () => {
-      showToast("Bulk approve failed. Please try again.");
+      showToast("Олноор батлахад алдаа гарлаа. Дахин оролдоно уу.");
     },
   });
 
@@ -170,21 +170,21 @@ export default function ReviewQueuePage() {
 
   return (
     <div className={cn("mx-auto max-w-3xl px-4 py-8", hasSelection && "pb-24")}>
-      <h1 className="mb-6 text-xl font-semibold">Review Queue</h1>
+      <h1 className="mb-6 text-xl font-semibold">Хяналтын дараалал</h1>
 
       {/* Stats row */}
       <div className="mb-6 grid grid-cols-3 gap-3">
         <StatCard
-          label="Pending"
+          label="Хүлээж буй"
           value={isLoading ? "—" : String(pendingCount)}
         />
         <StatCard
-          label="AI Flagged"
+          label="AI тэмдэглэсэн"
           value={isLoading ? "—" : String(flaggedCount)}
           accent="yellow"
         />
         <StatCard
-          label="Approved today"
+          label="Өнөөдөр батлагдсан"
           value={isLoading ? "—" : String(approvedTodayCount)}
           accent="green"
         />
@@ -226,14 +226,14 @@ export default function ReviewQueuePage() {
               onClick={handleSelectAllAiPassed}
               className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
             >
-              Select all AI Passed ({aiPassedInView})
+              AI дамжсан бүгдийг сонгох ({aiPassedInView})
             </button>
           )}
         </div>
 
         <div className="flex items-center gap-1.5 shrink-0">
           <label htmlFor="sort-order" className="text-xs text-muted-foreground">
-            Sort:
+            Эрэмбэлэх:
           </label>
           <select
             id="sort-order"
@@ -241,9 +241,9 @@ export default function ReviewQueuePage() {
             onChange={(e) => setSort(e.target.value as SortOrder)}
             className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-ring"
           >
-            <option value="flagged-first">AI Flagged first</option>
-            <option value="newest">Newest first</option>
-            <option value="oldest">Oldest first</option>
+            <option value="flagged-first">AI тэмдэглэснийг эхэнд</option>
+            <option value="newest">Шинийг эхэнд</option>
+            <option value="oldest">Хуучнийг эхэнд</option>
           </select>
         </div>
       </div>
@@ -256,7 +256,7 @@ export default function ReviewQueuePage() {
           ))
         ) : visibleItems.length === 0 ? (
           <p className="py-12 text-center text-sm text-muted-foreground">
-            No items in this category.
+            Энэ ангилалд зүйл байхгүй.
           </p>
         ) : (
           visibleItems.map((item) => (
@@ -281,15 +281,14 @@ export default function ReviewQueuePage() {
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4 px-4 py-3">
           <div className="flex items-center gap-3">
             <span className="text-sm font-medium">
-              {selectedIds.size} item{selectedIds.size === 1 ? "" : "s"}{" "}
-              selected
+              Сонгогдсон: {selectedIds.size}
             </span>
             <button
               type="button"
               onClick={() => setSelectedIds(new Set())}
               className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
             >
-              Clear selection
+              Цуцлах
             </button>
           </div>
 
@@ -300,8 +299,8 @@ export default function ReviewQueuePage() {
             className="rounded-md bg-green-600 px-4 py-2 text-sm font-medium text-white hover:bg-green-700 transition-colors disabled:pointer-events-none disabled:opacity-60"
           >
             {bulkMutation.isPending
-              ? "Approving…"
-              : `Bulk Approve (${selectedIds.size})`}
+              ? "Батлаж байна…"
+              : `Олноор батлах (${selectedIds.size})`}
           </button>
         </div>
       </div>

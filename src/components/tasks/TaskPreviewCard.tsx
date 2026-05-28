@@ -177,7 +177,6 @@ export function TaskPreviewCard({ form, groups, taskType, onGoToStep }: TaskPrev
             value={LESSON_SLOT_LABELS[form.lesson_slot_fit] || "—"}
           />
           <MetaItem label="Хугацаа" value={`${form.estimated_time_seconds} секунд`} />
-          <MetaItem label="Давтах өдрүүд" value={form.review_after_days || "—"} />
         </div>
 
         {form.error_targets.length > 0 && (

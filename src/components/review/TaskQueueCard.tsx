@@ -27,12 +27,12 @@ const STATUS_STYLES: Record<ReviewItem["status"], string> = {
 };
 
 const STATUS_LABELS: Record<ReviewItem["status"], string> = {
-  ai_flagged: "AI Flagged",
-  pending: "Pending",
-  ai_passed: "AI Passed",
-  human_approved: "Approved",
-  human_rejected: "Rejected",
-  needs_revision: "Needs Revision",
+  ai_flagged: "AI тэмдэглэсэн",
+  pending: "Хүлээгдэж буй",
+  ai_passed: "AI дамжсан",
+  human_approved: "Батлагдсан",
+  human_rejected: "Татгалзсан",
+  needs_revision: "Засах шаардлагатай",
 };
 
 interface Props {

@@ -46,7 +46,7 @@ export const ReviewPanel = forwardRef<ReviewPanelRef, Props>(function ReviewPane
 
   function handleAction(action: ReviewAction['action']) {
     if ((action === 'reject' || action === 'request_revision') && !note.trim()) {
-      setNoteError('A note is required for this action.');
+      setNoteError('Энэ үйлдэлд тэмдэглэл шаардлагатай.');
       textareaRef.current?.focus();
       return;
     }
@@ -97,9 +97,9 @@ export const ReviewPanel = forwardRef<ReviewPanelRef, Props>(function ReviewPane
       {/* Section 2: Reviewer note */}
       <div className="rounded-lg border border-border bg-card p-5">
         <label htmlFor="reviewer-note" className="block text-sm font-semibold mb-2">
-          Reviewer Note
+          Хянагчийн тэмдэглэл
           <span className="ml-1 text-xs font-normal text-muted-foreground">
-            (required for reject / revision)
+            (татгалзах / засах үед заавал)
           </span>
         </label>
         <textarea
@@ -110,7 +110,7 @@ export const ReviewPanel = forwardRef<ReviewPanelRef, Props>(function ReviewPane
             noteError ? 'border-destructive' : 'border-border',
           )}
           rows={3}
-          placeholder="Add a note for the content team…"
+          placeholder="Агуулгын багийнхны тэмдэглэл нэмнэ үү…"
           value={note}
           onChange={(e) => {
             setNote(e.target.value);
@@ -124,14 +124,14 @@ export const ReviewPanel = forwardRef<ReviewPanelRef, Props>(function ReviewPane
 
       {/* Section 3: Actions */}
       <div className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-sm font-semibold mb-4">Decision</h2>
+        <h2 className="text-sm font-semibold mb-4">Шийдвэр</h2>
 
         <div className="flex flex-col gap-2">
           {/* Tooltip wrapper — hover works because the wrapper div keeps pointer-events,
               while the disabled button has pointer-events-none */}
           <div className="group relative">
             <ActionButton
-              label={isPending ? 'Submitting…' : 'Approve'}
+              label={isPending ? 'Илгээж байна…' : 'Батлах'}
               shortcut="A"
               variant="approve"
               disabled={approveDisabled}
@@ -142,21 +142,21 @@ export const ReviewPanel = forwardRef<ReviewPanelRef, Props>(function ReviewPane
                 role="tooltip"
                 className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-md bg-foreground px-2.5 py-1.5 text-xs text-background opacity-0 transition-opacity group-hover:opacity-100"
               >
-                Save edits first
+                Эхлэн засварыг хадгала
                 <span className="absolute left-1/2 top-full -translate-x-1/2 border-4 border-transparent border-t-foreground" />
               </div>
             )}
           </div>
 
           <ActionButton
-            label="Request Revision"
+            label="Засах хүсэх"
             shortcut="⇧R"
             variant="revision"
             disabled={actionDisabled}
             onClick={() => handleAction('request_revision')}
           />
           <ActionButton
-            label="Reject"
+            label="Татгалзах"
             shortcut="X"
             variant="reject"
             disabled={actionDisabled}

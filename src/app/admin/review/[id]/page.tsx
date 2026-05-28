@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { useReviewItem, useSubmitReview } from '@/hooks/useReviewItem';
 import { useUpdateTaskContent } from '@/hooks/useTaskActions';
-import { useReviewQueue } from '@/hooks/useReviewQueue';
 import { useHotkeys } from '@/hooks/useHotkeys';
 import { TaskPreview } from '@/components/review/TaskPreview';
 import { ReviewPanel, type ReviewPanelRef } from '@/components/review/ReviewPanel';
@@ -18,9 +17,9 @@ import {
 import type { ReviewAction, TaskContent } from '@/lib/types';
 
 const TOAST_MESSAGES: Record<ReviewAction['action'], string> = {
-  approve: 'Task approved.',
-  reject: 'Task rejected.',
-  request_revision: 'Revision requested.',
+  approve: 'Даалгавар батлагдлаа.',
+  reject: 'Даалгавар татгалзагдлаа.',
+  request_revision: 'Засах хүсэлт илгээгдлаа.',
 };
 
 export default function ReviewDetailPage() {
@@ -29,12 +28,6 @@ export default function ReviewDetailPage() {
   const queryClient = useQueryClient();
 
   const { data: item, isLoading, isError } = useReviewItem(id);
-
-  // Full unfiltered queue — used only for position/navigation (cache hit, no extra fetch)
-  const { data: queue = [] } = useReviewQueue();
-  const queueIndex = useMemo(() => queue.findIndex((i) => i.id === id), [queue, id]);
-  const prevId = queueIndex > 0 ? queue[queueIndex - 1].id : null;
-  const nextId = queueIndex < queue.length - 1 ? queue[queueIndex + 1].id : null;
 
   // Edit state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -83,7 +76,7 @@ export default function ReviewDetailPage() {
       onSuccess: () => {
         setSavedEdits(editDraft);
         setIsEditMode(false);
-        showToast('Task updated — ready to approve');
+        showToast('Даалгавар шинэчлэгдлаа — батлахад бэлэн');
       },
     });
   }, [editDraft, updateMutation, showToast]);
@@ -115,15 +108,9 @@ export default function ReviewDetailPage() {
         e: () => (isEditMode ? handleCancelEdit() : handleEnterEdit()),
         escape: () => router.push('/admin/review'),
         '?': () => setIsHelpOpen(true),
-        arrowleft: () => {
-          if (prevId) router.push(`/admin/review/${prevId}`);
-        },
-        arrowright: () => {
-          if (nextId) router.push(`/admin/review/${nextId}`);
-        },
       }),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [isEditMode, submitMutation.isPending, prevId, nextId],
+      [isEditMode, submitMutation.isPending],
     ),
     !isHelpOpen,
   );
@@ -140,12 +127,12 @@ export default function ReviewDetailPage() {
   if (isError || !item || !displayTask) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <p className="text-muted-foreground mb-4">Item not found.</p>
+        <p className="text-muted-foreground mb-4">Зүйл олдсонгүй.</p>
         <Link
           href="/admin/review"
           className="text-sm underline text-muted-foreground hover:text-foreground"
         >
-          Back to queue
+          Дараалал руу буцах
         </Link>
       </div>
     );
@@ -153,38 +140,17 @@ export default function ReviewDetailPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      {/* Header: breadcrumb + progress + nav + help */}
+      {/* Header: breadcrumb + help */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
           <Link href="/admin/review" className="hover:text-foreground transition-colors shrink-0">
-            Review Queue
+            Хяналтын дараалал
           </Link>
           <span className="shrink-0">/</span>
           <span className="font-mono text-foreground truncate">{item.task.task_id}</span>
         </div>
 
-        {/* Progress + navigation + help */}
         <div className="flex items-center gap-2 shrink-0">
-          {queue.length > 0 && queueIndex >= 0 && (
-            <span className="text-xs text-muted-foreground tabular-nums">
-              Item {queueIndex + 1} of {queue.length}
-            </span>
-          )}
-
-          <div className="flex items-center gap-1">
-            <NavArrow
-              direction="prev"
-              href={prevId ? `/admin/review/${prevId}` : null}
-              title="Previous item (←)"
-            />
-            <NavArrow
-              direction="next"
-              href={nextId ? `/admin/review/${nextId}` : null}
-              title="Next item (→)"
-            />
-          </div>
-
           <ShortcutsHelpButton onClick={() => setIsHelpOpen(true)} />
         </div>
       </div>
@@ -232,52 +198,12 @@ export default function ReviewDetailPage() {
   );
 }
 
-function NavArrow({
-  direction,
-  href,
-  title,
-}: {
-  direction: 'prev' | 'next';
-  href: string | null;
-  title: string;
-}) {
-  const label = direction === 'prev' ? '←' : '→';
-  const base =
-    'flex h-7 w-7 items-center justify-center rounded-md border text-sm transition-colors';
-
-  if (!href) {
-    return (
-      <span className={cn(base, 'border-border text-muted-foreground/30 cursor-not-allowed')}>
-        {label}
-      </span>
-    );
-  }
-
-  return (
-    <Link
-      href={href}
-      title={title}
-      className={cn(
-        base,
-        'border-border text-muted-foreground hover:bg-muted hover:text-foreground',
-      )}
-    >
-      {label}
-    </Link>
-  );
-}
-
 function ReviewDetailSkeleton() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 animate-pulse">
       <div className="flex items-center justify-between mb-6">
         <div className="h-4 w-48 rounded bg-muted" />
-        <div className="flex gap-2">
-          <div className="h-4 w-24 rounded bg-muted" />
-          <div className="h-7 w-7 rounded bg-muted" />
-          <div className="h-7 w-7 rounded bg-muted" />
-          <div className="h-7 w-7 rounded bg-muted" />
-        </div>
+        <div className="h-7 w-7 rounded bg-muted" />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6">
         <div className="rounded-lg border border-border bg-card p-5 space-y-4">

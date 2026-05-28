@@ -10,7 +10,6 @@ import {
   TASK_TYPE_INFO,
   TASK_TYPE_BLUEPRINT,
   computeDefaults,
-  parseNumberList,
   parseLines,
   type OptionGroup,
   type TaskTypeInfo,
@@ -30,7 +29,6 @@ export type FormState = {
   error_targets: string[];
   difficulty: string;
   estimated_time_seconds: string;
-  review_after_days: string;
   lesson_slot_fit: string;
   feedback_text: string;
   initial_text: string;
@@ -56,7 +54,6 @@ export const INITIAL_FORM: FormState = {
   error_targets: [],
   difficulty: "1",
   estimated_time_seconds: "30",
-  review_after_days: "1, 3, 7",
   lesson_slot_fit: "CORE",
   feedback_text: "",
   initial_text: "",
@@ -100,7 +97,6 @@ export interface TaskTemplate {
   lesson_slot_fit: string;
   error_targets: string[];
   estimated_time_seconds: string;
-  review_after_days: string;
 }
 
 const DEFAULT_TRACKABLE_KEYS = new Set([
@@ -108,7 +104,6 @@ const DEFAULT_TRACKABLE_KEYS = new Set([
   "level_target",
   "estimated_time_seconds",
   "lesson_slot_fit",
-  "review_after_days",
 ]);
 
 function buildOptions(form: FormState, groups: OptionGroup[]): TaskOptions {
@@ -258,7 +253,6 @@ export function useTaskForm() {
       lesson_slot_fit: template.lesson_slot_fit,
       error_targets: template.error_targets,
       estimated_time_seconds: template.estimated_time_seconds,
-      review_after_days: template.review_after_days,
     });
     // mark template-loaded fields as dirty so defaults don't overwrite
     for (const key of DEFAULT_TRACKABLE_KEYS) {
@@ -367,7 +361,6 @@ export function useTaskForm() {
         grade_band: form.grade_band,
         difficulty: parseInt(form.difficulty, 10) || 1,
         estimated_time_seconds: parseInt(form.estimated_time_seconds, 10) || 30,
-        review_after_days: parseNumberList(form.review_after_days),
         lesson_slot_fit: form.lesson_slot_fit,
         feedback_text: form.feedback_text,
         initial_text: form.initial_text || undefined,

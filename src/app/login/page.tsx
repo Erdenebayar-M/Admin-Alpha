@@ -23,13 +23,13 @@ export default function LoginPage() {
       })
       if (!res.ok) {
         const data = await res.json() as { error?: string }
-        setError(data.error ?? 'Login failed')
+        setError(data.error ?? 'Нэвтрэхэд алдаа гарлаа')
         return
       }
       router.push('/admin/review')
       router.refresh()
     } catch {
-      setError('Network error — please try again')
+      setError('Сүлжээний алдаа — дахин оролдоно уу')
     } finally {
       setLoading(false)
     }
@@ -39,13 +39,13 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="bg-card rounded-xl shadow-sm border border-border p-8 w-full max-w-sm">
         <div className="mb-6">
-          <h1 className="text-lg font-semibold text-foreground">Admin Panel</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Mongolian Writing App</p>
+          <h1 className="text-lg font-semibold text-foreground">Админ самбар</h1>
+          <p className="text-sm text-muted-foreground mt-0.5">Монгол бичгийн апп</p>
         </div>
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground" htmlFor="email">
-              Email
+              И-мэйл
             </label>
             <input
               id="email"
@@ -61,7 +61,7 @@ export default function LoginPage() {
           </div>
           <div className="flex flex-col gap-1.5">
             <label className="text-sm font-medium text-foreground" htmlFor="password">
-              Password
+              Нууц үг
             </label>
             <input
               id="password"
@@ -75,7 +75,7 @@ export default function LoginPage() {
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={loading} className="w-full mt-1">
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? 'Нэвтэрч байна…' : 'Нэвтрэх'}
           </Button>
         </form>
       </div>

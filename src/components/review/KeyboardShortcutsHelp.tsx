@@ -3,15 +3,15 @@
 import { useEffect } from 'react';
 
 const SHORTCUTS: { keys: string[]; description: string }[] = [
-  { keys: ['A'],        description: 'Approve task' },
-  { keys: ['R'],        description: 'Focus reviewer note' },
-  { keys: ['Shift', 'R'], description: 'Request revision' },
-  { keys: ['X'],        description: 'Reject task' },
-  { keys: ['E'],        description: 'Toggle edit mode' },
-  { keys: ['Esc'],      description: 'Back to queue' },
-  { keys: ['←'],        description: 'Previous item in queue' },
-  { keys: ['→'],        description: 'Next item in queue' },
-  { keys: ['?'],        description: 'Show this help' },
+  { keys: ['A'],        description: 'Даалгавар батлах' },
+  { keys: ['R'],        description: 'Тэмдэглэл рүү шилжих' },
+  { keys: ['Shift', 'R'], description: 'Засвар хүсэх' },
+  { keys: ['X'],        description: 'Даалгавар татгалзах' },
+  { keys: ['E'],        description: 'Засах горим нэмэх/хасах' },
+  { keys: ['Esc'],      description: 'Дараалал руу буцах' },
+  { keys: ['←'],        description: 'Өмнөх зүйл' },
+  { keys: ['→'],        description: 'Дараагийн зүйл' },
+  { keys: ['?'],        description: 'Энэ тусламжийг харах' },
 ];
 
 interface Props {
@@ -46,7 +46,7 @@ export function KeyboardShortcutsHelp({ open, onClose }: Props) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between px-5 pt-5 pb-3">
-          <h2 className="text-sm font-semibold">Keyboard shortcuts</h2>
+          <h2 className="text-sm font-semibold">Гарын товчлол</h2>
           <button
             type="button"
             onClick={onClose}
@@ -86,7 +86,7 @@ export function KeyboardShortcutsHelp({ open, onClose }: Props) {
 
         <div className="px-5 py-3 border-t border-border">
           <p className="text-xs text-muted-foreground">
-            Shortcuts are disabled while an input field is focused.
+            Оруулгын талбарт байхад товчлол ажиллахгүй.
           </p>
         </div>
       </div>
@@ -100,7 +100,7 @@ export function ShortcutsHelpButton({ onClick }: { onClick: () => void }) {
     <button
       type="button"
       onClick={onClick}
-      title="Keyboard shortcuts (?)"
+      title="Гарын товчлол (?)"
       className="flex h-7 w-7 items-center justify-center rounded-md border border-border text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
     >
       ?

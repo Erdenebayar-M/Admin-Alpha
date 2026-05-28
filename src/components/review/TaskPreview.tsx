@@ -119,7 +119,7 @@ export function TaskPreview({
               className={cn(inputClass, 'mt-1.5 font-medium')}
               value={title}
               onChange={(e) => onDraftChange({ title: e.target.value })}
-              placeholder="Title"
+              placeholder="Гарчиг"
             />
           ) : (
             <p className="mt-1 text-sm font-medium">{task.title}</p>
@@ -134,7 +134,7 @@ export function TaskPreview({
               disabled={isSaving}
               className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-80 transition-opacity disabled:opacity-50 disabled:pointer-events-none"
             >
-              {isSaving ? 'Saving…' : 'Save Edits'}
+              {isSaving ? 'Хадгалж байна…' : 'Хадгалах'}
             </button>
             <button
               type="button"
@@ -142,7 +142,7 @@ export function TaskPreview({
               disabled={isSaving}
               className="rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors disabled:opacity-50 disabled:pointer-events-none"
             >
-              Cancel
+              Болих
             </button>
           </div>
         ) : (
@@ -151,7 +151,7 @@ export function TaskPreview({
             onClick={onEnterEdit}
             className="shrink-0 rounded-md border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
           >
-            Edit
+            Засах
           </button>
         )}
       </div>
@@ -159,7 +159,7 @@ export function TaskPreview({
       {/* ── Metadata grid ──────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 rounded-md bg-muted/40 p-3 text-sm">
         <MetaItem
-          label="Skill"
+          label="Чадвар"
           value={
             <span className="flex items-center gap-1.5">
               <Chip>{task.primary_skill}</Chip>
@@ -169,7 +169,7 @@ export function TaskPreview({
         />
         {task.secondary_skill && (
           <MetaItem
-            label="Secondary skill"
+            label="Дэд чадвар"
             value={
               <span className="flex items-center gap-1.5">
                 <Chip>{task.secondary_skill}</Chip>
@@ -179,38 +179,28 @@ export function TaskPreview({
           />
         )}
         <MetaItem
-          label="Level"
+          label="Түвшин"
           value={<Chip>{task.level_target}</Chip>}
         />
         <MetaItem
-          label="Grade"
+          label="Анги"
           value={
             <span className="flex flex-wrap gap-1">
               {task.grade_band.map((g) => <Chip key={g}>{g}</Chip>)}
             </span>
           }
         />
-        <MetaItem label="Difficulty" value={`${task.difficulty} / 5`} />
-        <MetaItem label="Time" value={`${task.estimated_time_seconds}s`} />
+        <MetaItem label="Хэцүү байдал" value={`${task.difficulty} / 5`} />
+        <MetaItem label="Хугацаа" value={`${task.estimated_time_seconds}с`} />
         <MetaItem
-          label="Lesson slot"
+          label="Хичээлийн үе"
           value={task.lesson_slot_fit ? <Chip>{task.lesson_slot_fit}</Chip> : '—'}
-        />
-        <MetaItem
-          label="Review"
-          value={
-            task.review_after_days.length ? (
-              <span className="flex flex-wrap gap-1">
-                {task.review_after_days.map((d) => <Chip key={d}>Day {d}</Chip>)}
-              </span>
-            ) : '—'
-          }
         />
       </div>
 
       {/* ── Error targets ──────────────────────────────────────────────────── */}
       {task.error_targets.length > 0 && (
-        <Field label="Error targets">
+        <Field label="Алдааны зорилт">
           <div className="flex flex-wrap gap-1.5">
             {task.error_targets.map((code) => (
               <span
@@ -225,7 +215,7 @@ export function TaskPreview({
       )}
 
       {/* ── Prompt ─────────────────────────────────────────────────────────── */}
-      <Field label="Prompt">
+      <Field label="Асуулт">
         {isEditMode ? (
           <textarea
             className={textareaClass}
@@ -250,7 +240,7 @@ export function TaskPreview({
 
       {/* ── Expected answers (dictation / listening tasks) ─────────────────── */}
       {hasExpectedAnswers && (
-        <Field label="Expected answers">
+        <Field label="Хүлээгдэж буй хариултууд">
           <div className="flex flex-wrap gap-1.5">
             {opts.expected_answers!.map((a, i) => (
               <span
@@ -263,22 +253,22 @@ export function TaskPreview({
           </div>
           {opts.audio_text && (
             <p className="mt-2 font-mono text-xs text-muted-foreground">
-              Audio text: &ldquo;{opts.audio_text}&rdquo;
+              Аудио текст: &ldquo;{opts.audio_text}&rdquo;
             </p>
           )}
           <div className="mt-1.5 flex gap-4 text-xs text-muted-foreground">
             {opts.word_count !== undefined && (
-              <span>{opts.word_count} word{opts.word_count !== 1 ? 's' : ''}</span>
+              <span>{opts.word_count} үг</span>
             )}
             {opts.allow_partial !== undefined && (
-              <span>Partial credit: {opts.allow_partial ? 'yes' : 'no'}</span>
+              <span>Хэсэгчилсэн оноо: {opts.allow_partial ? 'тийм' : 'үгүй'}</span>
             )}
           </div>
         </Field>
       )}
 
       {/* ── Correct answer (hidden for correction tasks — shown as "Target correct text") */}
-      {!isCorrection && <Field label="Correct answer">
+      {!isCorrection && <Field label="Зөв хариулт">
         {isEditMode ? (
           <input
             className={cn(inputClass, 'border-green-400 bg-green-50 text-green-900')}
@@ -293,7 +283,7 @@ export function TaskPreview({
       </Field>}
 
       {/* ── Feedback ───────────────────────────────────────────────────────── */}
-      <Field label="Feedback">
+      <Field label="Тайлбар">
         {isEditMode ? (
           <textarea
             className={textareaClass}
@@ -308,7 +298,7 @@ export function TaskPreview({
 
       {/* ── Media ──────────────────────────────────────────────────────────── */}
       {(task.audio_url || task.image_url) && (
-        <Field label="Media">
+        <Field label="Медиа">
           <div className="space-y-2">
             {task.audio_url && (
               <div className="flex flex-col gap-1">
@@ -324,10 +314,10 @@ export function TaskPreview({
             )}
             {task.image_url && (
               <div className="flex items-start gap-2">
-                <span className="text-xs text-muted-foreground w-12 pt-0.5">Image</span>
+                <span className="text-xs text-muted-foreground w-12 pt-0.5">Зураг</span>
                 <img
                   src={resolveAssetUrl(task.image_url)}
-                  alt="Task image"
+                  alt="Даалгаврын зураг"
                   className="rounded-md border border-border max-h-40 object-contain"
                 />
               </div>
@@ -367,11 +357,11 @@ function CorrectionSection({
     <>
       {/* Side-by-side comparison */}
       <div>
-        <p className="mb-2 text-xs font-medium">Correction comparison</p>
+        <p className="mb-2 text-xs font-medium">Засварын харьцуулалт</p>
         <div className="grid grid-cols-2 gap-3">
           {/* Initial (incorrect) text */}
           <div>
-            <p className="mb-1 text-xs text-red-600 font-medium">Text shown to student</p>
+            <p className="mb-1 text-xs text-red-600 font-medium">Сурагчид харуулах текст</p>
             {isEditMode ? (
               <textarea
                 className={cn(
@@ -391,7 +381,7 @@ function CorrectionSection({
 
           {/* Correct text */}
           <div>
-            <p className="mb-1 text-xs text-green-600 font-medium">Target correct text</p>
+            <p className="mb-1 text-xs text-green-600 font-medium">Зөв хэлбэр</p>
             <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2.5 font-mono text-sm text-green-900 whitespace-pre-wrap min-h-[60px]">
               {opts.correct_text || <span className="text-green-400 italic">—</span>}
             </div>
@@ -403,8 +393,7 @@ function CorrectionSection({
           <div className="mt-2 flex items-start gap-2 rounded-md border border-yellow-300 bg-yellow-50 px-3 py-2">
             <span className="text-yellow-600 text-sm shrink-0">⚠</span>
             <p className="text-xs text-yellow-800">
-              <strong>Data inconsistency:</strong> <code>initial_text</code> does not match{' '}
-              <code>options.incorrect_text</code>. Check which value is canonical before approving.
+              <strong>Өгөгдлийн зөрчил:</strong> <code>initial_text</code> нь <code>options.incorrect_text</code>-тэй таарахгүй байна. Батлахаасаа өмнө аль нь зөв эсэхийг шалгана уу.
             </p>
           </div>
         )}

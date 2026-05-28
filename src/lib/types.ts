@@ -27,7 +27,6 @@ export interface TaskContent {
   grade_band: string[];
   difficulty: number;
   estimated_time_seconds: number;
-  review_after_days: number[];
   lesson_slot_fit: string;
   feedback_text: string;
   initial_text?: string;
