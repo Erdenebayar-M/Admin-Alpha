@@ -8,17 +8,23 @@ export const config = {
 const BACKEND = 'http://127.0.0.1:3000'
 const PUBLIC_PATHS = ['/login', '/api/auth']
 
-export function proxy(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
-  if (pathname.startsWith('/api/admin')) {
-    const backendUrl = new URL(pathname + req.nextUrl.search, BACKEND)
-    return NextResponse.rewrite(backendUrl)
-  }
+  if (pathname.startsWith('/api/admin') || pathname.startsWith('/content/')) {
+    const url = `${BACKEND}${pathname}${req.nextUrl.search}`
+    const headers = new Headers(req.headers)
+    headers.delete('host')
 
-  if (pathname.startsWith('/content/')) {
-    const backendUrl = new URL(pathname + req.nextUrl.search, BACKEND)
-    return NextResponse.rewrite(backendUrl)
+    const isBody = req.method !== 'GET' && req.method !== 'HEAD'
+    const body = isBody ? await req.arrayBuffer() : undefined
+
+    try {
+      const res = await fetch(url, { method: req.method, headers, body })
+      return new NextResponse(res.body, { status: res.status, headers: res.headers })
+    } catch {
+      return NextResponse.json({ error: 'Backend unreachable' }, { status: 502 })
+    }
   }
 
   if (PUBLIC_PATHS.some(p => pathname.startsWith(p))) {
