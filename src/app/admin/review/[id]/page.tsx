@@ -19,7 +19,7 @@ import type { ReviewAction, TaskContent } from '@/lib/types';
 const TOAST_MESSAGES: Record<ReviewAction['action'], string> = {
   approve: 'Даалгавар батлагдлаа.',
   reject: 'Даалгавар татгалзагдлаа.',
-  request_revision: 'Засах хүсэлт илгээгдлаа.',
+  request_revision: '',
 };
 
 export default function ReviewDetailPage() {
@@ -100,7 +100,6 @@ export default function ReviewDetailPage() {
           }
         },
         r: () => reviewPanelRef.current?.focusNote(),
-        'shift+r': () => reviewPanelRef.current?.triggerAction('request_revision'),
         x: () => reviewPanelRef.current?.triggerAction('reject'),
         e: () => (isEditMode ? handleCancelEdit() : handleEnterEdit()),
         escape: () => router.push('/admin/review'),
@@ -171,8 +170,10 @@ export default function ReviewDetailPage() {
           ref={reviewPanelRef}
           item={item}
           isEditMode={isEditMode}
+          isSaving={updateMutation.isPending}
           savedEdits={savedEdits}
           onSubmit={handleSubmit}
+          onSaveEdit={handleSaveEdit}
           isPending={submitMutation.isPending}
         />
       </div>

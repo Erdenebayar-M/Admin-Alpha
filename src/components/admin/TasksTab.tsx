@@ -8,6 +8,8 @@ import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import type { LiveTask } from "@/lib/types";
+import { MediaCell } from "./MediaCell";
+import { useVisited } from "@/hooks/useVisited";
 
 const SKILL_NAMES: Record<string, string> = {
   S1: "Үсэг-авиа ялгалт",
@@ -24,6 +26,12 @@ function difficultyStars(n: number) {
   return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+
 function DescriptionCell({ text }: { text: string }) {
   if (!text) return null;
   return (
@@ -37,10 +45,13 @@ function DescriptionCell({ text }: { text: string }) {
 }
 
 type GradeFilter = "all" | "G12" | "G24";
+type SortOrder = "newest" | "oldest";
 
 export function TasksTab() {
   const [grade, setGrade] = useState<GradeFilter>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [sort, setSort] = useState<SortOrder>("newest");
+  const { visited, markVisited } = useVisited("visited_tasks");
   const [toastVisible, setToastVisible] = useState(false);
   const router = useRouter();
   const { pageToast, clearPageToast } = useModalStore();
@@ -64,7 +75,10 @@ export function TasksTab() {
   const availableTypes = Array.from(new Set(tasks.map((t) => t.task_type))).sort();
   const filtered = (typeFilter === "all" ? tasks : tasks.filter((t) => t.task_type === typeFilter))
     .slice()
-    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    .sort((a, b) => {
+      const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      return sort === "newest" ? -diff : diff;
+    });
 
   return (
     <div className="relative px-4 py-6">
@@ -103,9 +117,19 @@ export function TasksTab() {
           </select>
         )}
 
-        <span className="ml-auto shrink-0 text-sm text-muted-foreground">
-          {isLoading ? "—" : `${filtered.length} даалгавар`}
-        </span>
+        <div className="ml-auto flex items-center gap-3 shrink-0">
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as SortOrder)}
+            className="rounded-md border border-border bg-background px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-foreground/30"
+          >
+            <option value="newest">Шинийг эхэнд</option>
+            <option value="oldest">Хуучнийг эхэнд</option>
+          </select>
+          <span className="text-sm text-muted-foreground">
+            {isLoading ? "—" : `${filtered.length} даалгавар`}
+          </span>
+        </div>
       </div>
 
       {/* Table */}
@@ -124,24 +148,25 @@ export function TasksTab() {
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/50">
               <tr>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">ID</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Төрөл</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Анги</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Гарчиг</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Чадвар</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Хүндрэл</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Медиа</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Огноо</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {filtered.map((task: LiveTask) => (
                 <tr
                   key={task.task_id}
-                  onClick={() => router.push(`/admin/tasks/${task.task_id}`)}
-                  className="cursor-pointer transition-colors hover:bg-muted/50"
+                  onClick={() => { markVisited(task.task_id); router.push(`/admin/tasks/${task.task_id}`); }}
+                  className={cn(
+                    "cursor-pointer transition-colors hover:bg-muted/50",
+                    visited.has(task.task_id) && "bg-blue-50 dark:bg-blue-950/30",
+                  )}
                 >
-                  <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">
-                    {task.task_id.slice(0, 8)}…
-                  </td>
                   <td className="px-3 py-2.5">
                     <div className="font-medium text-sm leading-tight">
                       {TASK_TYPE_INFO[task.task_type]?.label ?? task.task_type}
@@ -173,6 +198,12 @@ export function TasksTab() {
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-xs text-yellow-500">
                     {difficultyStars(task.difficulty)}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <MediaCell audioUrl={task.audio_url} imageUrl={task.image_url} />
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground">
+                    {fmtDate(task.created_at)}
                   </td>
                 </tr>
               ))}

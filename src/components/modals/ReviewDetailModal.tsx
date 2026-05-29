@@ -173,8 +173,10 @@ function ReviewDetailContent({ id, onClose }: { id: string; onClose: () => void 
             ref={reviewPanelRef}
             item={item}
             isEditMode={isEditMode}
+            isSaving={updateMutation.isPending}
             savedEdits={savedEdits}
             onSubmit={handleSubmit}
+            onSaveEdit={handleSaveEdit}
             isPending={submitMutation.isPending}
           />
         </div>

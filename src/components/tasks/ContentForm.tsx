@@ -727,7 +727,7 @@ function FeedbackField({ form, set }: { form: FormState; set: ContentFormProps["
 // ─── Metadata (shared) ──────────────────────────────────────────────────────
 
 function MetadataSection({ form, set, toggleList, groups }: Pick<ContentFormProps, "form" | "set" | "toggleList" | "groups">) {
-  const showPartial = groups.includes("dictation") || groups.includes("multiple_choice");
+  const showPartial = groups.includes("dictation") || groups.includes("choice");
 
   return (
     <>

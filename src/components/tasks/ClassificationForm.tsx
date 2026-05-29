@@ -23,7 +23,12 @@ interface ClassificationFormProps {
   errors: ValidationErrors;
 }
 
-export function ClassificationForm({ form, set, toggleList, errors }: ClassificationFormProps) {
+export function ClassificationForm({
+  form,
+  set,
+  toggleList,
+  errors,
+}: ClassificationFormProps) {
   return (
     <div className="space-y-4">
       <Separator />
@@ -34,7 +39,10 @@ export function ClassificationForm({ form, set, toggleList, errors }: Classifica
             value={form.primary_skill}
             onChange={(v) => set("primary_skill", v)}
             placeholder="Сонгох…"
-            options={SKILLS.map((s) => ({ value: s, label: `${s} — ${SKILL_LABELS[s]}` }))}
+            options={SKILLS.map((s) => ({
+              value: s,
+              label: `${s} — ${SKILL_LABELS[s]}`,
+            }))}
           />
         </Field>
         <Field label="Дэд чадвар">
@@ -44,7 +52,10 @@ export function ClassificationForm({ form, set, toggleList, errors }: Classifica
             placeholder="—"
             options={[
               { value: "", label: "Байхгүй" },
-              ...SKILLS.map((s) => ({ value: s, label: `${s} — ${SKILL_LABELS[s]}` })),
+              ...SKILLS.map((s) => ({
+                value: s,
+                label: `${s} — ${SKILL_LABELS[s]}`,
+              })),
             ]}
           />
         </Field>
@@ -53,13 +64,16 @@ export function ClassificationForm({ form, set, toggleList, errors }: Classifica
             value={form.level_target}
             onChange={(v) => set("level_target", v)}
             placeholder="Сонгох…"
-            options={LEVELS.map((l) => ({ value: l, label: `${l} — ${LEVEL_LABELS[l]}` }))}
+            options={LEVELS.map((l) => ({
+              value: l,
+              label: `${l} — ${LEVEL_LABELS[l]}`,
+            }))}
           />
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-4">
-        <Field label="Хэцүү байдал (1–5)" required error={errors.difficulty}>
+        <Field label="Хүндийн түвшин (1–5)" required error={errors.difficulty}>
           <Input
             type="number"
             min={1}
@@ -73,7 +87,10 @@ export function ClassificationForm({ form, set, toggleList, errors }: Classifica
             value={form.lesson_slot_fit}
             onChange={(v) => set("lesson_slot_fit", v)}
             placeholder="Сонгох…"
-            options={LESSON_SLOTS.map((s) => ({ value: s, label: LESSON_SLOT_LABELS[s] }))}
+            options={LESSON_SLOTS.map((s) => ({
+              value: s,
+              label: LESSON_SLOT_LABELS[s],
+            }))}
           />
         </Field>
       </div>

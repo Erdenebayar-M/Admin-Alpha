@@ -9,6 +9,9 @@ export interface TaskOptions {
   correct_text?: string;
   hint?: string;
   error_type?: string;
+  // choice tasks — stored as [{text, is_correct}], distractors extracted by backend
+  choices?: Array<{ text: string; is_correct: boolean }>;
+  distractors?: string[];
 }
 
 export interface TaskContent {

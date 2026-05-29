@@ -1,17 +1,16 @@
-'use client';
+"use client";
 
-import { useEffect } from 'react';
+import { useEffect } from "react";
 
 const SHORTCUTS: { keys: string[]; description: string }[] = [
-  { keys: ['A'],        description: 'Даалгавар батлах' },
-  { keys: ['R'],        description: 'Тэмдэглэл рүү шилжих' },
-  { keys: ['Shift', 'R'], description: 'Засвар хүсэх' },
-  { keys: ['X'],        description: 'Даалгавар татгалзах' },
-  { keys: ['E'],        description: 'Засах горим нэмэх/хасах' },
-  { keys: ['Esc'],      description: 'Дараалал руу буцах' },
-  { keys: ['←'],        description: 'Өмнөх зүйл' },
-  { keys: ['→'],        description: 'Дараагийн зүйл' },
-  { keys: ['?'],        description: 'Энэ тусламжийг харах' },
+  { keys: ["A"], description: "Даалгавар батлах" },
+  { keys: ["R"], description: "Тэмдэглэл рүү шилжих" },
+  { keys: ["X"], description: "Даалгавар устгах" },
+  { keys: ["E"], description: "Засах горим нэмэх/хасах" },
+  { keys: ["Esc"], description: "Дараалал руу буцах" },
+  { keys: ["←"], description: "Өмнөх зүйл" },
+  { keys: ["→"], description: "Дараагийн зүйл" },
+  { keys: ["?"], description: "Энэ тусламжийг харах" },
 ];
 
 interface Props {
@@ -25,13 +24,13 @@ export function KeyboardShortcutsHelp({ open, onClose }: Props) {
   useEffect(() => {
     if (!open) return;
     function onKey(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
+      if (e.key === "Escape") {
         e.preventDefault();
         onClose();
       }
     }
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
   if (!open) return null;
@@ -72,13 +71,17 @@ export function KeyboardShortcutsHelp({ open, onClose }: Props) {
                           {k}
                         </kbd>
                         {i < keys.length - 1 && (
-                          <span className="text-muted-foreground text-xs">+</span>
+                          <span className="text-muted-foreground text-xs">
+                            +
+                          </span>
                         )}
                       </span>
                     ))}
                   </div>
                 </td>
-                <td className="py-2.5 pr-5 text-muted-foreground">{description}</td>
+                <td className="py-2.5 pr-5 text-muted-foreground">
+                  {description}
+                </td>
               </tr>
             ))}
           </tbody>

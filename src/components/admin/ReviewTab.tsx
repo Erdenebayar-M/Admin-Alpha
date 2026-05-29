@@ -4,10 +4,12 @@ import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useReviewQueue } from "@/hooks/useReviewQueue";
+import { useVisited } from "@/hooks/useVisited";
 import { approveVariant } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import type { ReviewItem } from "@/lib/types";
+import { MediaCell } from "./MediaCell";
 
 const SKILL_NAMES: Record<string, string> = {
   S1: "Үсэг-авиа ялгалт",
@@ -74,6 +76,16 @@ function sortItems(items: ReviewItem[], order: SortOrder): ReviewItem[] {
   }
 }
 
+function difficultyStars(n: number) {
+  return "★".repeat(n) + "☆".repeat(5 - n);
+}
+
+function fmtDate(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+
 function PromptCell({ text }: { text: string }) {
   if (!text) return null;
   return (
@@ -94,6 +106,7 @@ export function ReviewTab() {
   const [sort, setSort] = useState<SortOrder>("flagged-first");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
+  const { visited, markVisited } = useVisited("visited_review");
 
   const { data: allItems = [], isLoading } = useReviewQueue();
 
@@ -204,19 +217,26 @@ export function ReviewTab() {
                 <th className="w-8 px-3 py-2.5" />
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Төрөл</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Гарчиг</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Асуулт</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Хариулт</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Дүрмийн тайлбар</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Анги</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Чадвар</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Хүндрэл</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Медиа</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Төлөв</th>
+                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Огноо</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {visibleItems.map((item) => (
                 <tr
                   key={item.id}
-                  onClick={() => router.push(`/admin/review/${item.id}`)}
+                  onClick={() => { markVisited(item.id); router.push(`/admin/review/${item.id}`); }}
                   className={cn(
                     "cursor-pointer transition-colors hover:bg-muted/50",
                     selectedIds.has(item.id) && "bg-blue-50/40 dark:bg-blue-950/20",
+                    visited.has(item.id) && !selectedIds.has(item.id) && "bg-blue-50 dark:bg-blue-950/30",
                   )}
                 >
                   <td
@@ -242,6 +262,15 @@ export function ReviewTab() {
                   <td className="max-w-[180px] px-3 py-2.5">
                     <span className="line-clamp-1 font-medium">{item.task.title}</span>
                   </td>
+                  <td className="max-w-[160px] px-3 py-2.5">
+                    <PromptCell text={item.task.prompt_text} />
+                  </td>
+                  <td className="max-w-[120px] px-3 py-2.5">
+                    <span className="line-clamp-1 text-xs">{item.task.correct_answer || "—"}</span>
+                  </td>
+                  <td className="max-w-[160px] px-3 py-2.5">
+                    <PromptCell text={item.task.feedback_text} />
+                  </td>
                   <td className="px-3 py-2.5">
                     <div className="flex flex-wrap gap-1">
                       {item.task.grade_band.map((g) => (
@@ -257,10 +286,19 @@ export function ReviewTab() {
                     </div>
                     <div className="text-[10px] text-muted-foreground">{item.task.primary_skill}</div>
                   </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-xs text-yellow-500">
+                    {difficultyStars(item.task.difficulty)}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <MediaCell audioUrl={item.task.audio_url} imageUrl={item.task.image_url} />
+                  </td>
                   <td className="px-3 py-2.5">
                     <span className={cn("inline-flex items-center rounded px-2 py-0.5 text-xs font-medium", STATUS_STYLES[item.status])}>
                       {STATUS_LABELS[item.status]}
                     </span>
+                  </td>
+                  <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground">
+                    {fmtDate(item.created_at)}
                   </td>
                 </tr>
               ))}
