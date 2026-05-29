@@ -18,11 +18,14 @@ export async function uploadImageToR2(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to upload image');
+    const error = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(`Upload failed: ${error.error || 'Unknown error'}`);
   }
 
   const result = await response.json();
+  if (!result.success || !result.data) {
+    throw new Error(result.error || 'Invalid response from upload endpoint');
+  }
   return result.data;
 }
 
@@ -40,11 +43,14 @@ export async function uploadAudioToR2(
   });
 
   if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error || 'Failed to upload audio');
+    const error = await response.json().catch(() => ({ error: response.statusText }));
+    throw new Error(`Upload failed: ${error.error || 'Unknown error'}`);
   }
 
   const result = await response.json();
+  if (!result.success || !result.data) {
+    throw new Error(result.error || 'Invalid response from upload endpoint');
+  }
   return result.data;
 }
 

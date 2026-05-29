@@ -385,10 +385,14 @@ export function useTaskForm() {
       } catch { /* localStorage full — non-critical */ }
       // auto-accept media generated during Step 2
       if (audioPreview?.base64) {
-        saveAudioAndUpdateTask(audioPreview.base64, result.task_id, result.variant_id, audioPreview.slot).catch(() => {});
+        saveAudioAndUpdateTask(audioPreview.base64, result.task_id, result.variant_id, audioPreview.slot).catch((err) => {
+          console.error('Failed to save audio:', err);
+        });
       }
       if (imagePreview?.base64) {
-        saveImageAndUpdateTask(imagePreview.base64, result.task_id, result.variant_id).catch(() => {});
+        saveImageAndUpdateTask(imagePreview.base64, result.task_id, result.variant_id).catch((err) => {
+          console.error('Failed to save image:', err);
+        });
       }
     },
   });

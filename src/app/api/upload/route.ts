@@ -2,14 +2,26 @@ import { NextRequest, NextResponse } from 'next/server';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import crypto from 'crypto';
 
-const s3 = new S3Client({
-  region: 'auto',
-  endpoint: `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-});
+function getS3Client() {
+  const accountId = process.env.R2_ACCOUNT_ID;
+  const accessKeyId = process.env.R2_ACCESS_KEY_ID;
+  const secretAccessKey = process.env.R2_SECRET_ACCESS_KEY;
+
+  if (!accountId || !accessKeyId || !secretAccessKey) {
+    throw new Error(
+      `R2 credentials missing: accountId=${!!accountId}, accessKeyId=${!!accessKeyId}, secretAccessKey=${!!secretAccessKey}`
+    );
+  }
+
+  return new S3Client({
+    region: 'auto',
+    endpoint: `https://${accountId}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId,
+      secretAccessKey,
+    },
+  });
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -24,6 +36,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const bucketName = process.env.R2_BUCKET_NAME;
+    const publicUrl = process.env.NEXT_PUBLIC_R2_PUBLIC_URL;
+
+    if (!bucketName || !publicUrl) {
+      return NextResponse.json(
+        { success: false, error: 'R2 bucket or public URL not configured' },
+        { status: 500 }
+      );
+    }
+
+    const s3 = getS3Client();
     const buffer = Buffer.from(await file.arrayBuffer());
     const timestamp = Date.now();
     const random = crypto.randomBytes(4).toString('hex');
@@ -31,14 +54,14 @@ export async function POST(request: NextRequest) {
 
     await s3.send(
       new PutObjectCommand({
-        Bucket: process.env.R2_BUCKET_NAME!,
+        Bucket: bucketName,
         Key: fileName,
         Body: buffer,
         ContentType: file.type,
       })
     );
 
-    const url = `${process.env.NEXT_PUBLIC_R2_PUBLIC_URL}/${fileName}`;
+    const url = `${publicUrl}/${fileName}`;
     const base64 = buffer.toString('base64');
 
     return NextResponse.json({
