@@ -192,7 +192,7 @@ export async function saveImageAndUpdateTask(
   base64: string,
   taskId: string,
   variantId: string,
-  stage?: string,
+  stage: string = 'validated',
 ): Promise<R2UploadResult> {
   try {
     // Convert base64 to blob and upload to R2
@@ -204,7 +204,7 @@ export async function saveImageAndUpdateTask(
       task_id: taskId,
       variant_id: variantId,
       image_url: result.url,
-      ...(stage ? { stage } : {}),
+      stage,
     });
 
     return result;
@@ -218,7 +218,7 @@ export async function saveAudioAndUpdateTask(
   taskId: string,
   variantId: string,
   slot: 'dictation' | 'prompt',
-  stage?: string,
+  stage: string = 'validated',
 ): Promise<R2UploadResult> {
   try {
     // Convert base64 to blob and upload to R2
@@ -231,7 +231,7 @@ export async function saveAudioAndUpdateTask(
       variant_id: variantId,
       audio_url: result.url,
       slot,
-      ...(stage ? { stage } : {}),
+      stage,
     });
 
     return result;
