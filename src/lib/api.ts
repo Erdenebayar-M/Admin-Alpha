@@ -10,9 +10,10 @@ import type {
 } from "./types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
 
 const client = axios.create({
-  baseURL: "http://localhost:3000/api/admin/content",
+  baseURL: `${API_BASE}/api/admin/content`,
   headers: {
     "Content-Type": "application/json",
     Authorization: `Bearer ${ADMIN_TOKEN}`,
@@ -193,6 +194,8 @@ export interface CreateTaskPayload {
   estimated_time_seconds: number;
   lesson_slot_fit: string;
   feedback_text: string;
+  feedback_correct?: string;
+  feedback_wrong?: string;
   initial_text?: string;
   audio_url?: string | null;
   image_url?: string | null;

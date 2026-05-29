@@ -1,10 +1,10 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useReviewQueue } from "@/hooks/useReviewQueue";
 import { approveVariant } from "@/lib/api";
-import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import type { ReviewItem } from "@/lib/types";
@@ -88,7 +88,7 @@ function PromptCell({ text }: { text: string }) {
 
 export function ReviewTab() {
   const queryClient = useQueryClient();
-  const { openReviewDetail } = useModalStore();
+  const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [sort, setSort] = useState<SortOrder>("flagged-first");
@@ -213,7 +213,7 @@ export function ReviewTab() {
               {visibleItems.map((item) => (
                 <tr
                   key={item.id}
-                  onClick={() => openReviewDetail(item.id)}
+                  onClick={() => router.push(`/admin/review/${item.id}`)}
                   className={cn(
                     "cursor-pointer transition-colors hover:bg-muted/50",
                     selectedIds.has(item.id) && "bg-blue-50/40 dark:bg-blue-950/20",

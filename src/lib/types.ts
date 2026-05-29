@@ -29,6 +29,8 @@ export interface TaskContent {
   estimated_time_seconds: number;
   lesson_slot_fit: string;
   feedback_text: string;
+  feedback_correct?: string;
+  feedback_wrong?: string;
   initial_text?: string;
 }
 

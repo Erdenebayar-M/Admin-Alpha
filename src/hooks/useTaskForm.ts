@@ -31,6 +31,8 @@ export type FormState = {
   estimated_time_seconds: string;
   lesson_slot_fit: string;
   feedback_text: string;
+  feedback_correct: string;
+  feedback_wrong: string;
   initial_text: string;
   incorrect_text: string;
   correct_text: string;
@@ -56,6 +58,8 @@ export const INITIAL_FORM: FormState = {
   estimated_time_seconds: "30",
   lesson_slot_fit: "CORE",
   feedback_text: "",
+  feedback_correct: "",
+  feedback_wrong: "",
   initial_text: "",
   incorrect_text: "",
   correct_text: "",
@@ -273,6 +277,8 @@ export function useTaskForm() {
         prompt_text: "",
         correct_answer: "",
         feedback_text: "",
+        feedback_correct: "",
+        feedback_wrong: "",
         initial_text: "",
         incorrect_text: "",
         correct_text: "",
@@ -363,6 +369,8 @@ export function useTaskForm() {
         estimated_time_seconds: parseInt(form.estimated_time_seconds, 10) || 30,
         lesson_slot_fit: form.lesson_slot_fit,
         feedback_text: form.feedback_text,
+        feedback_correct: form.feedback_correct || undefined,
+        feedback_wrong: form.feedback_wrong || undefined,
         initial_text: form.initial_text || undefined,
         audio_url: null,
         image_url: null,

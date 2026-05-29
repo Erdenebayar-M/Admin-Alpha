@@ -58,7 +58,8 @@ function ReviewDetailContent({ id, onClose }: { id: string; onClose: () => void 
       prompt_text: item.task.prompt_text,
       correct_answer: item.task.correct_answer,
       feedback_text: item.task.feedback_text,
-      ...(item.task.initial_text !== undefined ? { initial_text: item.task.initial_text } : {}),
+      feedback_correct: item.task.feedback_correct ?? '',
+      feedback_wrong: item.task.feedback_wrong ?? '',
     });
     setIsEditMode(true);
   }, [item]);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { getLiveTasks, type LiveTaskFilters } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
@@ -41,7 +42,8 @@ export function TasksTab() {
   const [grade, setGrade] = useState<GradeFilter>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [toastVisible, setToastVisible] = useState(false);
-  const { openTaskDetail, pageToast, clearPageToast } = useModalStore();
+  const router = useRouter();
+  const { pageToast, clearPageToast } = useModalStore();
 
   useEffect(() => {
     if (!pageToast) return;
@@ -134,7 +136,7 @@ export function TasksTab() {
               {filtered.map((task: LiveTask) => (
                 <tr
                   key={task.task_id}
-                  onClick={() => openTaskDetail(task.task_id)}
+                  onClick={() => router.push(`/admin/tasks/${task.task_id}`)}
                   className="cursor-pointer transition-colors hover:bg-muted/50"
                 >
                   <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground">

@@ -2,7 +2,6 @@
 
 import { ReviewTab } from "@/components/admin/ReviewTab";
 import { ConnectedStatusBar } from "@/components/admin/ConnectedStatusBar";
-import { ReviewDetailModal } from "@/components/modals/ReviewDetailModal";
 
 export default function ReviewPage() {
   return (
@@ -11,7 +10,6 @@ export default function ReviewPage() {
         <ConnectedStatusBar />
       </div>
       <ReviewTab />
-      <ReviewDetailModal />
     </div>
   );
 }

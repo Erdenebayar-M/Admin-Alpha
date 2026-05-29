@@ -59,9 +59,6 @@ export default function ReviewDetailPage() {
       prompt_text: item.task.prompt_text,
       correct_answer: item.task.correct_answer,
       feedback_text: item.task.feedback_text,
-      ...(item.task.initial_text !== undefined
-        ? { initial_text: item.task.initial_text }
-        : {}),
     });
     setIsEditMode(true);
   }, [item]);

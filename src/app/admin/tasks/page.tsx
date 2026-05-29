@@ -2,7 +2,6 @@
 
 import { TasksTab } from "@/components/admin/TasksTab";
 import { ConnectedStatusBar } from "@/components/admin/ConnectedStatusBar";
-import { TaskDetailModal } from "@/components/modals/TaskDetailModal";
 
 export default function TasksPage() {
   return (
@@ -11,7 +10,6 @@ export default function TasksPage() {
         <ConnectedStatusBar />
       </div>
       <TasksTab />
-      <TaskDetailModal />
     </div>
   );
 }

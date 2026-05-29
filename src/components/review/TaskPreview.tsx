@@ -5,8 +5,9 @@ import type { TaskContent } from '@/lib/types';
 import { MediaGenerator } from './MediaGenerator';
 
 // Handles both full https:// R2 URLs and legacy /content/... local paths
+const _API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 function resolveAssetUrl(url: string): string {
-  return url.startsWith('http') ? url : `http://localhost:3000${url}`;
+  return url.startsWith('http') ? url : `${_API_BASE}${url}`;
 }
 
 const SKILL_LABELS: Record<string, string> = {
@@ -91,12 +92,15 @@ export function TaskPreview({
   const promptText = (isEditMode && editDraft.prompt_text !== undefined) ? editDraft.prompt_text : task.prompt_text;
   const correctAnswer = (isEditMode && editDraft.correct_answer !== undefined) ? editDraft.correct_answer : task.correct_answer;
   const feedbackText = (isEditMode && editDraft.feedback_text !== undefined) ? editDraft.feedback_text : task.feedback_text;
+  const feedbackCorrect = (isEditMode && editDraft.feedback_correct !== undefined) ? editDraft.feedback_correct : (task.feedback_correct ?? '');
+  const feedbackWrong = (isEditMode && editDraft.feedback_wrong !== undefined) ? editDraft.feedback_wrong : (task.feedback_wrong ?? '');
   const opts = task.options;
-  // initial_text can live at root OR inside options.incorrect_text — check both
-  const rawInitialText = task.initial_text ?? opts.incorrect_text ?? '';
-  const initialText = (isEditMode && editDraft.initial_text != null)
-    ? editDraft.initial_text
-    : rawInitialText;
+  // Merge editDraft.options into opts so edits to nested fields are reflected
+  const currentOpts = isEditMode ? { ...opts, ...editDraft.options } : opts;
+  // initial_text lives in options.incorrect_text (AI tasks); root task.initial_text is legacy
+  const rawInitialText = opts.incorrect_text ?? task.initial_text ?? '';
+  // When editing, read from currentOpts so changes via options patch are reflected immediately
+  const initialText = isEditMode ? (currentOpts.incorrect_text ?? rawInitialText) : rawInitialText;
 
   const hasExpectedAnswers = (opts.expected_answers?.length ?? 0) > 0;
   // Render correction layout if task_type matches OR if the data carries initial_text
@@ -232,7 +236,7 @@ export function TaskPreview({
       {isCorrection && (
         <CorrectionSection
           initialText={initialText}
-          opts={opts}
+          opts={currentOpts}
           isEditMode={isEditMode}
           onDraftChange={onDraftChange}
         />
@@ -283,7 +287,7 @@ export function TaskPreview({
       </Field>}
 
       {/* ── Feedback ───────────────────────────────────────────────────────── */}
-      <Field label="Тайлбар">
+      <Field label="Дүрмийн тайлбар">
         {isEditMode ? (
           <textarea
             className={textareaClass}
@@ -295,6 +299,40 @@ export function TaskPreview({
           <p className="text-sm text-muted-foreground">{feedbackText}</p>
         )}
       </Field>
+
+      {/* ── Correct / Wrong feedback ───────────────────────────────────────── */}
+      <div className="grid grid-cols-2 gap-3">
+        <Field label={<span className="text-green-700">Зөв хариулсан үед</span>}>
+          {isEditMode ? (
+            <textarea
+              className={cn(textareaClass, 'border-green-300 bg-green-50 text-green-900')}
+              rows={2}
+              value={feedbackCorrect}
+              placeholder="Зөв хариулсан үед харуулах текст…"
+              onChange={(e) => onDraftChange({ feedback_correct: e.target.value })}
+            />
+          ) : feedbackCorrect ? (
+            <p className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">{feedbackCorrect}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">—</p>
+          )}
+        </Field>
+        <Field label={<span className="text-red-700">Буруу хариулсан үед</span>}>
+          {isEditMode ? (
+            <textarea
+              className={cn(textareaClass, 'border-red-300 bg-red-50 text-red-900')}
+              rows={2}
+              value={feedbackWrong}
+              placeholder="Буруу хариулсан үед харуулах текст…"
+              onChange={(e) => onDraftChange({ feedback_wrong: e.target.value })}
+            />
+          ) : feedbackWrong ? (
+            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">{feedbackWrong}</p>
+          ) : (
+            <p className="text-sm text-muted-foreground italic">—</p>
+          )}
+        </Field>
+      </div>
 
       {/* ── Media ──────────────────────────────────────────────────────────── */}
       {(task.audio_url || task.image_url) && (
@@ -347,11 +385,8 @@ function CorrectionSection({
   isEditMode: boolean;
   onDraftChange: (patch: Partial<TaskContent>) => void;
 }) {
-  // Only warn when root-level initial_text explicitly differs from options.incorrect_text
-  const mismatch =
-    opts.incorrect_text !== undefined &&
-    initialText !== '' &&
-    initialText !== opts.incorrect_text;
+  // Only warn in view mode — in edit mode the fields are kept in sync
+  const mismatch = false;
 
   return (
     <>
@@ -370,7 +405,9 @@ function CorrectionSection({
                 )}
                 rows={3}
                 value={initialText}
-                onChange={(e) => onDraftChange({ initial_text: e.target.value })}
+                onChange={(e) =>
+                  onDraftChange({ options: { ...opts, incorrect_text: e.target.value } })
+                }
               />
             ) : (
               <div className="rounded-md border border-red-300 bg-red-50 px-3 py-2.5 font-mono text-sm text-red-900 whitespace-pre-wrap min-h-[60px]">
@@ -382,9 +419,23 @@ function CorrectionSection({
           {/* Correct text */}
           <div>
             <p className="mb-1 text-xs text-green-600 font-medium">Зөв хэлбэр</p>
-            <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2.5 font-mono text-sm text-green-900 whitespace-pre-wrap min-h-[60px]">
-              {opts.correct_text || <span className="text-green-400 italic">—</span>}
-            </div>
+            {isEditMode ? (
+              <textarea
+                className={cn(
+                  textareaClass,
+                  'border-green-300 bg-green-50 text-green-900 font-mono',
+                )}
+                rows={3}
+                value={opts.correct_text ?? ''}
+                onChange={(e) =>
+                  onDraftChange({ options: { ...opts, correct_text: e.target.value } })
+                }
+              />
+            ) : (
+              <div className="rounded-md border border-green-300 bg-green-50 px-3 py-2.5 font-mono text-sm text-green-900 whitespace-pre-wrap min-h-[60px]">
+                {opts.correct_text || <span className="text-green-400 italic">—</span>}
+              </div>
+            )}
           </div>
         </div>
 
@@ -400,10 +451,21 @@ function CorrectionSection({
       </div>
 
       {/* Hint row */}
-      {opts.hint && (
+      {(opts.hint || isEditMode) && (
         <div>
           <p className="mb-1 text-xs font-medium">Дохио (hint)</p>
-          <p className="text-sm text-muted-foreground">{opts.hint}</p>
+          {isEditMode ? (
+            <input
+              className={inputClass}
+              value={opts.hint ?? ''}
+              onChange={(e) =>
+                onDraftChange({ options: { ...opts, hint: e.target.value } })
+              }
+              placeholder="Дохио…"
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">{opts.hint}</p>
+          )}
         </div>
       )}
     </>

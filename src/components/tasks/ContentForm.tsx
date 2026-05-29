@@ -686,15 +686,37 @@ function FreeWriteContent({ form, set, errors }: SubProps) {
 
 function FeedbackField({ form, set }: { form: FormState; set: ContentFormProps["set"] }) {
   return (
-    <Field label="Тайлбар (feedback)" hint="Хариулсны дараа сурагчид харуулах">
-      <Textarea
-        rows={2}
-        value={form.feedback_text}
-        onChange={(e) => set("feedback_text", e.target.value)}
-        placeholder="Жнэ: Зөв! Сайн хийлээ."
-        className="resize-y"
-      />
-    </Field>
+    <>
+      <Field label="Дүрмийн тайлбар" hint="Хариултаас үл хамааран харуулах дүрэм/тайлбар">
+        <Textarea
+          rows={2}
+          value={form.feedback_text}
+          onChange={(e) => set("feedback_text", e.target.value)}
+          placeholder="Жнэ: Зөв! Сайн хийлээ."
+          className="resize-y"
+        />
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Зөв хариулсан үед" hint="Зөв хариулсан сурагчид харуулах">
+          <Textarea
+            rows={2}
+            value={form.feedback_correct}
+            onChange={(e) => set("feedback_correct", e.target.value)}
+            placeholder="Жнэ: Маш сайн! Зөв хариуллаа."
+            className="resize-y border-green-500/40 bg-green-50/30 dark:bg-green-950/20"
+          />
+        </Field>
+        <Field label="Буруу хариулсан үед" hint="Буруу хариулсан сурагчид харуулах">
+          <Textarea
+            rows={2}
+            value={form.feedback_wrong}
+            onChange={(e) => set("feedback_wrong", e.target.value)}
+            placeholder="Жнэ: Дахин оролдоно уу."
+            className="resize-y border-destructive/40 bg-red-50/30 dark:bg-red-950/20"
+          />
+        </Field>
+      </div>
+    </>
   );
 }
 

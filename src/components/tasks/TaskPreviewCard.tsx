@@ -138,6 +138,22 @@ export function TaskPreviewCard({ form, groups, taskType, onGoToStep }: TaskPrev
               {form.feedback_text && (
                 <p className="mt-1 text-xs text-muted-foreground">{form.feedback_text}</p>
               )}
+              {(form.feedback_correct || form.feedback_wrong) && (
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {form.feedback_correct && (
+                    <div className="rounded border border-green-300 bg-green-50 px-2 py-1 dark:bg-green-950/30">
+                      <p className="text-[10px] font-medium text-green-700">Зөв хариулсан үед</p>
+                      <p className="text-xs text-green-900">{form.feedback_correct}</p>
+                    </div>
+                  )}
+                  {form.feedback_wrong && (
+                    <div className="rounded border border-red-300 bg-red-50 px-2 py-1 dark:bg-red-950/30">
+                      <p className="text-[10px] font-medium text-red-700">Буруу хариулсан үед</p>
+                      <p className="text-xs text-red-900">{form.feedback_wrong}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

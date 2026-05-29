@@ -61,7 +61,8 @@ export default function LiveTaskDetailPage() {
       prompt_text: task.prompt_text,
       correct_answer: task.correct_answer,
       feedback_text: task.feedback_text,
-      ...(task.initial_text !== undefined ? { initial_text: task.initial_text } : {}),
+      feedback_correct: task.feedback_correct ?? '',
+      feedback_wrong: task.feedback_wrong ?? '',
     });
     setIsEditMode(true);
   }, [task]);
