@@ -1,27 +1,33 @@
 import type { NextRequest } from 'next/server';
 
-const BACKEND = 'http://localhost:3000';
+const BACKEND = 'http://127.0.0.1:3000';
 
 async function proxy(request: NextRequest, { params }: { params: Promise<{ slug: string[] }> }) {
   const { slug } = await params;
-  const path = slug.join('/');
-  const search = request.nextUrl.search;
-  const url = `${BACKEND}/api/admin/${path}${search}`;
+  const url = `${BACKEND}/api/admin/${slug.join('/')}${request.nextUrl.search}`;
 
-  const headers = new Headers(request.headers);
-  headers.delete('host');
+  const headers = new Headers();
+  const contentType = request.headers.get('content-type');
+  const authorization = request.headers.get('authorization');
+  if (contentType) headers.set('content-type', contentType);
+  if (authorization) headers.set('authorization', authorization);
 
-  const init: RequestInit = { method: request.method, headers };
+  let body: BodyInit | undefined;
   if (request.method !== 'GET' && request.method !== 'HEAD') {
-    init.body = request.body;
-    (init as RequestInit & { duplex: string }).duplex = 'half';
+    body = await request.arrayBuffer();
   }
 
-  const res = await fetch(url, init);
-  return new Response(res.body, {
-    status: res.status,
-    headers: res.headers,
-  });
+  try {
+    const res = await fetch(url, { method: request.method, headers, body });
+    const data = await res.arrayBuffer();
+    return new Response(data, {
+      status: res.status,
+      headers: { 'content-type': res.headers.get('content-type') ?? 'application/json' },
+    });
+  } catch (err) {
+    console.error('[proxy] backend unreachable:', err);
+    return Response.json({ error: 'Backend unreachable' }, { status: 502 });
+  }
 }
 
 export const GET = proxy;
