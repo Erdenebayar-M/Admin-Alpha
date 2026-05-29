@@ -184,6 +184,62 @@ export async function acceptAudio(
   });
 }
 
+// ─── Direct R2 upload functions ────────────────────────────────────────────
+
+import { uploadImageToR2, uploadAudioToR2, base64ToBlob, type R2UploadResult } from './r2Upload';
+
+export async function saveImageAndUpdateTask(
+  base64: string,
+  taskId: string,
+  variantId: string,
+  stage?: string,
+): Promise<R2UploadResult> {
+  try {
+    // Convert base64 to blob and upload to R2
+    const blob = await base64ToBlob(base64, 'image/jpeg');
+    const result = await uploadImageToR2(blob);
+
+    // Update the task variant with the new image URL
+    await client.post('/update-image', {
+      task_id: taskId,
+      variant_id: variantId,
+      image_url: result.url,
+      ...(stage ? { stage } : {}),
+    });
+
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to save image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
+export async function saveAudioAndUpdateTask(
+  base64: string,
+  taskId: string,
+  variantId: string,
+  slot: 'dictation' | 'prompt',
+  stage?: string,
+): Promise<R2UploadResult> {
+  try {
+    // Convert base64 to blob and upload to R2
+    const blob = await base64ToBlob(base64, 'audio/mp4');
+    const result = await uploadAudioToR2(blob);
+
+    // Update the task variant with the new audio URL
+    await client.post('/update-audio', {
+      task_id: taskId,
+      variant_id: variantId,
+      audio_url: result.url,
+      slot,
+      ...(stage ? { stage } : {}),
+    });
+
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to save audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
 export interface CreateTaskPayload {
   task_type: string;
   title: string;

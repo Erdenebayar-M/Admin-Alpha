@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createTask } from "@/lib/api";
 import type { CreateTaskPayload, CreateTaskResult } from "@/lib/api";
 import type { TaskOptions } from "@/lib/types";
-import { acceptAudio, acceptImage } from "@/lib/api";
+import { acceptAudio, acceptImage, saveImageAndUpdateTask, saveAudioAndUpdateTask } from "@/lib/api";
 import {
   TASK_TYPE_INFO,
   TASK_TYPE_BLUEPRINT,
@@ -382,11 +382,11 @@ export function useTaskForm() {
         localStorage.setItem("last_created_task", JSON.stringify(form));
       } catch { /* localStorage full — non-critical */ }
       // auto-accept media generated during Step 2
-      if (audioPreview?.tempId) {
-        acceptAudio(audioPreview.tempId, result.task_id, result.variant_id, audioPreview.slot).catch(() => {});
+      if (audioPreview?.base64) {
+        saveAudioAndUpdateTask(audioPreview.base64, result.task_id, result.variant_id, audioPreview.slot).catch(() => {});
       }
-      if (imagePreview?.tempId) {
-        acceptImage(imagePreview.tempId, result.task_id, result.variant_id).catch(() => {});
+      if (imagePreview?.base64) {
+        saveImageAndUpdateTask(imagePreview.base64, result.task_id, result.variant_id).catch(() => {});
       }
     },
   });
