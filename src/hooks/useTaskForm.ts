@@ -128,13 +128,12 @@ function buildOptions(form: FormState, groups: OptionGroup[]): TaskOptions {
     if (form.hint) opts.hint = form.hint;
     if (form.error_type) opts.error_type = form.error_type;
   }
-  if (groups.includes("choice")) {
-    const wrongAnswers = parseLines(form.expected_answers);
-    const choices = [
+  const wrongAnswers = parseLines(form.expected_answers);
+  if (wrongAnswers.length > 0) {
+    opts.choices = [
       { text: form.correct_answer, is_correct: true },
       ...wrongAnswers.map((t) => ({ text: t, is_correct: false })),
     ];
-    opts.choices = choices;
   }
   return opts;
 }
