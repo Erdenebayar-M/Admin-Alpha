@@ -32,13 +32,13 @@ const TABS: { id: Tab; label: string }[] = [
   { id: "done", label: "Дуусгасан" },
 ];
 
-const STATUS_STYLES: Record<ReviewItem["status"], string> = {
-  ai_flagged:     "bg-[#E91D26] text-white",
-  pending:        "bg-gray-500 text-white",
-  ai_passed:      "bg-[#69BF68] text-white",
-  human_approved: "bg-[#48A145] text-white",
-  human_rejected: "bg-[#90251D] text-white",
-  needs_revision: "bg-[#DC2B33] text-white",
+const STATUS_DOT_STYLES: Record<ReviewItem["status"], string> = {
+  ai_flagged:     "bg-[#E91D26]",
+  pending:        "bg-gray-500",
+  ai_passed:      "bg-[#69BF68]",
+  human_approved: "bg-[#48A145]",
+  human_rejected: "bg-[#90251D]",
+  needs_revision: "bg-[#DC2B33]",
 };
 
 const STATUS_LABELS: Record<ReviewItem["status"], string> = {
@@ -82,7 +82,7 @@ function difficultyStars(n: number) {
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
 }
 
 
@@ -219,7 +219,6 @@ export function ReviewTab() {
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Гарчиг</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Асуулт</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Хариулт</th>
-                <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Дүрмийн тайлбар</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Анги</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Чадвар</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Хүндрэл</th>
@@ -255,9 +254,6 @@ export function ReviewTab() {
                     <div className="font-medium text-sm leading-tight">
                       {TASK_TYPE_INFO[item.task.task_type]?.label ?? item.task.task_type}
                     </div>
-                    <span className="mt-0.5 inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                      {item.task.task_type}
-                    </span>
                   </td>
                   <td className="max-w-[180px] px-3 py-2.5">
                     <span className="line-clamp-1 font-medium">{item.task.title}</span>
@@ -267,9 +263,6 @@ export function ReviewTab() {
                   </td>
                   <td className="max-w-[120px] px-3 py-2.5">
                     <span className="line-clamp-1 text-xs">{item.task.correct_answer || "—"}</span>
-                  </td>
-                  <td className="max-w-[160px] px-3 py-2.5">
-                    <PromptCell text={item.task.feedback_text} />
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex flex-wrap gap-1">
@@ -293,9 +286,12 @@ export function ReviewTab() {
                     <MediaCell audioUrl={item.task.audio_url} imageUrl={item.task.image_url} />
                   </td>
                   <td className="px-3 py-2.5">
-                    <span className={cn("inline-flex items-center rounded px-2 py-0.5 text-xs font-medium", STATUS_STYLES[item.status])}>
-                      {STATUS_LABELS[item.status]}
-                    </span>
+                    <div className="group relative inline-flex items-center">
+                      <span className={cn("h-2.5 w-2.5 rounded-full", STATUS_DOT_STYLES[item.status])} />
+                      <div className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 hidden whitespace-nowrap rounded-md border border-border bg-popover px-2 py-1 text-xs text-foreground shadow-lg group-hover:block">
+                        {STATUS_LABELS[item.status]}
+                      </div>
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-3 py-2.5 text-xs text-muted-foreground">
                     {fmtDate(item.created_at)}

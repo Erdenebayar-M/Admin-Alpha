@@ -119,6 +119,8 @@ export default function LiveTaskDetailPage() {
         <TaskPreview
           task={displayTask}
           variantId={id}
+          createdAt={task.created_at}
+          showSaveInHeader
           isEditMode={isEditMode}
           isSaving={saveMutation.isPending}
           editDraft={editDraft}
@@ -131,38 +133,6 @@ export default function LiveTaskDetailPage() {
 
         {/* Action sidebar */}
         <div className="space-y-3">
-          {/* Edit / Save / Cancel */}
-          <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Засах</p>
-            {isEditMode ? (
-              <div className="flex flex-col gap-2">
-                <button
-                  type="button"
-                  onClick={handleSave}
-                  disabled={saveMutation.isPending}
-                  className="w-full rounded-md bg-foreground px-3 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity disabled:opacity-60"
-                >
-                  {saveMutation.isPending ? "Хадгалж байна…" : "Хадгалах"}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCancelEdit}
-                  className="w-full rounded-md border border-border px-3 py-2 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors"
-                >
-                  Болих
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleEnterEdit}
-                className="w-full rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
-              >
-                Засварлах
-              </button>
-            )}
-          </div>
-
           {/* Delete */}
           {!isEditMode && (
             <div className="rounded-lg border border-border bg-card p-4 space-y-2">
@@ -197,31 +167,6 @@ export default function LiveTaskDetailPage() {
             </div>
           )}
 
-          {/* Meta info */}
-          <div className="rounded-lg border border-border bg-card p-4 space-y-2 text-xs text-muted-foreground">
-            <div className="flex justify-between">
-              <span>Ангилал</span>
-              <span className="text-foreground">{task.grade_band.join(", ")}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Чадвар</span>
-              <span className="text-foreground">{task.primary_skill}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Хүндрэл</span>
-              <span className="text-foreground">{"★".repeat(task.difficulty)}{"☆".repeat(5 - task.difficulty)}</span>
-            </div>
-            <div className="flex justify-between">
-              <span>Цаг</span>
-              <span className="text-foreground">{task.estimated_time_seconds}с</span>
-            </div>
-            {task.is_diagnostic && (
-              <div className="flex justify-between">
-                <span>Оношилгоо</span>
-                <span className="text-blue-600">Тийм</span>
-              </div>
-            )}
-          </div>
         </div>
       </div>
 

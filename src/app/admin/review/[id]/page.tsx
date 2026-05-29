@@ -156,6 +156,7 @@ export default function ReviewDetailPage() {
         <TaskPreview
           task={displayTask}
           variantId={item.variant_id}
+          createdAt={item.created_at}
           isEditMode={isEditMode}
           isSaving={updateMutation.isPending}
           editDraft={editDraft}

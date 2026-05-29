@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 
 const STEPS = [
   { label: "Төрөл & Ангилал", description: "Даалгаврын төрөл, анги, чадвар" },
-  { label: "Агуулга", description: "Текст, хариулт, тохиргоо" },
+  { label: "Дасгалын тайлбар", description: "Текст, хариулт, тохиргоо" },
   { label: "Хянах & Илгээх", description: "Шалгаж илгээх" },
 ] as const;
 
@@ -197,7 +197,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
         {step === 1 && (
           <Card>
             <CardHeader>
-              <CardTitle>Агуулга</CardTitle>
+              <CardTitle>Дасгалын тайлбар</CardTitle>
               <CardDescription>
                 {tf.typeInfo
                   ? `${tf.typeInfo.shortLabel} — ${tf.typeInfo.label}: ${tf.typeInfo.description}`

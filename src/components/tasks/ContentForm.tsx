@@ -44,7 +44,8 @@ function WordDictationContent({ form, set, errors, audioPreview, onAudioGenerate
           placeholder="Жнэ: гэрэл"
         />
       </Field>
-      <Field label="Гарчиг" required error={errors.title} hint="Даалгаврын товч нэр">
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title} hint="Даалгаврын товч нэр">
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -85,7 +86,8 @@ function SentenceDictationContent({ form, set, errors, audioPreview, onAudioGene
           className="resize-y"
         />
       </Field>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -124,7 +126,8 @@ function AudioPlayDictationContent({ form, set, errors, audioPreview, onAudioGen
           placeholder="Жнэ: гэрэл"
         />
       </Field>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -163,7 +166,8 @@ function ImageDictationContent({ form, set, errors, onAudioGenerated, onImageGen
           placeholder="Жнэ: нар"
         />
       </Field>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -210,7 +214,8 @@ function ListenDictationContent({ form, set, errors, audioPreview, onAudioGenera
           className="resize-y"
         />
       </Field>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -244,7 +249,8 @@ function CorrectionContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3 text-xs text-orange-800 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
         Сурагчид алдаатай текст харуулна. Тэд алдааг олж засах ёстой.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -306,7 +312,8 @@ function ChooseCorrectContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-3 text-xs text-purple-800 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-200">
         Сурагч хэд хэдэн сонголтоос зөв үгийг сонгоно.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -355,7 +362,8 @@ function FillBlankContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
         Өгүүлбэр дэх цоорхойг зөв үгээр бөглөнө. Цоорхойг <code className="rounded bg-emerald-200 px-1 dark:bg-emerald-800">___</code> тэмдэгээр тэмдэглэнэ.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -405,7 +413,8 @@ function LetterArrangeContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-3 text-xs text-sky-800 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-200">
         Холилдсон үсгүүдийг зөв дарааллаар байрлуулж үг бүтээнэ.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -451,7 +460,8 @@ function WordPartContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
         Үгийн дутуу хэсгийг нөхөж бичнэ (эхлэл эсвэл төгсгөл).
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -498,7 +508,8 @@ function TrueFalseContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3 text-xs text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-200">
         Сурагч өгүүлбэр зөв эсэхийг тодорхойлно. Зөв/буруу хариултыг сонгоно.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -552,7 +563,8 @@ function ImageMatchContent({ form, set, errors, onImageGenerated }: SubProps) {
       <div className="rounded-lg border border-pink-200 bg-pink-50/50 p-3 text-xs text-pink-800 dark:border-pink-800 dark:bg-pink-950/30 dark:text-pink-200">
         Зурагт тохирох зөв үгийг сонгоно.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -606,7 +618,8 @@ function RewriteContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 text-xs text-teal-800 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-200">
         Сурагч эх текстийг зөв хэлбэрээр дахин бичнэ.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -654,7 +667,8 @@ function FreeWriteContent({ form, set, errors }: SubProps) {
       <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 text-xs text-violet-800 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-200">
         Сурагч сэдвийн дагуу чөлөөтэй бичнэ. Зөв хариулт байхгүй — үнэлгээний шалгуур бичнэ.
       </div>
-      <Field label="Гарчиг" required error={errors.title}>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
@@ -691,12 +705,12 @@ function FreeWriteContent({ form, set, errors }: SubProps) {
 function FeedbackField({ form, set }: { form: FormState; set: ContentFormProps["set"] }) {
   return (
     <>
-      <Field label="Дүрмийн тайлбар" hint="Хариултаас үл хамааран харуулах дүрэм/тайлбар">
+      <Field label="Hint" hint="Хариултаас үл хамааран харуулах дүрмийн тайлбар">
         <Textarea
           rows={2}
           value={form.feedback_text}
           onChange={(e) => set("feedback_text", e.target.value)}
-          placeholder="Жнэ: Зөв! Сайн хийлээ."
+          placeholder="Жнэ: 'гэрэл' — г+э+р+э+л гэж бичдэг."
           className="resize-y"
         />
       </Field>

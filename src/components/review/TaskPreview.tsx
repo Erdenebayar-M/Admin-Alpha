@@ -57,9 +57,16 @@ function formatReviewDays(days: number[]): string {
   return days.map((d) => `${d}-р өдөр`).join(", ");
 }
 
+function fmtDateTime(iso: string) {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}:${String(d.getSeconds()).padStart(2, "0")}`;
+}
+
 interface Props {
   task: TaskContent;
   variantId: string;
+  createdAt?: string;
+  showSaveInHeader?: boolean;
   isEditMode: boolean;
   isSaving: boolean;
   editDraft: Partial<TaskContent>;
@@ -77,6 +84,8 @@ const textareaClass = `${inputClass} resize-none`;
 export function TaskPreview({
   task,
   variantId,
+  createdAt,
+  showSaveInHeader = false,
   isEditMode,
   isSaving,
   editDraft,
@@ -129,30 +138,27 @@ export function TaskPreview({
   return (
     <div className="rounded-lg border border-border bg-card p-5 space-y-5">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-mono text-xs text-muted-foreground">
-              {task.task_id}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 flex-wrap min-w-0">
+          {createdAt && (
+            <span className="text-xs text-muted-foreground">
+              {fmtDateTime(createdAt)}
             </span>
-            <span className="rounded bg-muted px-1.5 py-0.5 text-xs font-medium tabular-nums">
-              {task.task_type}
-            </span>
-          </div>
-          {isEditMode ? (
-            <input
-              className={cn(inputClass, "mt-1.5 font-medium")}
-              value={title}
-              onChange={(e) => onDraftChange({ title: e.target.value })}
-              placeholder="Гарчиг"
-            />
-          ) : (
-            <p className="mt-1 text-sm font-medium">{task.title}</p>
           )}
         </div>
 
         {isEditMode ? (
           <div className="flex shrink-0 gap-2">
+            {showSaveInHeader && (
+              <button
+                type="button"
+                onClick={onSaveEdit}
+                disabled={isSaving}
+                className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 transition-opacity disabled:opacity-60"
+              >
+                {isSaving ? "Хадгалж байна…" : "Хадгалах"}
+              </button>
+            )}
             <button
               type="button"
               onClick={onCancelEdit}
@@ -174,6 +180,7 @@ export function TaskPreview({
       </div>
 
       {/* ── Metadata grid ──────────────────────────────────────────────────── */}
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Дасгалын тайлбар</p>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 rounded-md bg-muted/40 p-3 text-sm">
         <MetaItem
           label="Чадвар"
@@ -210,7 +217,7 @@ export function TaskPreview({
             </span>
           }
         />
-        <MetaItem label="Хүндийн түвшин" value={`${task.difficulty} / 5`} />
+        <MetaItem label="Хүндийн түвшин" value={<span className="text-yellow-500">{"★".repeat(task.difficulty)}{"☆".repeat(5 - task.difficulty)}</span>} />
         <MetaItem label="Хугацаа" value={`${task.estimated_time_seconds}с`} />
         <MetaItem
           label="Хичээлийн үе"
@@ -219,6 +226,10 @@ export function TaskPreview({
           }
         />
       </div>
+
+      {/* ── Content section ────────────────────────────────────────────────── */}
+      <div className="border-t border-border" />
+      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Дасгалын заавар</p>
 
       {/* ── Error targets ──────────────────────────────────────────────────── */}
       {task.error_targets.length > 0 && (
@@ -236,6 +247,20 @@ export function TaskPreview({
           </div>
         </Field>
       )}
+
+      {/* ── Title ──────────────────────────────────────────────────────────── */}
+      <Field label="Дасгалын нэр">
+        {isEditMode ? (
+          <input
+            className={inputClass}
+            value={title}
+            onChange={(e) => onDraftChange({ title: e.target.value })}
+            placeholder="Гарчиг"
+          />
+        ) : (
+          <p className="text-sm font-medium">{task.title}</p>
+        )}
+      </Field>
 
       {/* ── Prompt ─────────────────────────────────────────────────────────── */}
       <Field label="Асуулт">
