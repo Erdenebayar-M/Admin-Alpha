@@ -22,6 +22,7 @@ export type FormState = {
   title: string;
   prompt_text: string;
   correct_answer: string;
+  image_description: string;
   primary_skill: string;
   secondary_skill: string;
   level_target: string;
@@ -49,6 +50,7 @@ export const INITIAL_FORM: FormState = {
   title: "",
   prompt_text: "",
   correct_answer: "",
+  image_description: "",
   primary_skill: "",
   secondary_skill: "",
   level_target: "",

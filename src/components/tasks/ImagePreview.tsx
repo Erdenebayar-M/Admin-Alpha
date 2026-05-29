@@ -14,18 +14,19 @@ export interface ImagePreviewState {
 }
 
 interface ImagePreviewProps {
-  defaultPrompt: string;
+  correctAnswer: string;
+  imageDescription: string;
+  onDescriptionChange: (desc: string) => void;
   onGenerated: (state: ImagePreviewState) => void;
 }
 
-export function ImagePreview({ defaultPrompt, onGenerated }: ImagePreviewProps) {
+export function ImagePreview({ correctAnswer, imageDescription, onDescriptionChange, onGenerated }: ImagePreviewProps) {
   const [status, setStatus] = useState<Status>("idle");
-  const [subject, setSubject] = useState(defaultPrompt);
   const [base64, setBase64] = useState("");
   const [error, setError] = useState("");
 
   const generate = useCallback(async () => {
-    const text = subject.trim() || defaultPrompt.trim();
+    const text = imageDescription.trim() || correctAnswer.trim();
     if (!text) return;
     setError("");
     setStatus("generating");
@@ -38,7 +39,7 @@ export function ImagePreview({ defaultPrompt, onGenerated }: ImagePreviewProps) 
       setError(e instanceof Error ? e.message : "Зураг үүсгэхэд алдаа гарлаа");
       setStatus("error");
     }
-  }, [subject, defaultPrompt, onGenerated]);
+  }, [imageDescription, correctAnswer, onGenerated]);
 
   const discard = useCallback(() => {
     setBase64("");
@@ -47,7 +48,7 @@ export function ImagePreview({ defaultPrompt, onGenerated }: ImagePreviewProps) 
     onGenerated({ tempId: "", base64: "" });
   }, [onGenerated]);
 
-  const currentSubject = subject.trim() || defaultPrompt.trim();
+  const currentDescription = imageDescription.trim() || correctAnswer.trim();
 
   return (
     <div className="rounded-lg border border-dashed p-3 space-y-2">
@@ -63,18 +64,19 @@ export function ImagePreview({ defaultPrompt, onGenerated }: ImagePreviewProps) 
           <div className="space-y-1">
             <p className="text-[11px] text-muted-foreground">Зурагт юу дүрслэх вэ?</p>
             <Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder={defaultPrompt || "Жнэ: алим, нар, нохой..."}
+              value={imageDescription}
+              onChange={(e) => onDescriptionChange(e.target.value)}
+              placeholder={correctAnswer || "Жнэ: алим, нар, нохой, малгайтай хүн..."}
               className="text-xs h-8"
             />
+            <p className="text-[10px] text-muted-foreground">Зөв хариулт: {correctAnswer || "—"}</p>
           </div>
           <Button
             type="button"
             size="sm"
             variant="outline"
             onClick={generate}
-            disabled={!currentSubject}
+            disabled={!currentDescription}
             className="text-xs"
           >
             Зураг үүсгэх

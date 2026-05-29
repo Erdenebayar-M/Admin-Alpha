@@ -180,7 +180,9 @@ function ImageDictationContent({ form, set, errors, onAudioGenerated, onImageGen
         />
       </Field>
       <ImagePreview
-        defaultPrompt={form.correct_answer}
+        correctAnswer={form.correct_answer}
+        imageDescription={form.image_description}
+        onDescriptionChange={(desc) => set("image_description", desc)}
         onGenerated={onImageGenerated}
       />
       <AudioPreview
@@ -588,7 +590,9 @@ function ImageMatchContent({ form, set, errors, onImageGenerated }: SubProps) {
         />
       </Field>
       <ImagePreview
-        defaultPrompt={form.correct_answer}
+        correctAnswer={form.correct_answer}
+        imageDescription={form.image_description}
+        onDescriptionChange={(desc) => set("image_description", desc)}
         onGenerated={onImageGenerated}
       />
       <FeedbackField form={form} set={set} />
