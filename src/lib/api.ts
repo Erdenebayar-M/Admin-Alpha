@@ -22,13 +22,18 @@ const client = axios.create({
 
 client.interceptors.response.use(
   (r) => r,
-  (err) =>
-    Promise.reject(
-      new Error(
-        (err.response?.data as { message?: string } | undefined)?.message ??
-          err.message,
-      ),
-    ),
+  (err) => {
+    const data = err.response?.data as
+      | { message?: string; error?: string | { message?: string } }
+      | undefined;
+    const msg =
+      data?.message ??
+      (typeof data?.error === "string"
+        ? data.error
+        : data?.error?.message) ??
+      err.message;
+    return Promise.reject(new Error(msg));
+  },
 );
 
 export interface TaskFilters {
