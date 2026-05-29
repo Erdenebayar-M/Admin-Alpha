@@ -8,6 +8,7 @@ type Status = "idle" | "generating" | "ready" | "error";
 
 export interface AudioPreviewState {
   tempId: string;
+  base64: string;
   blobUrl: string;
   slot: "dictation" | "prompt";
 }
@@ -34,7 +35,7 @@ export function AudioPreview({ text, slot = "dictation", onGenerated }: AudioPre
       if (blobUrl) URL.revokeObjectURL(blobUrl);
       setBlobUrl(url);
       setStatus("ready");
-      onGenerated({ tempId: res.temp_id, blobUrl: url, slot });
+      onGenerated({ tempId: res.temp_id, base64: res.base64, blobUrl: url, slot });
     } catch (e) {
       setError(e instanceof Error ? e.message : "Аудио үүсгэхэд алдаа гарлаа");
       setStatus("error");
@@ -46,7 +47,7 @@ export function AudioPreview({ text, slot = "dictation", onGenerated }: AudioPre
     setBlobUrl("");
     setStatus("idle");
     setError("");
-    onGenerated({ tempId: "", blobUrl: "", slot });
+    onGenerated({ tempId: "", base64: "", blobUrl: "", slot });
   }, [blobUrl, slot, onGenerated]);
 
   return (
