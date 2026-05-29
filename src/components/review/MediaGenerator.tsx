@@ -66,7 +66,7 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
     setImgError('');
     setImgStatus('generating');
     try {
-      const res = await generateImage(imgPrompt);
+      const res = await generateImage(imgPrompt, task.grade_band);
       setImgTempId(res.temp_id);
       setImgBase64(res.base64);
       setImgStatus('preview');

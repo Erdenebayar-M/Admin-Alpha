@@ -134,10 +134,10 @@ export interface GenerateAudioResult {
   base64: string;
 }
 
-export async function generateImage(prompt: string): Promise<GenerateImageResult> {
+export async function generateImage(prompt: string, gradeBand?: string[]): Promise<GenerateImageResult> {
   const { data } = await client.post<{ success: boolean; data: { temp_id: string; base64: string } }>(
     '/generate-image',
-    { prompt },
+    { prompt, grade_band: gradeBand },
   );
   return { temp_id: data.data.temp_id, base64: data.data.base64 };
 }

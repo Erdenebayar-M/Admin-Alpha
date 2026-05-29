@@ -354,7 +354,7 @@ export function useTaskForm() {
 
   // Submission
   const mutation = useMutation({
-    mutationFn: () => {
+    mutationFn: async () => {
       const currentGroups = TASK_TYPE_INFO[form.task_type]?.groups ?? [];
       const payload: CreateTaskPayload = {
         task_type: form.task_type,
@@ -377,23 +377,29 @@ export function useTaskForm() {
         audio_url: null,
         image_url: null,
       };
-      return createTask(payload);
-    },
-    onSuccess: (result) => {
+      const result = await createTask(payload);
+
       try {
         localStorage.setItem("last_created_task", JSON.stringify(form));
       } catch { /* localStorage full — non-critical */ }
-      // auto-accept media generated during Step 2
+
+      // Upload media and update DB before resolving — keeps isPending true until done
+      const saves: Promise<unknown>[] = [];
       if (audioPreview?.base64) {
-        saveAudioAndUpdateTask(audioPreview.base64, result.task_id, result.variant_id, audioPreview.slot).catch((err) => {
-          console.error('Failed to save audio:', err);
-        });
+        saves.push(
+          saveAudioAndUpdateTask(audioPreview.base64, result.task_id, result.variant_id, audioPreview.slot)
+            .catch((err) => console.error('Failed to save audio:', err)),
+        );
       }
       if (imagePreview?.base64) {
-        saveImageAndUpdateTask(imagePreview.base64, result.task_id, result.variant_id).catch((err) => {
-          console.error('Failed to save image:', err);
-        });
+        saves.push(
+          saveImageAndUpdateTask(imagePreview.base64, result.task_id, result.variant_id)
+            .catch((err) => console.error('Failed to save image:', err)),
+        );
       }
+      await Promise.all(saves);
+
+      return result;
     },
   });
 
