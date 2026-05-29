@@ -5,9 +5,8 @@ import type { TaskContent } from '@/lib/types';
 import { MediaGenerator } from './MediaGenerator';
 
 // Handles both full https:// R2 URLs and legacy /content/... local paths
-const _API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3000';
 function resolveAssetUrl(url: string): string {
-  return url.startsWith('http') ? url : `${_API_BASE}${url}`;
+  return url.startsWith('http') ? url : url;
 }
 
 const SKILL_LABELS: Record<string, string> = {

@@ -10,10 +10,8 @@ import type {
 } from "./types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3000";
-
 const client = axios.create({
-  baseURL: `${API_BASE}/api/admin/content`,
+  baseURL: `/api/admin/content`,
   headers: {
     "Content-Type": "application/json",
     Authorization: `Bearer ${ADMIN_TOKEN}`,
