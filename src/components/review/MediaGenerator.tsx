@@ -6,8 +6,8 @@ import type { TaskContent } from '@/lib/types';
 import {
   generateImage,
   generateAudio,
-  acceptImage,
-  acceptAudio,
+  saveImageAndUpdateTask,
+  saveAudioAndUpdateTask,
 } from '@/lib/api';
 
 interface Props {
@@ -54,7 +54,7 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
   const [audioSlot, setAudioSlot] = useState<'dictation' | 'prompt'>('dictation');
   const [audioVoice, setAudioVoice] = useState('');
   const [audioStatus, setAudioStatus] = useState<GenStatus>('idle');
-  const [audioTempId, setAudioTempId] = useState('');
+  const [audioBase64, setAudioBase64] = useState('');
   const [audioBlobUrl, setAudioBlobUrl] = useState('');
   const [audioError, setAudioError] = useState('');
 
@@ -79,7 +79,7 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
   async function handleAcceptImage() {
     setImgStatus('accepting');
     try {
-      await acceptImage(imgTempId, taskId, variantId);
+      await saveImageAndUpdateTask(imgBase64, taskId, variantId, 'validated');
       setImgStatus('idle');
       setImgBase64('');
       setImgTempId('');
@@ -105,7 +105,7 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
       const bytes = Uint8Array.from(atob(res.base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
       if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
-      setAudioTempId(res.temp_id);
+      setAudioBase64(res.base64);
       setAudioBlobUrl(url);
       setAudioStatus('preview');
     } catch (e) {
@@ -117,11 +117,11 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
   async function handleAcceptAudio() {
     setAudioStatus('accepting');
     try {
-      await acceptAudio(audioTempId, taskId, variantId, audioSlot);
+      await saveAudioAndUpdateTask(audioBase64, taskId, variantId, audioSlot, 'validated');
       URL.revokeObjectURL(audioBlobUrl);
       setAudioStatus('idle');
       setAudioBlobUrl('');
-      setAudioTempId('');
+      setAudioBase64('');
       onMediaAccepted();
     } catch (e) {
       setAudioError(e instanceof Error ? e.message : 'Accept failed');
@@ -132,7 +132,7 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
   function handleDiscardAudio() {
     if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
     setAudioBlobUrl('');
-    setAudioTempId('');
+    setAudioBase64('');
     setAudioStatus('idle');
     setAudioError('');
   }
