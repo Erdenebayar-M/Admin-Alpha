@@ -121,6 +121,7 @@ export default function LiveTaskDetailPage() {
           variantId={id}
           createdAt={task.created_at}
           showSaveInHeader
+          mediaStage="validated"
           isEditMode={isEditMode}
           isSaving={saveMutation.isPending}
           editDraft={editDraft}

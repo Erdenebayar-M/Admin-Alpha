@@ -157,6 +157,7 @@ export default function ReviewDetailPage() {
           task={displayTask}
           variantId={item.variant_id}
           createdAt={item.created_at}
+          mediaStage="stage2"
           isEditMode={isEditMode}
           isSaving={updateMutation.isPending}
           editDraft={editDraft}

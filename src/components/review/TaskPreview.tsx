@@ -67,6 +67,7 @@ interface Props {
   variantId: string;
   createdAt?: string;
   showSaveInHeader?: boolean;
+  mediaStage?: string;
   isEditMode: boolean;
   isSaving: boolean;
   editDraft: Partial<TaskContent>;
@@ -86,6 +87,7 @@ export function TaskPreview({
   variantId,
   createdAt,
   showSaveInHeader = false,
+  mediaStage,
   isEditMode,
   isSaving,
   editDraft,
@@ -455,6 +457,7 @@ export function TaskPreview({
       <MediaGenerator
         task={task}
         variantId={variantId}
+        stage={mediaStage}
         onMediaAccepted={onMediaAccepted}
       />
 

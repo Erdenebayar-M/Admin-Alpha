@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import type { TaskContent } from '@/lib/types';
+import { TASK_TYPE_INFO } from '@/lib/task-defaults';
 import {
   generateImage,
   generateAudio,
@@ -13,11 +14,12 @@ import {
 interface Props {
   task: TaskContent;
   variantId: string;
+  stage?: string;
   onMediaAccepted: () => void;
 }
 
 type Tab = 'image' | 'audio';
-type GenStatus = 'idle' | 'generating' | 'preview' | 'accepting';
+type GenStatus = 'idle' | 'generating' | 'preview' | 'accepting' | 'accepted';
 
 const btnBase =
   'rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none';
@@ -27,15 +29,17 @@ function needsAudio(task: TaskContent): boolean {
     !!task.audio_url ||
     !!task.options.audio_text ||
     (task.options.expected_answers?.length ?? 0) > 0 ||
-    task.primary_skill === 'S7'
+    task.primary_skill === 'S7' ||
+    task.task_type === 'TT_LISTEN_CHOOSE' ||
+    (TASK_TYPE_INFO[task.task_type]?.groups.includes('dictation') ?? false)
   );
 }
 
 function needsImage(task: TaskContent): boolean {
-  return !!task.image_url;
+  return !!task.image_url || task.task_type === 'TT_IMAGE_WORD_MATCH';
 }
 
-export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
+export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAccepted }: Props) {
   const showAudio = needsAudio(task);
   const showImage = needsImage(task);
 
@@ -79,10 +83,11 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
   async function handleAcceptImage() {
     setImgStatus('accepting');
     try {
-      await saveImageAndUpdateTask(imgBase64, taskId, variantId, 'validated');
-      setImgStatus('idle');
+      await saveImageAndUpdateTask(imgBase64, taskId, variantId, stage);
       setImgBase64('');
       setImgTempId('');
+      setImgError('');
+      setImgStatus('accepted');
       onMediaAccepted();
     } catch (e) {
       setImgError(e instanceof Error ? e.message : 'Accept failed');
@@ -117,11 +122,12 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
   async function handleAcceptAudio() {
     setAudioStatus('accepting');
     try {
-      await saveAudioAndUpdateTask(audioBase64, taskId, variantId, audioSlot, 'validated');
+      await saveAudioAndUpdateTask(audioBase64, taskId, variantId, audioSlot, stage);
       URL.revokeObjectURL(audioBlobUrl);
-      setAudioStatus('idle');
       setAudioBlobUrl('');
       setAudioBase64('');
+      setAudioError('');
+      setAudioStatus('accepted');
       onMediaAccepted();
     } catch (e) {
       setAudioError(e instanceof Error ? e.message : 'Accept failed');
@@ -181,19 +187,24 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
                   rows={3}
                   value={imgPrompt}
                   onChange={(e) => setImgPrompt(e.target.value)}
-                  disabled={imgStatus !== 'idle'}
+                  disabled={imgStatus !== 'idle' && imgStatus !== 'accepted'}
                 />
               </div>
 
-              {imgStatus === 'idle' && (
-                <button
-                  type="button"
-                  onClick={handleGenerateImage}
-                  disabled={!imgPrompt.trim()}
-                  className={cn(btnBase, 'bg-foreground text-background hover:opacity-80')}
-                >
-                  Generate image
-                </button>
+              {(imgStatus === 'idle' || imgStatus === 'accepted') && (
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleGenerateImage}
+                    disabled={!imgPrompt.trim()}
+                    className={cn(btnBase, 'bg-foreground text-background hover:opacity-80')}
+                  >
+                    Generate image
+                  </button>
+                  {imgStatus === 'accepted' && (
+                    <span className="text-xs font-medium text-green-600">Saved</span>
+                  )}
+                </div>
               )}
 
               {imgStatus === 'generating' && (
@@ -244,7 +255,7 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
                   rows={3}
                   value={audioText}
                   onChange={(e) => setAudioText(e.target.value)}
-                  disabled={audioStatus !== 'idle'}
+                  disabled={audioStatus !== 'idle' && audioStatus !== 'accepted'}
                 />
               </div>
 
@@ -260,7 +271,7 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
                           value={s}
                           checked={audioSlot === s}
                           onChange={() => setAudioSlot(s)}
-                          disabled={audioStatus !== 'idle'}
+                          disabled={audioStatus !== 'idle' && audioStatus !== 'accepted'}
                           className="accent-foreground"
                         />
                         {s}
@@ -277,20 +288,25 @@ export function MediaGenerator({ task, variantId, onMediaAccepted }: Props) {
                     placeholder="Kore"
                     value={audioVoice}
                     onChange={(e) => setAudioVoice(e.target.value)}
-                    disabled={audioStatus !== 'idle'}
+                    disabled={audioStatus !== 'idle' && audioStatus !== 'accepted'}
                   />
                 </div>
               </div>
 
-              {audioStatus === 'idle' && (
-                <button
-                  type="button"
-                  onClick={handleGenerateAudio}
-                  disabled={!audioText.trim()}
-                  className={cn(btnBase, 'bg-foreground text-background hover:opacity-80')}
-                >
-                  Generate audio
-                </button>
+              {(audioStatus === 'idle' || audioStatus === 'accepted') && (
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleGenerateAudio}
+                    disabled={!audioText.trim()}
+                    className={cn(btnBase, 'bg-foreground text-background hover:opacity-80')}
+                  >
+                    Generate audio
+                  </button>
+                  {audioStatus === 'accepted' && (
+                    <span className="text-xs font-medium text-green-600">Saved</span>
+                  )}
+                </div>
               )}
 
               {audioStatus === 'generating' && (
