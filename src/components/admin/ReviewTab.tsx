@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useReviewQueue } from "@/hooks/useReviewQueue";
 import { useVisited } from "@/hooks/useVisited";
-import { approveVariant } from "@/lib/api";
+import { approveVariant, bulkDeleteDrafts } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import type { ReviewItem } from "@/lib/types";
@@ -118,6 +118,8 @@ export function ReviewTab() {
   const tabItems = useMemo(() => filterByTab(allItems, activeTab), [allItems, activeTab]);
   const visibleItems = useMemo(() => sortItems(tabItems, sort), [tabItems, sort]);
   const aiPassedInView = useMemo(() => visibleItems.filter((i) => i.status === "ai_passed").length, [visibleItems]);
+  const allVisibleSelected = visibleItems.length > 0 && visibleItems.every((i) => selectedIds.has(i.id));
+  const someVisibleSelected = !allVisibleSelected && visibleItems.some((i) => selectedIds.has(i.id));
 
   function handleSelect(id: string, checked: boolean) {
     setSelectedIds((prev) => {
@@ -130,6 +132,15 @@ export function ReviewTab() {
   function handleSelectAllAiPassed() {
     const ids = visibleItems.filter((i) => i.status === "ai_passed").map((i) => i.id);
     setSelectedIds((prev) => new Set([...prev, ...ids]));
+  }
+
+  function handleSelectAll(checked: boolean) {
+    if (checked) {
+      setSelectedIds((prev) => new Set([...prev, ...visibleItems.map((i) => i.id)]));
+    } else {
+      const visibleSet = new Set(visibleItems.map((i) => i.id));
+      setSelectedIds((prev) => new Set([...prev].filter((id) => !visibleSet.has(id))));
+    }
   }
 
   const bulkMutation = useMutation({
@@ -145,6 +156,21 @@ export function ReviewTab() {
       setTimeout(() => showToast(`${ids.length} батлагдлаа`), 300);
     },
     onError: () => showToast("Олноор батлахад алдаа гарлаа. Дахин оролдоно уу."),
+  });
+
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]): Promise<void> => {
+      const items = allItems.filter((i) => ids.includes(i.id));
+      await bulkDeleteDrafts(items.map((i) => i.variant_id));
+    },
+    onMutate: (ids) => showToast(`${ids.length} зүйл устгаж байна…`, 2000),
+    onSuccess: (_, ids) => {
+      queryClient.invalidateQueries({ queryKey: ["review-queue"] });
+      queryClient.invalidateQueries({ queryKey: ["content-stats"] });
+      setSelectedIds(new Set());
+      setTimeout(() => showToast(`${ids.length} устгагдлаа`), 300);
+    },
+    onError: () => showToast("Олноор устгахад алдаа гарлаа. Дахин оролдоно уу."),
   });
 
   const hasSelection = selectedIds.size > 0;
@@ -214,7 +240,16 @@ export function ReviewTab() {
           <table className="w-full text-sm">
             <thead className="border-b border-border bg-muted/50">
               <tr>
-                <th className="w-8 px-3 py-2.5" />
+                <th className="w-8 px-3 py-2.5">
+                  <input
+                    type="checkbox"
+                    checked={allVisibleSelected}
+                    ref={(el) => { if (el) el.indeterminate = someVisibleSelected; }}
+                    onChange={(e) => handleSelectAll(e.target.checked)}
+                    className="h-4 w-4 cursor-pointer rounded border-border"
+                    aria-label="Select all"
+                  />
+                </th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Төрөл</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Гарчиг</th>
                 <th className="px-3 py-2.5 text-left text-xs font-semibold text-muted-foreground">Асуулт</th>
@@ -322,14 +357,24 @@ export function ReviewTab() {
               Цуцлах
             </button>
           </div>
-          <button
-            type="button"
-            onClick={() => bulkMutation.mutate([...selectedIds])}
-            disabled={bulkMutation.isPending}
-            className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-80 transition-opacity disabled:pointer-events-none disabled:opacity-40"
-          >
-            {bulkMutation.isPending ? "Батлаж байна…" : `Олноор батлах (${selectedIds.size})`}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => bulkDeleteMutation.mutate([...selectedIds])}
+              disabled={bulkDeleteMutation.isPending || bulkMutation.isPending}
+              className="rounded-md border border-red-300 px-4 py-2 text-sm font-medium text-red-600 hover:bg-red-50 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-950/30 transition-colors disabled:pointer-events-none disabled:opacity-40"
+            >
+              {bulkDeleteMutation.isPending ? "Устгаж байна…" : `Олноор устгах (${selectedIds.size})`}
+            </button>
+            <button
+              type="button"
+              onClick={() => bulkMutation.mutate([...selectedIds])}
+              disabled={bulkMutation.isPending || bulkDeleteMutation.isPending}
+              className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-80 transition-opacity disabled:pointer-events-none disabled:opacity-40"
+            >
+              {bulkMutation.isPending ? "Батлаж байна…" : `Олноор батлах (${selectedIds.size})`}
+            </button>
+          </div>
         </div>
       </div>
 

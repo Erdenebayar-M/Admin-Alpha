@@ -72,6 +72,10 @@ export async function approveVariant(
   });
 }
 
+export async function bulkDeleteDrafts(variantIds: string[]): Promise<void> {
+  await client.post("/bulk-delete-drafts", { variant_ids: variantIds });
+}
+
 export async function rejectVariant(
   taskId: string,
   variantId: string,
