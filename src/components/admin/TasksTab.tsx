@@ -173,9 +173,6 @@ export function TasksTab() {
                     <div className="font-medium text-sm leading-tight">
                       {TASK_TYPE_INFO[task.task_type]?.label ?? task.task_type}
                     </div>
-                    <span className="mt-0.5 inline-block rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
-                      {task.task_type}
-                    </span>
                   </td>
                   <td className="px-3 py-2.5">
                     <div className="flex gap-1">
