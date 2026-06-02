@@ -268,9 +268,11 @@ export function ReviewTab() {
                   key={item.id}
                   onClick={() => { markVisited(item.id); router.push(`/admin/review/${item.id}`); }}
                   className={cn(
-                    "cursor-pointer transition-colors hover:bg-muted/50",
-                    selectedIds.has(item.id) && "bg-blue-50/40 dark:bg-blue-950/20",
-                    visited.has(item.id) && !selectedIds.has(item.id) && "bg-blue-50 dark:bg-blue-950/30",
+                    "cursor-pointer transition-colors",
+                    visited.has(item.id)
+                      ? "bg-white dark:bg-background hover:bg-gray-50 dark:hover:bg-background/90"
+                      : "bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50",
+                    selectedIds.has(item.id) && "outline outline-1 outline-blue-300 dark:outline-blue-700",
                   )}
                 >
                   <td

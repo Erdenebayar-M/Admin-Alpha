@@ -163,8 +163,10 @@ export function TasksTab() {
                   key={task.task_id}
                   onClick={() => { markVisited(task.task_id); router.push(`/admin/tasks/${task.task_id}`); }}
                   className={cn(
-                    "cursor-pointer transition-colors hover:bg-muted/50",
-                    visited.has(task.task_id) && "bg-blue-50 dark:bg-blue-950/30",
+                    "cursor-pointer transition-colors",
+                    visited.has(task.task_id)
+                      ? "bg-white dark:bg-background hover:bg-gray-50 dark:hover:bg-background/90"
+                      : "bg-blue-50 dark:bg-blue-950/30 hover:bg-blue-100 dark:hover:bg-blue-950/50",
                   )}
                 >
                   <td className="px-3 py-2.5">
