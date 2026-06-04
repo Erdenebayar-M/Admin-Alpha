@@ -11,18 +11,20 @@ import {
 interface TaskTypeSelectorProps {
   value: string;
   onChange: (taskType: string) => void;
-  gradeBand?: string;
+  selectedGrades?: string[];
 }
 
-export function TaskTypeSelector({ value, onChange, gradeBand }: TaskTypeSelectorProps) {
+export function TaskTypeSelector({ value, onChange, selectedGrades }: TaskTypeSelectorProps) {
+  const gradeSet = new Set(selectedGrades ?? []);
+
   const grouped = CATEGORY_ORDER.map((cat) => ({
     category: cat,
     label: CATEGORY_LABELS[cat],
     types: TASK_TYPES.filter((t) => {
       const info = TASK_TYPE_INFO[t];
       if (info.category !== cat) return false;
-      if (!gradeBand) return true;
-      return info.gradeBand === gradeBand || info.gradeBand === "both";
+      if (gradeSet.size === 0) return true;
+      return info.grades.some((g) => gradeSet.has(g));
     }),
   })).filter((g) => g.types.length > 0);
 

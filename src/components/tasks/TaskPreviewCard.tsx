@@ -10,7 +10,7 @@ import {
   TASK_TYPE_INFO,
   SKILL_LABELS,
   LEVEL_LABELS,
-  GRADE_BAND_LABELS,
+  GRADE_LABELS,
   LESSON_SLOT_LABELS,
   ERROR_LABELS,
   parseLines,
@@ -233,7 +233,7 @@ export function TaskPreviewCard({
             label="Анги"
             value={
               form.grade_band
-                .map((g) => `${g} (${GRADE_BAND_LABELS[g]})`)
+                .map((g) => GRADE_LABELS[g] ?? g)
                 .join(", ") || "—"
             }
           />

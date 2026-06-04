@@ -807,66 +807,326 @@ function MetadataSection({ form, set, groups }: Pick<ContentFormProps, "form" | 
   );
 }
 
+// ─── copy (TT_7_1) ────────────────────────────────────────────────────────────
+
+function CopyContent({ form, set, errors }: SubProps) {
+  return (
+    <>
+      <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3 text-xs text-slate-800 dark:border-slate-700 dark:bg-slate-900/30 dark:text-slate-200">
+        Сурагч харуулсан текстийг хуулж бичнэ.
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Хуулж бичих дасгал"]}
+        promptSuggestions={["Доорх текстийг хуулж бичнэ үү."]}
+      />
+      <Separator />
+      <Field label="Хуулах текст" required error={errors.text_to_copy}>
+        <Textarea
+          rows={3}
+          value={form.text_to_copy}
+          onChange={(e) => set("text_to_copy", e.target.value)}
+          placeholder="Жнэ: нар мод гэр"
+          className="resize-y font-medium"
+        />
+      </Field>
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
+// ─── visual_memory (TT_7_2) ──────────────────────────────────────────────────
+
+function VisualMemoryContent({ form, set, errors }: SubProps) {
+  return (
+    <>
+      <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3 text-xs text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-200">
+        Текстийг товч харуулаад нуун, сурагч санасан зүйлээ бичнэ.
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Харж тогтоон бичих"]}
+        promptSuggestions={["Текстийг сайн уншаад тогтооно уу. Дараа нь нуугаад бичнэ үү."]}
+      />
+      <Separator />
+      <Field label="Тогтоох текст" required error={errors.correct_answer}>
+        <Textarea
+          rows={2}
+          value={form.correct_answer}
+          onChange={(e) => set("correct_answer", e.target.value)}
+          placeholder="Жнэ: нар гэрэл"
+          className="resize-y font-medium"
+        />
+      </Field>
+      <Field label="Харуулах хугацаа (секунд, 2–10)" error={errors.display_seconds}>
+        <Input
+          type="number"
+          min={2}
+          max={10}
+          value={form.display_seconds}
+          onChange={(e) => set("display_seconds", parseInt(e.target.value, 10) || 3)}
+        />
+      </Field>
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
+// ─── audio fill (TT_2_4, TT_3_2, TT_4_4) ────────────────────────────────────
+
+function AudioFillContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+  const ctx = form.context_word.trim();
+  const pos = form.blank_position;
+  const preview = ctx
+    ? ctx.split("").map((ch, i) => (i === pos ? "_" : ch)).join("")
+    : "";
+
+  return (
+    <>
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+        Аудио сонсоод дутуу үсгийг нөхөнө.
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
+        audioPreview={audioPreview} imagePreview={null}
+        titleSuggestions={["Аудио сонсоод нөхөх", "Дутуу үсэг нөхөх"]}
+        promptSuggestions={["Аудиог сонсоод дутуу үсгийг нөхнэ үү."]}
+      />
+      <Separator />
+      <Field label="Бүтэн зөв үг" required error={errors.context_word}>
+        <Input
+          value={form.context_word}
+          onChange={(e) => {
+            set("context_word", e.target.value);
+            set("blank_position", 0);
+          }}
+          placeholder="Жнэ: гэрэл"
+          className="border-green-500/30"
+        />
+      </Field>
+      {ctx.length > 0 && (
+        <Field label="Дутуу байрлалыг сонгоно уу">
+          <div className="flex flex-wrap gap-1.5">
+            {ctx.split("").map((ch, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => set("blank_position", i)}
+                className={`rounded border px-2.5 py-1 font-mono text-sm font-medium transition-colors ${
+                  i === pos
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-foreground/30"
+                }`}
+              >
+                {ch}
+              </button>
+            ))}
+          </div>
+          {preview && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Сурагчид:{" "}
+              <span className="font-mono font-semibold text-foreground">{preview}</span>
+            </p>
+          )}
+        </Field>
+      )}
+      <AudioPreview
+        text={form.context_word || form.correct_answer}
+        slot="dictation"
+        onGenerated={onAudioGenerated}
+      />
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
+// ─── image fill (TT_2_1) ─────────────────────────────────────────────────────
+
+function ImageFillContent({ form, set, errors, onImageGenerated }: SubProps) {
+  const ctx = form.context_word.trim();
+  const pos = form.blank_position;
+  const preview = ctx
+    ? ctx.split("").map((ch, i) => (i === pos ? "_" : ch)).join("")
+    : "";
+
+  return (
+    <>
+      <div className="rounded-lg border border-pink-200 bg-pink-50/50 p-3 text-xs text-pink-800 dark:border-pink-800 dark:bg-pink-950/30 dark:text-pink-200">
+        Зурагт харж дутуу үсгийг нөхөнө.
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={onImageGenerated}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Зураг харж нөхөх", "Дутуу үсэг нөхөх"]}
+        promptSuggestions={["Зургийг харж дутуу үсгийг нөхнэ үү."]}
+      />
+      <Separator />
+      <Field label="Бүтэн зөв үг" required error={errors.context_word}>
+        <Input
+          value={form.context_word}
+          onChange={(e) => {
+            set("context_word", e.target.value);
+            set("blank_position", 0);
+          }}
+          placeholder="Жнэ: нар"
+          className="border-green-500/30"
+        />
+      </Field>
+      {ctx.length > 0 && (
+        <Field label="Дутуу байрлалыг сонгоно уу">
+          <div className="flex flex-wrap gap-1.5">
+            {ctx.split("").map((ch, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => set("blank_position", i)}
+                className={`rounded border px-2.5 py-1 font-mono text-sm font-medium transition-colors ${
+                  i === pos
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-foreground/30"
+                }`}
+              >
+                {ch}
+              </button>
+            ))}
+          </div>
+          {preview && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Сурагчид:{" "}
+              <span className="font-mono font-semibold text-foreground">{preview}</span>
+            </p>
+          )}
+        </Field>
+      )}
+      <ImagePreview
+        correctAnswer={form.context_word || form.correct_answer}
+        imageDescription={form.image_description}
+        onDescriptionChange={(desc) => set("image_description", desc)}
+        onGenerated={onImageGenerated}
+      />
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
+// ─── audio sentence fill (TT_7_5) ────────────────────────────────────────────
+
+function AudioSentenceFillContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+  return (
+    <>
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+        Аудио сонсоод өгүүлбэрийн цоорхойг бөглөнө.
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
+        audioPreview={audioPreview} imagePreview={null}
+        titleSuggestions={["Нөхөж бичих цээж бичиг"]}
+        promptSuggestions={["Аудиог сонсоод цоорхойг бөглөнө үү."]}
+      />
+      <Separator />
+      <Field label="Өгүүлбэрийн загвар (___-аар цоорхой тэмдэглэ)" required error={errors.sentence_template}>
+        <SuggestTextarea
+          rows={2}
+          value={form.sentence_template}
+          onChange={(v) => set("sentence_template", v)}
+          placeholder="Жнэ: Бид ___ руу явна."
+          suggestions={[]}
+          className="font-medium"
+        />
+      </Field>
+      <Field label="Цоорхойд орох зөв үг" required error={errors.correct_answer}>
+        <Input
+          value={form.correct_answer}
+          onChange={(e) => set("correct_answer", e.target.value)}
+          placeholder="Жнэ: сургууль"
+          className="border-green-500/30"
+        />
+      </Field>
+      <Field label="Бүтэн контекст өгүүлбэр" required error={errors.context_sentence}>
+        <SuggestTextarea
+          rows={2}
+          value={form.context_sentence}
+          onChange={(v) => set("context_sentence", v)}
+          placeholder="Жнэ: Бид сургууль руу явна."
+          suggestions={[]}
+        />
+      </Field>
+      <AudioPreview
+        text={form.context_sentence || form.correct_answer}
+        slot="dictation"
+        onGenerated={onAudioGenerated}
+      />
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
 // ─── TYPE_CONTENT_MAP ─────────────────────────────────────────────────────────
 
 const TYPE_CONTENT_MAP: Record<string, React.FC<SubProps>> = {
-  // G12 — choice + audio
-  TT_LISTEN_CHOOSE:          ListenChoiceContent,
-  TT_CHOOSE_CORRECT:         ChoiceContent,
-  TT_SIMPLE_SUFFIX:          ChoiceContent,
-  TT_MIXED_REVIEW:           ChoiceContent,
-  // G12 — choice + image
-  TT_IMAGE_WORD_MATCH:       ImageChoiceContent,
-  // G12 — word fill
-  TT_LETTER_FILL:            WordFillContent,
-  TT_FILL_WRITE:             WordFillContent,
-  TT_MISSING_LETTER:         WordFillContent,
-  TT_WORD_ENDING:            WordFillContent,
-  // G12 — sentence fill
-  TT_SENTENCE_FILL:          SentenceFillContent,
-  // G12 — correction
-  TT_COPY_WRITE:             CorrectionContent,
-  TT_CAPITAL_PUNCTUATION:    CorrectionContent,
-  TT_FIND_ERROR:             CorrectionContent,
-  // G12 — dictation
-  TT_WORD_SET_DICTATION:     DictationContent,
-  TT_TWO_WORD_DICTATION:     DictationContent,
-  // G12 — self_check
-  TT_SELF_CHECK:             SelfCheckContent,
-  // G24 — choice
-  TT_WORD_FORM_CHOOSE:       ChoiceContent,
-  TT_SUFFIX_CHOOSE:          ChoiceContent,
-  TT_CONSONANT_CONFUSION:    ChoiceContent,
-  TT_CASE_SUFFIX:            ChoiceContent,
-  TT_MIXED_WORD_SET:         ChoiceContent,
-  TT_LONG_VOWEL_CHALLENGE:   ChoiceContent,
-  TT_MIXED_CHECKPOINT:       ChoiceContent,
-  // G24 — word fill
-  TT_LONG_VOWEL_FILL:        WordFillContent,
-  TT_REDUCED_VOWEL:          WordFillContent,
-  TT_REDUCED_VOWEL_IN_SENTENCE: SentenceFillContent,
-  TT_SUFFIX_WRITE:           WordFillContent,
-  TT_COMPOUND_SUFFIX:        WordFillContent,
-  // G24 — sentence fill
-  TT_LONG_VOWEL_IN_SENTENCE: SentenceFillContent,
-  // G24 — correction
-  TT_FIX_ERROR:              CorrectionContent,
-  TT_WORD_FORM_FIX:          CorrectionContent,
-  TT_BASIC_COMMA:            CorrectionContent,
-  TT_FIND_OMITTED_LETTER:    CorrectionContent,
-  TT_SENTENCE_BOUNDARY:      CorrectionContent,
-  TT_EXPLAINED_CORRECTION:   CorrectionContent,
-  // G24 — dictation
-  TT_SHORT_SENTENCE_DICTATION: DictationContent,
-  TT_TWO_SENTENCE_DICTATION:   DictationContent,
-  // G24 — mini_text
-  TT_MINI_TEXT_DICTATION:    MiniTextContent,
-  // G24 — self_check
-  TT_OWN_WRITING_CORRECTION: SelfCheckContent,
-  // v3 interaction forms
-  TT_MATCH_PAIRS:            MatchPairsContent,
-  TT_ASSEMBLE_WORD:          AssembleWordContent,
-  TT_TAP_FIND_ERROR:         TapFindErrorContent,
+  // S1 — Үсэг-авиаг зөв таних
+  TT_1_1: ListenChoiceContent,
+  TT_1_2: ImageChoiceContent,
+  TT_1_3: MatchPairsContent,
+  TT_1_4: AssembleWordContent,
+  TT_1_5: ListenChoiceContent,
+  // S2 — Үгийг зөв бичих
+  TT_2_1: ImageFillContent,
+  TT_2_2: AssembleWordContent,
+  TT_2_3: ImageChoiceContent,
+  TT_2_4: AudioFillContent,
+  TT_2_5: CorrectionContent,
+  TT_2_6: CorrectionContent,
+  // S3 — Урт/богино, балархай эгшиг
+  TT_3_1: ListenChoiceContent,
+  TT_3_2: AudioFillContent,
+  TT_3_3: MatchPairsContent,
+  TT_3_4: ChoiceContent,
+  TT_3_5: CorrectionContent,
+  // S4 — Гийгүүлэгчийг зөв ялгах
+  TT_4_1: ListenChoiceContent,
+  TT_4_2: ListenChoiceContent,
+  TT_4_3: WordFillContent,
+  TT_4_4: AudioFillContent,
+  TT_4_5: CorrectionContent,
+  // S5 — Залгаварыг зөв залгах
+  TT_5_1: ChoiceContent,
+  TT_5_2: SentenceFillContent,
+  TT_5_3: MatchPairsContent,
+  TT_5_4: ChoiceContent,
+  TT_5_5: WordFillContent,
+  TT_5_6: ChoiceContent,
+  TT_5_7: ChoiceContent,
+  // S6 — Өгүүлбэрийн тэмдэглэгээ
+  TT_6_1: ChoiceContent,
+  TT_6_2: ChoiceContent,
+  TT_6_3: CorrectionContent,
+  TT_6_4: CorrectionContent,
+  // S7 — Цээж бичиг
+  TT_7_1: CopyContent,
+  TT_7_2: VisualMemoryContent,
+  TT_7_3: DictationContent,
+  TT_7_4: DictationContent,
+  TT_7_5: AudioSentenceFillContent,
+  TT_7_6: MiniTextContent,
+  TT_7_7: ListenChoiceContent,
+  // S8 — Алдаагаа зөв таних / засах
+  TT_8_1: TapFindErrorContent,
+  TT_8_2: CorrectionContent,
+  TT_8_3: ChoiceContent,
+  TT_8_4: SelfCheckContent,
 };
 
 // ─── Main export ─────────────────────────────────────────────────────────────

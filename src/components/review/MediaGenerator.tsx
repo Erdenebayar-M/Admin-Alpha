@@ -24,19 +24,30 @@ type GenStatus = 'idle' | 'generating' | 'preview' | 'accepting' | 'accepted';
 const btnBase =
   'rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none';
 
+const AUDIO_TASK_TYPES = new Set([
+  'TT_1_1', 'TT_1_4', 'TT_1_5',
+  'TT_2_4',
+  'TT_3_1', 'TT_3_2', 'TT_3_3',
+  'TT_4_1', 'TT_4_2', 'TT_4_4',
+  'TT_7_3', 'TT_7_4', 'TT_7_5', 'TT_7_6', 'TT_7_7',
+]);
+
+const IMAGE_TASK_TYPES = new Set([
+  'TT_1_2', 'TT_1_3',
+  'TT_2_1', 'TT_2_2', 'TT_2_3',
+]);
+
 function needsAudio(task: TaskContent): boolean {
   return (
     !!task.audio_url ||
     !!task.options.audio_text ||
-    (task.options.expected_answers?.length ?? 0) > 0 ||
-    task.primary_skill === 'S7' ||
-    task.task_type === 'TT_LISTEN_CHOOSE' ||
-    (TASK_TYPE_INFO[task.task_type]?.groups.some((g) => g === 'dictation' || g === 'mini_text') ?? false)
+    AUDIO_TASK_TYPES.has(task.task_type) ||
+    (TASK_TYPE_INFO[task.task_type]?.groups.some((g) => g === 'dictation' || g === 'mini_text' || g === 'sentence_fill') ?? false)
   );
 }
 
 function needsImage(task: TaskContent): boolean {
-  return !!task.image_url || task.task_type === 'TT_IMAGE_WORD_MATCH';
+  return !!task.image_url || IMAGE_TASK_TYPES.has(task.task_type);
 }
 
 export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAccepted }: Props) {

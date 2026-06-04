@@ -12,7 +12,6 @@ import {
   computeDefaults,
   parseLines,
   deriveInteractionForm,
-  BAND_TO_GRADES,
   type OptionGroup,
   type TaskTypeInfo,
 } from "@/lib/task-defaults";
@@ -69,6 +68,10 @@ export type FormState = {
   // TT_TAP_FIND_ERROR
   sentence: string;
   error_word_index: number;
+  // copy
+  text_to_copy: string;
+  // visual_memory
+  display_seconds: number;
 };
 
 export const INITIAL_FORM: FormState = {
@@ -119,6 +122,10 @@ export const INITIAL_FORM: FormState = {
   tiles_text: "",
   sentence: "",
   error_word_index: -1,
+  // copy
+  text_to_copy: "",
+  // visual_memory
+  display_seconds: 3,
 };
 
 export interface ValidationErrors {
@@ -153,6 +160,10 @@ export interface ValidationErrors {
   tiles_text?: string;
   sentence?: string;
   error_word_index?: string;
+  // copy
+  text_to_copy?: string;
+  // visual_memory
+  display_seconds?: string;
 }
 
 export interface TaskTemplate {
@@ -276,6 +287,15 @@ function buildOptions(form: FormState, group: OptionGroup): TaskOptions {
         correct_text: form.correct_text,
       };
     }
+    case "copy": {
+      return { text_to_copy: form.text_to_copy };
+    }
+    case "visual_memory": {
+      return {
+        text_to_memorize: form.correct_answer,
+        display_seconds: Math.min(10, Math.max(2, form.display_seconds)),
+      };
+    }
     default:
       return {};
   }
@@ -307,6 +327,9 @@ function deriveCorrectAnswer(form: FormState, group: OptionGroup): string {
   }
   if (group === "self_check") {
     return form.model_answer || form.correct_answer;
+  }
+  if (group === "copy") {
+    return form.text_to_copy || form.correct_answer;
   }
   return form.correct_answer;
 }
@@ -381,10 +404,9 @@ export function useTaskForm() {
   const setGradeBand = useCallback((gb: string) => {
     setForm((prev) => {
       const next: FormState = { ...prev, grade_band: [gb] };
-      // Clear task type if incompatible with newly selected grade band
       if (next.task_type) {
         const info = TASK_TYPE_INFO[next.task_type];
-        if (info && info.gradeBand !== "both" && info.gradeBand !== gb) {
+        if (info && !info.grades.includes(gb)) {
           next.task_type = "";
           next.primary_skill = "";
           next.secondary_skill = "";
@@ -401,6 +423,18 @@ export function useTaskForm() {
       const list = prev.grade_band;
       const next = list.includes(gb) ? list.filter((x) => x !== gb) : [...list, gb];
       const updated = { ...prev, grade_band: next };
+
+      // Clear task type if no selected grade matches it
+      if (updated.task_type && next.length > 0) {
+        const info = TASK_TYPE_INFO[updated.task_type];
+        if (info && !next.some((g) => info.grades.includes(g))) {
+          updated.task_type = "";
+          updated.primary_skill = "";
+          updated.secondary_skill = "";
+          updated.level_target = "";
+          updated.error_targets = [];
+        }
+      }
 
       if (updated.task_type && next.length > 0) {
         const defaults = computeDefaults(updated.task_type, next);
@@ -478,6 +512,8 @@ export function useTaskForm() {
         tiles_text: "",
         sentence: "",
         error_word_index: -1,
+        text_to_copy: "",
+        display_seconds: 3,
       });
       for (const key of DEFAULT_TRACKABLE_KEYS) {
         dirtyFields.current.add(key);
@@ -541,6 +577,11 @@ export function useTaskForm() {
       if (!form.sentence.trim()) e.sentence = "Өгүүлбэр оруулна уу";
       if (form.error_word_index < 0) e.error_word_index = "Алдаатай үгийг сонгоно уу";
       if (!form.correct_text.trim()) e.correct_text = "Засварласан өгүүлбэр оруулна уу";
+    } else if (currentGroup === "copy") {
+      if (!form.text_to_copy.trim()) e.text_to_copy = "Хуулах текстийг оруулна уу";
+    } else if (currentGroup === "visual_memory") {
+      if (!form.correct_answer.trim()) e.correct_answer = "Тогтоох текстийг оруулна уу";
+      if (form.display_seconds < 2 || form.display_seconds > 10) e.display_seconds = "Харуулах хугацаа 2–10 секунд байх ёстой";
     } else if (!form.correct_answer.trim()) {
       e.correct_answer = "Зөв хариулт оруулна уу";
     }
@@ -555,6 +596,7 @@ export function useTaskForm() {
     "context_word", "display_text", "sentence_template", "blank_answer", "context_sentence",
     "sentence_count", "model_answer", "comparison_mode",
     "pairs_text", "tiles_text", "sentence", "error_word_index",
+    "text_to_copy", "display_seconds",
   ];
 
   const stepErrors: [boolean, boolean, boolean] = useMemo(() => [
@@ -574,10 +616,7 @@ export function useTaskForm() {
   const mutation = useMutation({
     mutationFn: async () => {
       const currentGroup = (TASK_TYPE_INFO[form.task_type]?.groups[0] ?? "choice") as OptionGroup;
-      // Map UI band selectors (G12/G24) → canonical per-grade codes (G1-G4), deduplicated
-      const canonicalGradeBand = [
-        ...new Set(form.grade_band.flatMap((b) => BAND_TO_GRADES[b] ?? [b])),
-      ];
+      const canonicalGradeBand = [...new Set(form.grade_band)];
       const payload: CreateTaskPayload = {
         task_type: form.task_type,
         title: form.title,

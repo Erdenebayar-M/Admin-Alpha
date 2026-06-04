@@ -36,6 +36,11 @@ export interface TaskOptions {
   // tap_find_error: tapFindErrorOptions
   sentence?: string;
   error_word_index?: number;
+  // copy: copyOptions
+  text_to_copy?: string;
+  // visual_memory: visualMemoryOptions
+  text_to_memorize?: string;
+  display_seconds?: number;
 }
 
 export interface TaskContent {

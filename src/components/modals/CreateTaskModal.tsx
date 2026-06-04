@@ -4,6 +4,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useTaskForm } from "@/hooks/useTaskForm";
+import { GRADE_CODES, GRADE_LABELS } from "@/lib/task-defaults";
 import { TaskTypeSelector } from "@/components/tasks/TaskTypeSelector";
 import { ClassificationForm } from "@/components/tasks/ClassificationForm";
 import { ContentForm } from "@/components/tasks/ContentForm";
@@ -140,28 +141,22 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                 {tf.errors.grade_band && (
                   <p className="mb-2 text-xs text-destructive">{tf.errors.grade_band}</p>
                 )}
-                <div className="grid grid-cols-2 gap-3">
-                  {(
-                    [
-                      { gb: "G12", title: "1–2-р анги", desc: "Эхлэгч — суурь үсэг, эгшиг, богино диктант (16 төрөл)" },
-                      { gb: "G24", title: "2–4-р анги", desc: "Дунд — залгавар, урт эгшиг, мини диктант (23 төрөл)" },
-                    ] as const
-                  ).map(({ gb, title, desc }) => {
-                    const selected = tf.form.grade_band.includes(gb);
+                <div className="flex flex-wrap gap-2">
+                  {GRADE_CODES.map((g) => {
+                    const selected = tf.form.grade_band.includes(g);
                     return (
                       <button
-                        key={gb}
+                        key={g}
                         type="button"
-                        onClick={() => tf.setGradeBand(gb)}
+                        onClick={() => tf.toggleGradeBand(g)}
                         className={cn(
-                          "flex flex-col items-start gap-1 rounded-lg border p-4 text-left transition-all",
+                          "rounded-lg border px-5 py-3 text-sm font-semibold transition-all",
                           selected
-                            ? "border-primary bg-primary/5 ring-2 ring-primary"
-                            : "border-border hover:border-foreground/20 hover:bg-muted/50",
+                            ? "border-primary bg-primary/5 ring-2 ring-primary text-foreground"
+                            : "border-border hover:border-foreground/20 hover:bg-muted/50 text-muted-foreground",
                         )}
                       >
-                        <span className="font-semibold text-sm">{title}</span>
-                        <span className="text-[11px] leading-snug text-muted-foreground">{desc}</span>
+                        {GRADE_LABELS[g]}
                       </button>
                     );
                   })}
@@ -178,7 +173,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                   <TaskTypeSelector
                     value={tf.form.task_type}
                     onChange={tf.setTaskType}
-                    gradeBand={tf.form.grade_band[0]}
+                    selectedGrades={tf.form.grade_band}
                   />
                 </div>
               )}
