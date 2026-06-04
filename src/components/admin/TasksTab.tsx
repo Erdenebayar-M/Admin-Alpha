@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getLiveTasks, type LiveTaskFilters } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
-import { TASK_TYPE_INFO } from "@/lib/task-defaults";
+import { TASK_TYPE_INFO, GRADE_LABELS } from "@/lib/task-defaults";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-table";
 import type { LiveTask } from "@/lib/types";
@@ -179,10 +179,10 @@ export function TasksTab() {
                         </span>
                       </td>
                       <td className={tableStyles.cell}>
-                        <div className="flex gap-1">
+                        <div className="flex flex-wrap gap-1">
                           {task.grade_band.map((g) => (
                             <span key={g} className="rounded border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                              {g}
+                              {GRADE_LABELS[g] ?? g}
                             </span>
                           ))}
                         </div>

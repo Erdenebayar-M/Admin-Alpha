@@ -3,16 +3,14 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Field, ToggleChip, ComboSelect, SuggestInput, SuggestTextarea, ChipInput } from "./shared";
+import { Field, ToggleChip, SuggestInput, SuggestTextarea, ChipInput } from "./shared";
 import { AudioPreview } from "./AudioPreview";
 import type { AudioPreviewState } from "./AudioPreview";
 import { ImagePreview } from "./ImagePreview";
 import type { ImagePreviewState } from "./ImagePreview";
 import type { FormState, ValidationErrors } from "@/hooks/useTaskForm";
 import type { OptionGroup } from "@/lib/task-defaults";
-import { ERROR_CODES, ERROR_LABELS } from "@/lib/task-defaults";
 
 interface ContentFormProps {
   form: FormState;
@@ -29,159 +27,161 @@ interface ContentFormProps {
 
 type SubProps = Pick<ContentFormProps, "form" | "set" | "errors" | "audioPreview" | "onAudioGenerated" | "imagePreview" | "onImageGenerated">;
 
-// ─── Dictation types ─────────────────────────────────────────────────────────
+// ─── Shared: title + prompt + feedback ───────────────────────────────────────
 
-function WordDictationContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+function CommonFields({ form, set, errors, titleSuggestions = [], promptSuggestions = [] }: SubProps & { titleSuggestions?: string[]; promptSuggestions?: string[] }) {
   return (
     <>
-      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-        Сурагч дуу сонсоод үгийг бичнэ. Зөв бичигдэх үгээ оруулна уу.
-      </div>
-      <Field label="Бичигдэх үг" required error={errors.correct_answer}>
-        <Input
-          value={form.correct_answer}
-          onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: гэрэл"
-        />
-      </Field>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title} hint="Даалгаврын товч нэр">
+      <Field label="Гарчиг" required error={errors.title}>
         <SuggestInput
           value={form.title}
           onChange={(v) => set("title", v)}
-          placeholder="Жнэ: 'гэрэл' үгийн диктант"
-          suggestions={["Үгийн диктант", "Дуу сонсоод бич", "Зөв бичих дасгал"]}
+          placeholder="Даалгаврын товч нэр"
+          suggestions={titleSuggestions}
         />
       </Field>
-      <Field label="Заавар текст" required error={errors.prompt_text} hint="Сурагчид харуулах заавар">
-        <SuggestInput
+      <Field label="Заавар / Асуулт" required error={errors.prompt_text}>
+        <SuggestTextarea
+          rows={2}
           value={form.prompt_text}
           onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Сонсоод бич."
-          suggestions={["Сонсоод бич.", "Дуу сонсоод бичнэ үү.", "Анхааралтай сонсоод бичнэ үү."]}
+          placeholder="Сурагчид харуулах заавар"
+          suggestions={promptSuggestions}
         />
       </Field>
-      <AudioPreview
-        text={form.correct_answer}
-        slot="dictation"
-        onGenerated={onAudioGenerated}
-      />
-      <FeedbackField form={form} set={set} />
     </>
   );
 }
 
-function SentenceDictationContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+function FeedbackFields({ form, set }: Pick<SubProps, "form" | "set">) {
   return (
     <>
-      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-        Сурагч өгүүлбэр сонсоод бичнэ. Зөв бичигдэх өгүүлбэрээ оруулна уу.
-      </div>
-      <Field label="Бичигдэх өгүүлбэр" required error={errors.correct_answer}>
+      <Field label="Дүрмийн тайлбар" hint="Хариултаас үл хамааран харуулах">
         <Textarea
           rows={2}
-          value={form.correct_answer}
-          onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: Бид сургууль руу явна."
+          value={form.feedback_text}
+          onChange={(e) => set("feedback_text", e.target.value)}
+          placeholder="Жнэ: 'гэрэл' — г+э+р+э+л"
           className="resize-y"
         />
       </Field>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Өгүүлбэрийн диктант"
-          suggestions={["Өгүүлбэрийн диктант", "Өгүүлбэр бичих дасгал", "Сонсоод өгүүлбэр бич"]}
-        />
-      </Field>
-      <Field label="Заавар текст" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Өгүүлбэрийг сонсоод бич."
-          suggestions={["Өгүүлбэрийг сонсоод бич.", "Сонсоод өгүүлбэрийг бичнэ үү.", "Анхааралтай сонсоод бичнэ үү."]}
-        />
-      </Field>
-      <AudioPreview
-        text={form.correct_answer}
-        slot="dictation"
-        onGenerated={onAudioGenerated}
-      />
-      <FeedbackField form={form} set={set} />
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Зөв хариулсан үед">
+          <Textarea
+            rows={2}
+            value={form.feedback_correct}
+            onChange={(e) => set("feedback_correct", e.target.value)}
+            placeholder="Жнэ: Маш сайн!"
+            className="resize-y border-green-500/40 bg-green-50/30 dark:bg-green-950/20"
+          />
+        </Field>
+        <Field label="Буруу хариулсан үед">
+          <Textarea
+            rows={2}
+            value={form.feedback_wrong}
+            onChange={(e) => set("feedback_wrong", e.target.value)}
+            placeholder="Жнэ: Дахин оролдоно уу."
+            className="resize-y border-destructive/40 bg-red-50/30 dark:bg-red-950/20"
+          />
+        </Field>
+      </div>
     </>
   );
 }
 
-function AudioPlayDictationContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+// ─── choice ──────────────────────────────────────────────────────────────────
+
+function ChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
+  const isImageMatch = false; // detected by caller via taskType prop if needed
   return (
     <>
-      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-        Сурагч дуу тоглуулж сонсоод үгийг бичнэ.
+      <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-3 text-xs text-purple-800 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-200">
+        Сурагч хэд хэдэн сонголтоос зөв үгийг сонгоно.
       </div>
-      <Field label="Бичигдэх үг" required error={errors.correct_answer}>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={onImageGenerated}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Зөв бичигдсэн үгийг сонго", "Аль нь зөв вэ?", "Зөв хэлбэрийг сонго"]}
+        promptSuggestions={["Аль нь зөв бичигдсэн бэ?", "Зөв үгийг сонгоно уу.", "Зөв бичигдсэн хэлбэрийг сонго."]}
+      />
+      <Separator />
+      <Field label="Зөв хариулт" required error={errors.correct_answer}>
         <Input
           value={form.correct_answer}
           onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: гэрэл"
+          placeholder="Зөв сонголт"
+          className="border-green-500/30"
         />
       </Field>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Дуу сонсоод бич"
-          suggestions={["Дуу сонсоод бич", "Аудио диктант", "Тоглуулж сонсоод бичнэ үү"]}
+      <Field label="Буруу сонголтууд (2–3)" required error={errors.expected_answers} hint="Enter дарж нэмнэ, хамгийн ихдээ 3">
+        <ChipInput
+          value={form.expected_answers}
+          onChange={(v) => set("expected_answers", v)}
+          placeholder="Буруу сонголт бичээд Enter дарна..."
         />
       </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Дууг тоглуулж сонсоод үгийг бич."
-          suggestions={["Дууг тоглуулж сонсоод үгийг бич.", "Аудио сонсоод бичнэ үү.", "Тоглуулж сонсоод зөв бич."]}
-        />
+      <Field label="Аудио trigger">
+        <div className="flex h-9 items-center gap-2">
+          <Checkbox
+            id="audio_trigger"
+            checked={form.audio_trigger}
+            onCheckedChange={(c) => set("audio_trigger", c === true)}
+          />
+          <label htmlFor="audio_trigger" className="cursor-pointer text-sm text-muted-foreground">
+            Аудио тоглуулах trigger байна
+          </label>
+        </div>
       </Field>
-      <AudioPreview
-        text={form.correct_answer}
-        slot="dictation"
-        onGenerated={onAudioGenerated}
-      />
-      <FeedbackField form={form} set={set} />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-function ImageDictationContent({ form, set, errors, onAudioGenerated, onImageGenerated }: SubProps) {
+// ─── choice + image (TT_IMAGE_WORD_MATCH) ────────────────────────────────────
+
+function ImageChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
   return (
     <>
-      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-        Сурагч зураг хараад тухайн зүйлийн нэрийг бичнэ.
+      <div className="rounded-lg border border-pink-200 bg-pink-50/50 p-3 text-xs text-pink-800 dark:border-pink-800 dark:bg-pink-950/30 dark:text-pink-200">
+        Зурагт тохирох зөв үгийг сонгоно.
       </div>
-      <Field label="Зурагт харгалзах зөв үг" required error={errors.correct_answer}>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={onImageGenerated}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Зурагт тохирох үг олох", "Зургийн нэр сонгох"]}
+        promptSuggestions={["Зураг дээрх зүйлийн нэрийг сонгоно уу.", "Зурагт тохирох үгийг сонгоно уу."]}
+      />
+      <Separator />
+      <Field label="Зөв хариулт" required error={errors.correct_answer}>
         <Input
           value={form.correct_answer}
           onChange={(e) => set("correct_answer", e.target.value)}
           placeholder="Жнэ: нар"
+          className="border-green-500/30"
         />
       </Field>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Зурагт тохирох үг бич"
-          suggestions={["Зурагт тохирох үг бич", "Зургийн нэрийг бич", "Зураг харж бичнэ үү"]}
+      <Field label="Буруу сонголтууд (2–3)" required error={errors.expected_answers}>
+        <ChipInput
+          value={form.expected_answers}
+          onChange={(v) => set("expected_answers", v)}
+          placeholder="Буруу сонголт бичээд Enter дарна..."
         />
       </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Зураг дээрх зүйлийн нэрийг бичнэ үү."
-          suggestions={["Зураг дээрх зүйлийн нэрийг бичнэ үү.", "Зурагт тохирох үгийг бич.", "Зургийг харж нэрийг бичнэ үү."]}
-        />
+      <Field label="Аудио trigger">
+        <div className="flex h-9 items-center gap-2">
+          <Checkbox
+            id="audio_trigger_img"
+            checked={form.audio_trigger}
+            onCheckedChange={(c) => set("audio_trigger", c === true)}
+          />
+          <label htmlFor="audio_trigger_img" className="cursor-pointer text-sm text-muted-foreground">
+            Аудио trigger байна
+          </label>
+        </div>
       </Field>
       <ImagePreview
         correctAnswer={form.correct_answer}
@@ -189,59 +189,136 @@ function ImageDictationContent({ form, set, errors, onAudioGenerated, onImageGen
         onDescriptionChange={(desc) => set("image_description", desc)}
         onGenerated={onImageGenerated}
       />
-      <AudioPreview
-        text={form.correct_answer}
-        slot="dictation"
-        onGenerated={onAudioGenerated}
-      />
-      <FeedbackField form={form} set={set} />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-function ListenDictationContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+// ─── fill (word-level) ────────────────────────────────────────────────────────
+
+function WordFillContent({ form, set, errors }: SubProps) {
+  const ctx = form.context_word.trim();
+  const pos = form.blank_position;
+  const preview = ctx
+    ? ctx.split("").map((ch, i) => (i === pos ? "_" : ch)).join("")
+    : "";
+
   return (
     <>
-      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-        Сурагч сонсоод бичнэ.
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+        Сурагч үгийн нэг дутуу үсгийг бөглөнө. Бүтэн үгийг оруулаад дутуу байрлалыг сонгоно уу.
       </div>
-      <Field label="Бичигдэх текст" required error={errors.correct_answer}>
-        <Textarea
-          rows={2}
-          value={form.correct_answer}
-          onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: Бид сургууль руу явна."
-          className="resize-y"
-        />
-      </Field>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Сонсоод бич"
-          suggestions={["Сонсоод бич", "Үгийн багц диктант", "Олон үг сонсоод бич"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Сайтар сонсоод бичнэ үү."
-          suggestions={["Сайтар сонсоод бичнэ үү.", "Сонсоод үгсийг бичнэ үү.", "Анхааралтай сонсоод бич."]}
-        />
-      </Field>
-      <AudioPreview
-        text={form.correct_answer}
-        slot="dictation"
-        onGenerated={onAudioGenerated}
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Дутуу үсэг нөхөх", "Цоорхой бөглөх"]}
+        promptSuggestions={["Дутуу үсгийг бөглөнө үү.", "Зөв үсгийг нөхнэ үү."]}
       />
-      <FeedbackField form={form} set={set} />
+      <Separator />
+      <Field label="Бүтэн зөв үг" required error={errors.context_word} hint="Үгийн бүх үсгийг оруулна">
+        <Input
+          value={form.context_word}
+          onChange={(e) => {
+            set("context_word", e.target.value);
+            set("blank_position", 0);
+          }}
+          placeholder="Жнэ: гэрэл"
+          className="border-green-500/30"
+        />
+      </Field>
+      {ctx.length > 0 && (
+        <Field label="Дутуу байрлалыг сонгоно уу" hint="Товшиход тухайн үсгийг цоорхой болгоно">
+          <div className="flex flex-wrap gap-1.5">
+            {ctx.split("").map((ch, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => set("blank_position", i)}
+                className={`rounded border px-2.5 py-1 font-mono text-sm font-medium transition-colors ${
+                  i === pos
+                    ? "border-primary bg-primary/10 text-primary"
+                    : "border-border hover:border-foreground/30"
+                }`}
+              >
+                {ch}
+              </button>
+            ))}
+          </div>
+          {preview && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Сурагчид харагдах:{" "}
+              <span className="font-mono font-semibold text-foreground">{preview}</span>
+              {" "}→ зөв хариулт:{" "}
+              <span className="font-mono font-semibold text-green-700">{ctx[pos]}</span>
+            </p>
+          )}
+        </Field>
+      )}
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-// ─── Non-dictation types ─────────────────────────────────────────────────────
+// ─── sentence_fill ────────────────────────────────────────────────────────────
+
+function SentenceFillContent({ form, set, errors }: SubProps) {
+  return (
+    <>
+      <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
+        Өгүүлбэр дэх цоорхойг зөв үгээр бөглөнө.{" "}
+        <code className="rounded bg-emerald-200 px-1 dark:bg-emerald-800">___</code> тэмдгийг цоорхой болгоно.
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Өгүүлбэр нөхөх", "Цоорхой бөглөх дасгал"]}
+        promptSuggestions={["Цоорхойг зөв үгээр бөглөнө үү.", "Дутуу үгийг нөхнэ үү."]}
+      />
+      <Separator />
+      <Field label="Өгүүлбэрийн загвар (___-аар цоорхой тэмдэглэ)" required error={errors.sentence_template}>
+        <SuggestTextarea
+          rows={2}
+          value={form.sentence_template}
+          onChange={(v) => set("sentence_template", v)}
+          placeholder="Жнэ: Бид ___ руу явна."
+          suggestions={[]}
+          className="font-medium"
+        />
+      </Field>
+      <Field label="Цоорхойд орох зөв үг" required error={errors.correct_answer}>
+        <Input
+          value={form.correct_answer}
+          onChange={(e) => set("correct_answer", e.target.value)}
+          placeholder="Жнэ: сургууль"
+          className="border-green-500/30"
+        />
+      </Field>
+      <Field label="Бүтэн контекст өгүүлбэр" required error={errors.context_sentence} hint="Эх өгүүлбэрийг бүтнээр нь оруулна">
+        <SuggestTextarea
+          rows={2}
+          value={form.context_sentence}
+          onChange={(v) => set("context_sentence", v)}
+          placeholder="Жнэ: Бид сургууль руу явна."
+          suggestions={[]}
+        />
+      </Field>
+      <Field label="Санамж" hint="Сурагчид тусална (заавал биш)">
+        <Input
+          value={form.hint}
+          onChange={(e) => set("hint", e.target.value)}
+          placeholder="Жнэ: Газрын нэр"
+        />
+      </Field>
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
+// ─── correction ───────────────────────────────────────────────────────────────
 
 function CorrectionContent({ form, set, errors }: SubProps) {
   return (
@@ -250,25 +327,16 @@ function CorrectionContent({ form, set, errors }: SubProps) {
         Сурагчид алдаатай текст харуулна. Тэд алдааг олж засах ёстой.
       </div>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Алдаа олж зас"
-          suggestions={["Алдаа олж зас", "Бичгийн алдаа засах", "Зөв хэлбэрт оруул"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Доорх текстийн алдааг олж засна уу."
-          suggestions={["Доорх текстийн алдааг олж засна уу.", "Алдааг олж, зөв хэлбэрийг бич.", "Текстийн бичгийн алдааг засна уу."]}
-        />
-      </Field>
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Алдаа олж зас", "Бичгийн алдаа засах"]}
+        promptSuggestions={["Доорх текстийн алдааг олж засна уу.", "Алдааг олж, зөв хэлбэрийг бич."]}
+      />
       <Separator />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Алдаатай текст (буруу)" required error={errors.incorrect_text} hint="Сурагчид энэ текстийг харуулна">
+        <Field label="Алдаатай текст (буруу)" required error={errors.incorrect_text} hint="Сурагчид харуулах текст">
           <Textarea
             rows={3}
             value={form.incorrect_text}
@@ -277,7 +345,7 @@ function CorrectionContent({ form, set, errors }: SubProps) {
             className="resize-y border-destructive/30"
           />
         </Field>
-        <Field label="Зөв хэлбэр" required error={errors.correct_text} hint="Зөв засагдсан хувилбар">
+        <Field label="Зөв хэлбэр" required error={errors.correct_text}>
           <Textarea
             rows={3}
             value={form.correct_text}
@@ -287,6 +355,13 @@ function CorrectionContent({ form, set, errors }: SubProps) {
           />
         </Field>
       </div>
+      <Field label="Алдааны код" hint="Алдааны ангилал (заавал биш)">
+        <Input
+          value={form.error_type}
+          onChange={(e) => set("error_type", e.target.value)}
+          placeholder="Жнэ: C1"
+        />
+      </Field>
       <Field label="Санамж" hint="Сурагчид тусална (заавал биш)">
         <Input
           value={form.hint}
@@ -294,446 +369,215 @@ function CorrectionContent({ form, set, errors }: SubProps) {
           placeholder="Жнэ: 'уу' ба 'у'-г ялга"
         />
       </Field>
-      <Field label="Анхны оруулга" hint="Сурагчийн хариултыг урьдчилан бөглөх (заавал биш)">
-        <Input
-          value={form.initial_text}
-          onChange={(e) => set("initial_text", e.target.value)}
-          placeholder="Сурагч энэ текст дээр засвар хийнэ"
+      <Field label="Тайлбар" hint="Дэлгэрэнгүй тайлбар (заавал биш)">
+        <Textarea
+          rows={2}
+          value={form.explanation}
+          onChange={(e) => set("explanation", e.target.value)}
+          placeholder="Жнэ: 'сургууль' үгэнд урт эгшиг хэрэглэнэ."
+          className="resize-y"
         />
       </Field>
-      <FeedbackField form={form} set={set} />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-function ChooseCorrectContent({ form, set, errors }: SubProps) {
+// ─── dictation ────────────────────────────────────────────────────────────────
+
+function DictationContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
   return (
     <>
-      <div className="rounded-lg border border-purple-200 bg-purple-50/50 p-3 text-xs text-purple-800 dark:border-purple-800 dark:bg-purple-950/30 dark:text-purple-200">
-        Сурагч хэд хэдэн сонголтоос зөв үгийг сонгоно.
+      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
+        Сурагч аудио сонсоод бичнэ. Хүлээгдэж буй хариулт(ууд)-ыг оруулна уу.
       </div>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Зөв бичигдсэн үгийг сонго"
-          suggestions={["Зөв бичигдсэн үгийг сонго", "Аль нь зөв вэ?", "Зөв хэлбэрийг сонго"]}
-        />
-      </Field>
-      <Field label="Асуулт / Заавар" required error={errors.prompt_text} hint="Сурагчид харуулах асуулт">
-        <SuggestTextarea
-          rows={2}
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Аль нь зөв бичигдсэн бэ?"
-          suggestions={["Аль нь зөв бичигдсэн бэ?", "Зөв үгийг сонгоно уу.", "Зөв бичигдсэн хэлбэрийг сонго."]}
-        />
-      </Field>
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
+        audioPreview={audioPreview} imagePreview={null}
+        titleSuggestions={["Үгийн диктант", "Өгүүлбэрийн диктант", "Сонсоод бич"]}
+        promptSuggestions={["Сонсоод бичнэ үү.", "Аудиог сонсоод бичнэ үү.", "Анхааралтай сонсоод бичнэ үү."]}
+      />
       <Separator />
-      <Field label="Зөв хариулт" required error={errors.correct_answer}>
-        <Input
-          value={form.correct_answer}
-          onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: гэрэл"
-          className="border-green-500/30"
+      <Field label="Цээжлэх текст" required error={errors.audio_text} hint="Аудио энэ текстийн дагуу үүснэ">
+        <Textarea
+          rows={2}
+          value={form.audio_text}
+          onChange={(e) => set("audio_text", e.target.value)}
+          placeholder="Жнэ: Бид сургууль руу явна."
+          className="resize-y"
         />
       </Field>
       <Field
-        label="Буруу сонголтууд"
-        required
-        error={errors.expected_answers}
-        hint="Хамгийн багадаа 2 буруу сонголт нэмнэ үү"
+        label="Зөвшөөрөгдсөн хариултууд"
+        hint="Нэг мөрт нэг хариулт — олон зөв хэлбэр байж болно. Хоосон бол текстийг л хэрэглэнэ."
       >
-        <ChipInput
+        <Textarea
+          rows={3}
           value={form.expected_answers}
-          onChange={(v) => set("expected_answers", v)}
-          placeholder="Буруу сонголт бичээд Enter дарна..."
+          onChange={(e) => set("expected_answers", e.target.value)}
+          placeholder={"Жнэ:\nсургууль руу явна\nСургууль руу явна."}
+          className="resize-y font-mono text-xs"
         />
       </Field>
-      <FeedbackField form={form} set={set} />
+      <Field label="Хэсэгчилсэн оноо">
+        <div className="flex h-9 items-center gap-2">
+          <Checkbox
+            id="allow_partial"
+            checked={form.allow_partial}
+            onCheckedChange={(c) => set("allow_partial", c === true)}
+          />
+          <label htmlFor="allow_partial" className="cursor-pointer text-sm text-muted-foreground">
+            Хэсэгчилсэн хариулт зөвшөөрнө
+          </label>
+        </div>
+      </Field>
+      <AudioPreview
+        text={form.audio_text || form.correct_answer}
+        slot="dictation"
+        onGenerated={onAudioGenerated}
+      />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-function FillBlankContent({ form, set, errors }: SubProps) {
+// ─── mini_text ────────────────────────────────────────────────────────────────
+
+function MiniTextContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
   return (
     <>
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50/50 p-3 text-xs text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200">
-        Өгүүлбэр дэх цоорхойг зөв үгээр бөглөнө. Цоорхойг <code className="rounded bg-emerald-200 px-1 dark:bg-emerald-800">___</code> тэмдэгээр тэмдэглэнэ.
+      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
+        Сурагч 2–5 өгүүлбэртэй мини эхийг сонсоод бичнэ.
       </div>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Цоорхой бөглөх"
-          suggestions={["Цоорхой бөглөх", "Дутуу үгийг бөглөнө үү", "Зөв үгийг нөхнэ үү"]}
-        />
-      </Field>
-      <Field label="Цоорхойтой өгүүлбэр" required error={errors.prompt_text} hint="'___' тэмдгээр цоорхойг тэмдэглэ">
-        <SuggestTextarea
-          rows={2}
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Бид ___ руу явна."
-          suggestions={["Цоорхойг бөглөнө үү.", "Дутуу үгийг бичнэ үү.", "Зөв үгийг нөхнэ үү."]}
-          className="font-medium"
-        />
-      </Field>
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
+        audioPreview={audioPreview} imagePreview={null}
+        titleSuggestions={["Мини эхийн диктант", "Богино эх бичих"]}
+        promptSuggestions={["Сонсоод бичнэ үү.", "Мини эхийг сонсоод бичнэ үү."]}
+      />
       <Separator />
-      <Field label="Цоорхойд орох зөв үг" required error={errors.correct_answer}>
+      <Field label="Цээжлэх эх" required error={errors.audio_text}>
+        <Textarea
+          rows={4}
+          value={form.audio_text}
+          onChange={(e) => set("audio_text", e.target.value)}
+          placeholder="Жнэ: Бид сургууль руу явна. Маргааш бид далайд очно."
+          className="resize-y"
+        />
+      </Field>
+      <Field label="Өгүүлбэрийн тоо (2–5)" required error={errors.sentence_count}>
         <Input
-          value={form.correct_answer}
-          onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: сургууль"
-          className="border-green-500/30"
+          type="number"
+          min={2}
+          max={5}
+          value={form.sentence_count}
+          onChange={(e) => set("sentence_count", parseInt(e.target.value, 10) || 3)}
         />
       </Field>
-      <Field
-        label="Буруу сонголтууд"
-        required
-        error={errors.expected_answers}
-        hint="Хамгийн багадаа 2 буруу сонголт нэмнэ үү"
-      >
-        <ChipInput
+      <Field label="Зөвшөөрөгдсөн хариултууд" hint="Нэг мөрт нэг хариулт. Хоосон бол аудио текстийг л хэрэглэнэ.">
+        <Textarea
+          rows={3}
           value={form.expected_answers}
-          onChange={(v) => set("expected_answers", v)}
-          placeholder="Буруу сонголт бичээд Enter дарна..."
+          onChange={(e) => set("expected_answers", e.target.value)}
+          placeholder={"Жнэ:\nБид сургууль руу явна. Маргааш бид далайд очно."}
+          className="resize-y font-mono text-xs"
         />
       </Field>
-      <FeedbackField form={form} set={set} />
+      <AudioPreview
+        text={form.audio_text || form.correct_answer}
+        slot="dictation"
+        onGenerated={onAudioGenerated}
+      />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-function LetterArrangeContent({ form, set, errors }: SubProps) {
-  return (
-    <>
-      <div className="rounded-lg border border-sky-200 bg-sky-50/50 p-3 text-xs text-sky-800 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-200">
-        Холилдсон үсгүүдийг зөв дарааллаар байрлуулж үг бүтээнэ.
-      </div>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Үсэг тааруулах"
-          suggestions={["Үсэг тааруулах", "Үсгийн дараалал", "Холилдсон үсэг"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Үсгүүдийг зөв байрлуулж үг бичнэ үү."
-          suggestions={["Үсгүүдийг зөв байрлуулж үг бичнэ үү.", "Холилдсон үсгүүдийг зөв эрэмбэлнэ үү.", "Үсгийн дарааллыг зөв болго."]}
-        />
-      </Field>
-      <Separator />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Холилдсон үсгүүд" hint="Сурагчид харуулах үсгийн дараалал">
-          <Input
-            value={form.initial_text}
-            onChange={(e) => set("initial_text", e.target.value)}
-            placeholder="Жнэ: р э г л э"
-            className="font-mono tracking-widest"
-          />
-        </Field>
-        <Field label="Зөв үг" required error={errors.correct_answer}>
-          <Input
-            value={form.correct_answer}
-            onChange={(e) => set("correct_answer", e.target.value)}
-            placeholder="Жнэ: гэрэл"
-            className="border-green-500/30"
-          />
-        </Field>
-      </div>
-      <FeedbackField form={form} set={set} />
-    </>
-  );
-}
+// ─── self_check ───────────────────────────────────────────────────────────────
 
-function WordPartContent({ form, set, errors }: SubProps) {
+function SelfCheckContent({ form, set, errors }: SubProps) {
   return (
     <>
-      <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
-        Үгийн дутуу хэсгийг нөхөж бичнэ (эхлэл эсвэл төгсгөл).
+      <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 text-xs text-violet-800 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-200">
+        Сурагч өөрийн хариуг жишиг хариулттай харьцуулан шалгана.
       </div>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Үгийн төгсгөлийг бичнэ үү"
-          suggestions={["Үгийн төгсгөлийг бич", "Дутуу хэсгийг нөхнэ үү", "Үгийн дутуу хэсэг"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text} hint="Ямар хэсгийг бичих вэ гэдгийг тодорхой зааж өгнө">
-        <SuggestTextarea
-          rows={2}
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Дараах үгийн дутуу хэсгийг нөхөж бич: сургу___"
-          suggestions={["Дутуу хэсгийг нөхөж бич.", "Үгийн дутуу хэсгийг бичнэ үү.", "Цоорхойг зөв үгээр нөхнэ үү."]}
-        />
-      </Field>
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Өөрийгөө шалгах", "Өөрийн бичвэр засвар"]}
+        promptSuggestions={["Өөрийн хариуг жишиг хариулттай харьцуулна уу.", "Алдаагаа шалгана уу."]}
+      />
       <Separator />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Дутуу үг (сурагчид харуулах)" hint="'___' тэмдгээр дутуу хэсгийг тэмдэглэ">
-          <Input
-            value={form.initial_text}
-            onChange={(e) => set("initial_text", e.target.value)}
-            placeholder="Жнэ: сургу___"
-            className="font-mono"
-          />
-        </Field>
-        <Field label="Бүтэн зөв үг" required error={errors.correct_answer}>
-          <Input
-            value={form.correct_answer}
-            onChange={(e) => set("correct_answer", e.target.value)}
-            placeholder="Жнэ: сургууль"
-            className="border-green-500/30"
-          />
-        </Field>
-      </div>
-      <FeedbackField form={form} set={set} />
-    </>
-  );
-}
-
-function TrueFalseContent({ form, set, errors }: SubProps) {
-  return (
-    <>
-      <div className="rounded-lg border border-indigo-200 bg-indigo-50/50 p-3 text-xs text-indigo-800 dark:border-indigo-800 dark:bg-indigo-950/30 dark:text-indigo-200">
-        Сурагч өгүүлбэр зөв эсэхийг тодорхойлно. Зөв/буруу хариултыг сонгоно.
-      </div>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Зөв/буруу тодорхойлох"
-          suggestions={["Зөв/буруу тодорхойлох", "Бичиг зөв үү?", "Зөв эсэхийг шалга"]}
+      <Field label="Анхны оролдлого (original_attempt)" hint="Сурагчийн бичсэн эх (AI/seed-ийн тохиолдолд)">
+        <Textarea
+          rows={3}
+          value={form.original_attempt}
+          onChange={(e) => set("original_attempt", e.target.value)}
+          placeholder="Жнэ: Сурагчийн буруу бичсэн эх…"
+          className="resize-y"
         />
       </Field>
-      <Field label="Шалгах өгүүлбэр" required error={errors.prompt_text} hint="Сурагч энэ өгүүлбэр зөв эсэхийг шалгана">
-        <SuggestTextarea
-          rows={2}
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder={'Жнэ: "Би сургууль руу явна" гэсэн зөв бичигдсэн үү?'}
-          suggestions={["Доорх өгүүлбэр зөв бичигдсэн үү?", "Бичлэг зөв эсэхийг тодорхойлно уу.", "Энэ өгүүлбэр зөв үү?"]}
-          className="font-medium"
+      <Field label="Жишиг хариулт" required error={errors.model_answer}>
+        <Textarea
+          rows={3}
+          value={form.model_answer}
+          onChange={(e) => {
+            set("model_answer", e.target.value);
+            set("correct_answer", e.target.value);
+          }}
+          placeholder="Жнэ: Зөв бичигдсэн хувилбар…"
+          className="resize-y border-green-500/30"
         />
       </Field>
-      <Separator />
-      <Field label="Зөв хариулт" required error={errors.correct_answer}>
+      <Field label="Харьцуулах горим">
         <div className="flex gap-3">
-          {[
-            { value: "Зөв", label: "Зөв (тийм)" },
-            { value: "Буруу", label: "Буруу (үгүй)" },
-          ].map((opt) => (
+          {(["side_by_side", "highlight_diff"] as const).map((mode) => (
             <button
-              key={opt.value}
+              key={mode}
               type="button"
-              onClick={() => {
-                set("correct_answer", opt.value);
-                set("expected_answers", opt.value === "Зөв" ? "Зөв\nБуруу" : "Буруу\nЗөв");
-              }}
+              onClick={() => set("comparison_mode", mode)}
               className={`rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
-                form.correct_answer === opt.value
+                form.comparison_mode === mode
                   ? "border-primary bg-primary/10 text-primary"
                   : "border-border hover:bg-muted"
               }`}
             >
-              {opt.label}
+              {mode === "side_by_side" ? "Хажуу тал" : "Ялгааг тодруулах"}
             </button>
           ))}
         </div>
       </Field>
-      <FeedbackField form={form} set={set} />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-function ImageMatchContent({ form, set, errors, onImageGenerated }: SubProps) {
-  return (
-    <>
-      <div className="rounded-lg border border-pink-200 bg-pink-50/50 p-3 text-xs text-pink-800 dark:border-pink-800 dark:bg-pink-950/30 dark:text-pink-200">
-        Зурагт тохирох зөв үгийг сонгоно.
-      </div>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Зурагт тохирох үг олох"
-          suggestions={["Зурагт тохирох үг олох", "Зургийн нэр сонгох", "Зураг — үг тааруулах"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Зураг дээрх зүйлийн нэрийг сонгоно уу."
-          suggestions={["Зураг дээрх зүйлийн нэрийг сонгоно уу.", "Зурагт тохирох үгийг сонгоно уу.", "Зургийг харж зөв үгийг сонго."]}
-        />
-      </Field>
-      <Separator />
-      <Field label="Зөв хариулт (зурагт тохирох үг)" required error={errors.correct_answer}>
-        <Input
-          value={form.correct_answer}
-          onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: нар"
-          className="border-green-500/30"
-        />
-      </Field>
-      <Field
-        label="Буруу сонголтууд"
-        required
-        error={errors.expected_answers}
-        hint="Хамгийн багадаа 2 буруу сонголт нэмнэ үү"
-      >
-        <ChipInput
-          value={form.expected_answers}
-          onChange={(v) => set("expected_answers", v)}
-          placeholder="Буруу сонголт бичээд Enter дарна..."
-        />
-      </Field>
-      <ImagePreview
-        correctAnswer={form.correct_answer}
-        imageDescription={form.image_description}
-        onDescriptionChange={(desc) => set("image_description", desc)}
-        onGenerated={onImageGenerated}
-      />
-      <FeedbackField form={form} set={set} />
-    </>
-  );
-}
-
-function RewriteContent({ form, set, errors }: SubProps) {
-  return (
-    <>
-      <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 text-xs text-teal-800 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-200">
-        Сурагч эх текстийг зөв хэлбэрээр дахин бичнэ.
-      </div>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Өгүүлбэрийг зөв бичнэ үү"
-          suggestions={["Өгүүлбэрийг зөв бичнэ үү", "Дахин зөв бичих", "Зөв хэлбэрт оруул"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Дараах текстийг зөв хэлбэрээр дахин бичнэ үү."
-          suggestions={["Дараах текстийг зөв хэлбэрээр дахин бичнэ үү.", "Алдааг засаж дахин бичнэ үү.", "Зөв хэлбэрээр бичнэ үү."]}
-        />
-      </Field>
-      <Separator />
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Эх бичвэр (алдаатай)" required error={errors.initial_text} hint="Сурагч энэ текстийг дахин бичнэ">
-          <Textarea
-            rows={3}
-            value={form.initial_text}
-            onChange={(e) => set("initial_text", e.target.value)}
-            placeholder="Жнэ: Би сургуль руу явна. Маргааш бид далайд ошно."
-            className="resize-y border-destructive/30"
-          />
-        </Field>
-        <Field label="Зөв хувилбар" required error={errors.correct_answer} hint="Зөв бичигдсэн хувилбар">
-          <Textarea
-            rows={3}
-            value={form.correct_answer}
-            onChange={(e) => set("correct_answer", e.target.value)}
-            placeholder="Жнэ: Би сургууль руу явна. Маргааш бид далайд очно."
-            className="resize-y border-green-500/30"
-          />
-        </Field>
-      </div>
-      <FeedbackField form={form} set={set} />
-    </>
-  );
-}
-
-function FreeWriteContent({ form, set, errors }: SubProps) {
-  return (
-    <>
-      <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 text-xs text-violet-800 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-200">
-        Сурагч сэдвийн дагуу чөлөөтэй бичнэ. Зөв хариулт байхгүй — үнэлгээний шалгуур бичнэ.
-      </div>
-      <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Миний гэр бүл"
-          suggestions={["Миний гэр бүл", "Өөрийгөө танилцуул", "Миний дуртай зүйл"]}
-        />
-      </Field>
-      <Field label="Сэдэв / Заавар" required error={errors.prompt_text} hint="Сурагчид ямар сэдвээр бичих вэ">
-        <SuggestTextarea
-          rows={3}
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Өөрийн гэр бүлийнхнийхээ тухай 3-5 өгүүлбэр бичнэ үү."
-          suggestions={["Өөрийн гэр бүлийнхнийхээ тухай 3-5 өгүүлбэр бичнэ үү.", "Дуртай зүйлийнхээ тухай бичнэ үү.", "Сургуулийн өдөр тухай бичнэ үү."]}
-        />
-      </Field>
-      <Separator />
-      <Field label="Жишиг хариулт / Үнэлгээний шалгуур" required error={errors.correct_answer} hint="Багш үнэлэхэд хэрэглэнэ">
-        <Textarea
-          rows={3}
-          value={form.correct_answer}
-          onChange={(e) => set("correct_answer", e.target.value)}
-          placeholder="Жнэ: Гэр бүлийн гишүүдийн нэр, тоо, харилцааг дурдсан байх."
-          className="resize-y"
-        />
-      </Field>
-      <FeedbackField form={form} set={set} />
-    </>
-  );
-}
-
-// ─── v3 interaction forms ─────────────────────────────────────────────────────
+// ─── v3: match_pairs ──────────────────────────────────────────────────────────
 
 function MatchPairsContent({ form, set, errors }: SubProps) {
   return (
     <>
       <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 text-xs text-violet-800 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-200">
-        Зүүн ба баруун баганы зүйлсийг хосоор холбоно. Мөр бүрт{" "}
+        Мөр бүрт{" "}
         <code className="rounded bg-violet-200 px-1 dark:bg-violet-800">зүүн | баруун</code>{" "}
         хэлбэрээр бичнэ үү.
       </div>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Үсэг-зурагтай тааруулах"
-          suggestions={["Холбож тааруулах дасгал", "Хосоор тааруулах", "Зүүн-баруун холболт"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Тохирох хосуудыг холбоно уу."
-          suggestions={["Тохирох хосуудыг холбоно уу.", "Зүүн ба баруун баганыг тааруулна уу.", "Хосуудыг чирж холбоно уу."]}
-        />
-      </Field>
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Холбож тааруулах дасгал", "Хосоор тааруулах"]}
+        promptSuggestions={["Тохирох хосуудыг холбоно уу."]}
+      />
       <Separator />
-      <Field
-        label="Хосуудын жагсаалт"
-        required
-        error={errors.pairs_text}
-        hint="Мөр бүрт нэг хос — 'зүүн | баруун' хэлбэрт (2–6 хос)"
-      >
+      <Field label="Хосуудын жагсаалт" required error={errors.pairs_text} hint="Мөр бүрт нэг хос — 'зүүн | баруун' (2–6 хос)">
         <textarea
           rows={6}
           className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -744,7 +588,7 @@ function MatchPairsContent({ form, set, errors }: SubProps) {
       </Field>
       {form.pairs_text && (
         <div className="rounded-md bg-muted/40 p-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">Хосуудын урьдчилан харагдац</p>
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Урьдчилан харагдац</p>
           <div className="space-y-1.5">
             {form.pairs_text
               .split("\n")
@@ -764,10 +608,12 @@ function MatchPairsContent({ form, set, errors }: SubProps) {
           </div>
         </div>
       )}
-      <FeedbackField form={form} set={set} />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
+
+// ─── v3: assemble_word ────────────────────────────────────────────────────────
 
 function AssembleWordContent({ form, set, errors }: SubProps) {
   const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
@@ -775,33 +621,19 @@ function AssembleWordContent({ form, set, errors }: SubProps) {
   return (
     <>
       <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 text-xs text-teal-800 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-200">
-        Сурагч холилдсон үсэг/үеүдийг зөв дарааллаар угсрана. Сегментүүдийг{" "}
+        Сурагч холилдсон сегментүүдийг зөв дарааллаар угсрана. Сегментүүдийг{" "}
         <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.
       </div>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Үсэг угсрах"
-          suggestions={["Үсэг угсрах дасгал", "Угсрах", "Холилдсон үсэг"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Үсгүүдийг зөв байрлуулж үг бүтээнэ үү."
-          suggestions={["Үсгүүдийг зөв байрлуулж үг бүтээнэ үү.", "Холилдсон үсгүүдийг эрэмбэлнэ үү.", "Зөв дарааллаар угсарна уу."]}
-        />
-      </Field>
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Үсэг угсрах дасгал", "Угсрах"]}
+        promptSuggestions={["Үсгүүдийг зөв байрлуулж үг бүтээнэ үү."]}
+      />
       <Separator />
-      <Field
-        label="Зөв дарааллын сегментүүд"
-        required
-        error={errors.tiles_text}
-        hint="Зайгаар тусгаарлан зөв дарааллаар бичнэ үү (≥2 хэсэг)"
-      >
+      <Field label="Зөв дарааллын сегментүүд" required error={errors.tiles_text} hint="Зайгаар тусгаарлан зөв дарааллаар бичнэ үү (≥2 хэсэг)">
         <input
           type="text"
           className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -815,10 +647,7 @@ function AssembleWordContent({ form, set, errors }: SubProps) {
           <p className="text-xs font-medium text-muted-foreground">Урьдчилан харагдац</p>
           <div className="flex flex-wrap gap-1.5">
             {segments.map((seg, i) => (
-              <span
-                key={i}
-                className="rounded border border-primary/30 bg-primary/5 px-2.5 py-1 font-mono text-sm font-medium"
-              >
+              <span key={i} className="rounded border border-primary/30 bg-primary/5 px-2.5 py-1 font-mono text-sm font-medium">
                 {seg}
               </span>
             ))}
@@ -829,10 +658,12 @@ function AssembleWordContent({ form, set, errors }: SubProps) {
           </p>
         </div>
       )}
-      <FeedbackField form={form} set={set} />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
+
+// ─── v3: tap_find_error ───────────────────────────────────────────────────────
 
 function TapFindErrorContent({ form, set, errors }: SubProps) {
   const words = form.sentence.trim().split(/\s+/).filter(Boolean);
@@ -840,26 +671,16 @@ function TapFindErrorContent({ form, set, errors }: SubProps) {
   return (
     <>
       <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3 text-xs text-orange-800 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
-        Өгүүлбэрт нэг алдаатай үг байрлуулна. Сурагч аль үгийг товшихад зөв байх тэр үгийг
-        доороос сонгоно уу.
+        Өгүүлбэрт нэг алдаатай үг байрлуулна. Сурагч аль үгийг товшиход зөв байх тэр үгийг доороос сонгоно уу.
       </div>
       <Separator />
-      <Field label="Гарчиг оруулах" required error={errors.title}>
-        <SuggestInput
-          value={form.title}
-          onChange={(v) => set("title", v)}
-          placeholder="Жнэ: Алдаатай үгийг ол"
-          suggestions={["Алдаатай үгийг олж товш", "Буруу үгийг тодорхойл", "Алдаа олох дасгал"]}
-        />
-      </Field>
-      <Field label="Заавар" required error={errors.prompt_text}>
-        <SuggestInput
-          value={form.prompt_text}
-          onChange={(v) => set("prompt_text", v)}
-          placeholder="Жнэ: Алдаатай үгийг олоод товшино уу."
-          suggestions={["Алдаатай үгийг олоод товшино уу.", "Буруу бичигдсэн үгийг товш.", "Бичгийн алдаатай үгийг ол."]}
-        />
-      </Field>
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Алдаатай үгийг олж товш", "Алдаа олох дасгал"]}
+        promptSuggestions={["Алдаатай үгийг олоод товшино уу.", "Буруу бичигдсэн үгийг товш."]}
+      />
       <Separator />
       <Field label="Алдаатай өгүүлбэр" required error={errors.sentence} hint="Нэг үг нь буруу бичигдсэн өгүүлбэр">
         <input
@@ -874,12 +695,7 @@ function TapFindErrorContent({ form, set, errors }: SubProps) {
         />
       </Field>
       {words.length > 0 && (
-        <Field
-          label="Алдаатай үгийг сонгоно уу"
-          required
-          error={errors.error_word_index}
-          hint="Товшиход зөв байх (буруу бичигдсэн) үгийг тэмдэглэ"
-        >
+        <Field label="Алдаатай үгийг сонгоно уу" required error={errors.error_word_index}>
           <div className="flex flex-wrap gap-1.5">
             {words.map((word, i) => (
               <button
@@ -896,18 +712,9 @@ function TapFindErrorContent({ form, set, errors }: SubProps) {
               </button>
             ))}
           </div>
-          {form.error_word_index >= 0 && words[form.error_word_index] && (
-            <p className="mt-1 text-xs text-muted-foreground">
-              Сонгосон:{" "}
-              <span className="font-medium text-destructive">
-                {words[form.error_word_index]}
-              </span>{" "}
-              (индекс {form.error_word_index})
-            </p>
-          )}
         </Field>
       )}
-      <Field label="Засварласан өгүүлбэр (зөв хэлбэр)" required error={errors.correct_text}>
+      <Field label="Засварласан өгүүлбэр" required error={errors.correct_text}>
         <input
           type="text"
           className="w-full rounded-md border border-green-500/30 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -916,61 +723,22 @@ function TapFindErrorContent({ form, set, errors }: SubProps) {
           placeholder="Жнэ: Бид сургууль руу явна."
         />
       </Field>
-      <FeedbackField form={form} set={set} />
+      <FeedbackFields form={form} set={set} />
     </>
   );
 }
 
-// ─── Shared helpers ──────────────────────────────────────────────────────────
+// ─── Metadata ────────────────────────────────────────────────────────────────
 
-function FeedbackField({ form, set }: { form: FormState; set: ContentFormProps["set"] }) {
-  return (
-    <>
-      <Field label="Hint" hint="Хариултаас үл хамааран харуулах дүрмийн тайлбар">
-        <Textarea
-          rows={2}
-          value={form.feedback_text}
-          onChange={(e) => set("feedback_text", e.target.value)}
-          placeholder="Жнэ: 'гэрэл' — г+э+р+э+л гэж бичдэг."
-          className="resize-y"
-        />
-      </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Зөв хариулсан үед" hint="Зөв хариулсан сурагчид харуулах">
-          <Textarea
-            rows={2}
-            value={form.feedback_correct}
-            onChange={(e) => set("feedback_correct", e.target.value)}
-            placeholder="Жнэ: Маш сайн! Зөв хариуллаа."
-            className="resize-y border-green-500/40 bg-green-50/30 dark:bg-green-950/20"
-          />
-        </Field>
-        <Field label="Буруу хариулсан үед" hint="Буруу хариулсан сурагчид харуулах">
-          <Textarea
-            rows={2}
-            value={form.feedback_wrong}
-            onChange={(e) => set("feedback_wrong", e.target.value)}
-            placeholder="Жнэ: Дахин оролдоно уу."
-            className="resize-y border-destructive/40 bg-red-50/30 dark:bg-red-950/20"
-          />
-        </Field>
-      </div>
-    </>
-  );
-}
-
-// ─── Metadata (shared) ──────────────────────────────────────────────────────
-
-function MetadataSection({ form, set, toggleList, groups }: Pick<ContentFormProps, "form" | "set" | "toggleList" | "groups">) {
-  const showPartial = groups.includes("dictation") || groups.includes("choice");
+function MetadataSection({ form, set, groups }: Pick<ContentFormProps, "form" | "set" | "toggleList" | "groups">) {
+  const showPartial = groups.includes("dictation") || groups.includes("mini_text");
 
   return (
     <>
       <Separator />
       <p className="text-sm font-semibold">Мета өгөгдөл</p>
-
       <div className={`grid gap-4 ${showPartial ? "grid-cols-2" : "grid-cols-1"}`}>
-        <Field label="Зарцуулах хугацаа (секунд)" hint="Даалгаврын хугацаа">
+        <Field label="Зарцуулах хугацаа (секунд)">
           <Input
             type="number"
             min={5}
@@ -982,11 +750,11 @@ function MetadataSection({ form, set, toggleList, groups }: Pick<ContentFormProp
           <Field label="Хэсэгчилсэн оноо">
             <div className="flex h-9 items-center gap-2">
               <Checkbox
-                id="allow_partial"
+                id="allow_partial_meta"
                 checked={form.allow_partial}
                 onCheckedChange={(c) => set("allow_partial", c === true)}
               />
-              <label htmlFor="allow_partial" className="cursor-pointer text-sm text-muted-foreground">
+              <label htmlFor="allow_partial_meta" className="cursor-pointer text-sm text-muted-foreground">
                 Тийм
               </label>
             </div>
@@ -997,55 +765,69 @@ function MetadataSection({ form, set, toggleList, groups }: Pick<ContentFormProp
   );
 }
 
-// ─── Main ────────────────────────────────────────────────────────────────────
+// ─── TYPE_CONTENT_MAP ─────────────────────────────────────────────────────────
 
 const TYPE_CONTENT_MAP: Record<string, React.FC<SubProps>> = {
-  // G12
-  TT_LISTEN_CHOOSE:          ChooseCorrectContent,
-  TT_LETTER_FILL:            FillBlankContent,
-  TT_IMAGE_WORD_MATCH:       ImageMatchContent,
-  TT_COPY_WRITE:             RewriteContent,
-  TT_CHOOSE_CORRECT:         ChooseCorrectContent,
-  TT_FILL_WRITE:             FillBlankContent,
-  TT_MISSING_LETTER:         FillBlankContent,
-  TT_WORD_SET_DICTATION:     ListenDictationContent,
+  // G12 — choice
+  TT_LISTEN_CHOOSE:          ChoiceContent,
+  TT_CHOOSE_CORRECT:         ChoiceContent,
+  TT_SIMPLE_SUFFIX:          ChoiceContent,
+  TT_MIXED_REVIEW:           ChoiceContent,
+  // G12 — choice + image
+  TT_IMAGE_WORD_MATCH:       ImageChoiceContent,
+  // G12 — word fill
+  TT_LETTER_FILL:            WordFillContent,
+  TT_FILL_WRITE:             WordFillContent,
+  TT_MISSING_LETTER:         WordFillContent,
+  TT_WORD_ENDING:            WordFillContent,
+  // G12 — sentence fill
+  TT_SENTENCE_FILL:          SentenceFillContent,
+  // G12 — correction
+  TT_COPY_WRITE:             CorrectionContent,
   TT_CAPITAL_PUNCTUATION:    CorrectionContent,
-  TT_SIMPLE_SUFFIX:          ChooseCorrectContent,
   TT_FIND_ERROR:             CorrectionContent,
-  TT_SELF_CHECK:             FreeWriteContent,
-  TT_TWO_WORD_DICTATION:     WordDictationContent,
-  TT_WORD_ENDING:            FillBlankContent,
-  TT_SENTENCE_FILL:          FillBlankContent,
-  TT_MIXED_REVIEW:           ChooseCorrectContent,
-  // G24
-  TT_WORD_FORM_CHOOSE:       ChooseCorrectContent,
-  TT_LONG_VOWEL_FILL:        FillBlankContent,
-  TT_REDUCED_VOWEL:          FillBlankContent,
-  TT_SUFFIX_CHOOSE:          ChooseCorrectContent,
-  TT_SHORT_SENTENCE_DICTATION: SentenceDictationContent,
+  // G12 — dictation
+  TT_WORD_SET_DICTATION:     DictationContent,
+  TT_TWO_WORD_DICTATION:     DictationContent,
+  // G12 — self_check
+  TT_SELF_CHECK:             SelfCheckContent,
+  // G24 — choice
+  TT_WORD_FORM_CHOOSE:       ChoiceContent,
+  TT_SUFFIX_CHOOSE:          ChoiceContent,
+  TT_CONSONANT_CONFUSION:    ChoiceContent,
+  TT_CASE_SUFFIX:            ChoiceContent,
+  TT_MIXED_WORD_SET:         ChoiceContent,
+  TT_LONG_VOWEL_CHALLENGE:   ChoiceContent,
+  TT_MIXED_CHECKPOINT:       ChoiceContent,
+  // G24 — word fill
+  TT_LONG_VOWEL_FILL:        WordFillContent,
+  TT_REDUCED_VOWEL:          WordFillContent,
+  TT_REDUCED_VOWEL_IN_SENTENCE: SentenceFillContent,
+  TT_SUFFIX_WRITE:           WordFillContent,
+  TT_COMPOUND_SUFFIX:        WordFillContent,
+  // G24 — sentence fill
+  TT_LONG_VOWEL_IN_SENTENCE: SentenceFillContent,
+  // G24 — correction
   TT_FIX_ERROR:              CorrectionContent,
-  TT_CONSONANT_CONFUSION:    ChooseCorrectContent,
   TT_WORD_FORM_FIX:          CorrectionContent,
-  TT_LONG_VOWEL_IN_SENTENCE: ChooseCorrectContent,
-  TT_REDUCED_VOWEL_IN_SENTENCE: FillBlankContent,
-  TT_CASE_SUFFIX:            ChooseCorrectContent,
   TT_BASIC_COMMA:            CorrectionContent,
-  TT_TWO_SENTENCE_DICTATION: SentenceDictationContent,
   TT_FIND_OMITTED_LETTER:    CorrectionContent,
-  TT_MIXED_WORD_SET:         ChooseCorrectContent,
-  TT_SUFFIX_WRITE:           FillBlankContent,
   TT_SENTENCE_BOUNDARY:      CorrectionContent,
-  TT_MINI_TEXT_DICTATION:    SentenceDictationContent,
-  TT_OWN_WRITING_CORRECTION: FreeWriteContent,
-  TT_LONG_VOWEL_CHALLENGE:   ChooseCorrectContent,
-  TT_COMPOUND_SUFFIX:        FillBlankContent,
-  TT_MIXED_CHECKPOINT:       ChooseCorrectContent,
   TT_EXPLAINED_CORRECTION:   CorrectionContent,
+  // G24 — dictation
+  TT_SHORT_SENTENCE_DICTATION: DictationContent,
+  TT_TWO_SENTENCE_DICTATION:   DictationContent,
+  // G24 — mini_text
+  TT_MINI_TEXT_DICTATION:    MiniTextContent,
+  // G24 — self_check
+  TT_OWN_WRITING_CORRECTION: SelfCheckContent,
   // v3 interaction forms
   TT_MATCH_PAIRS:            MatchPairsContent,
   TT_ASSEMBLE_WORD:          AssembleWordContent,
   TT_TAP_FIND_ERROR:         TapFindErrorContent,
 };
+
+// ─── Main export ─────────────────────────────────────────────────────────────
 
 export function ContentForm({ form, set, toggleList, groups, errors, taskType, audioPreview, onAudioGenerated, imagePreview, onImageGenerated }: ContentFormProps) {
   const TypeContent = TYPE_CONTENT_MAP[taskType];
@@ -1056,7 +838,15 @@ export function ContentForm({ form, set, toggleList, groups, errors, taskType, a
 
   return (
     <div className="space-y-4">
-      <TypeContent form={form} set={set} errors={errors} audioPreview={audioPreview} onAudioGenerated={onAudioGenerated} imagePreview={imagePreview} onImageGenerated={onImageGenerated} />
+      <TypeContent
+        form={form}
+        set={set}
+        errors={errors}
+        audioPreview={audioPreview}
+        onAudioGenerated={onAudioGenerated}
+        imagePreview={imagePreview}
+        onImageGenerated={onImageGenerated}
+      />
       <MetadataSection form={form} set={set} toggleList={toggleList} groups={groups} />
     </div>
   );

@@ -1,23 +1,39 @@
 export interface TaskOptions {
-  // dictation / listening
+  // choice: choiceOptions
+  choices?: Array<{ text: string; is_correct: boolean }>;
+  audio_trigger?: boolean;
+  // fill (word-level): fillOptions
+  display_text?: string;
+  blank_position?: number;
+  blank_answer?: string;
+  context_word?: string;
+  // sentence_fill: sentenceFillOptions
+  sentence_template?: string;
+  context_sentence?: string;
+  // correction + sentence_fill shared
+  hint?: string;
+  // correction: correctionOptions
+  incorrect_text?: string;
+  correct_text?: string;
+  error_type?: string;
+  explanation?: string;
+  // dictation: dictationOptions
   audio_text?: string;
   word_count?: number;
   expected_answers?: string[];
   allow_partial?: boolean;
-  // correction
-  incorrect_text?: string;
-  correct_text?: string;
-  hint?: string;
-  error_type?: string;
-  // choice tasks — stored as [{text, is_correct}], distractors extracted by backend
-  choices?: Array<{ text: string; is_correct: boolean }>;
-  distractors?: string[];
-  // TT_MATCH_PAIRS
+  // mini_text: miniTextOptions
+  sentence_count?: number;
+  // self_check: selfCheckOptions
+  original_attempt?: string;
+  model_answer?: string;
+  comparison_mode?: "side_by_side" | "highlight_diff";
+  // match_pairs: matchPairsOptions
   pairs?: Array<{ left: string; right: string }>;
-  // TT_ASSEMBLE_WORD
+  // assemble_word: assembleWordOptions
   tiles?: string[];
   correct_order?: string[];
-  // TT_TAP_FIND_ERROR
+  // tap_find_error: tapFindErrorOptions
   sentence?: string;
   error_word_index?: number;
 }

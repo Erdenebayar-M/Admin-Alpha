@@ -12,6 +12,7 @@ import {
   computeDefaults,
   parseLines,
   deriveInteractionForm,
+  BAND_TO_GRADES,
   type OptionGroup,
   type TaskTypeInfo,
 } from "@/lib/task-defaults";
@@ -44,6 +45,23 @@ export type FormState = {
   word_count: string;
   allow_partial: boolean;
   expected_answers: string;
+  // fill (word-level): fillOptions
+  display_text: string;
+  blank_position: number;
+  context_word: string;
+  // sentence_fill: sentenceFillOptions
+  sentence_template: string;
+  context_sentence: string;
+  // mini_text: miniTextOptions
+  sentence_count: number;
+  // self_check: selfCheckOptions
+  original_attempt: string;
+  model_answer: string;
+  comparison_mode: string;
+  // choice extra
+  audio_trigger: boolean;
+  // correction extra
+  explanation: string;
   // TT_MATCH_PAIRS: one "left | right" per line
   pairs_text: string;
   // TT_ASSEMBLE_WORD: space-separated segments in correct order
@@ -79,6 +97,24 @@ export const INITIAL_FORM: FormState = {
   word_count: "",
   allow_partial: false,
   expected_answers: "",
+  // fill
+  display_text: "",
+  blank_position: 0,
+  context_word: "",
+  // sentence_fill
+  sentence_template: "",
+  context_sentence: "",
+  // mini_text
+  sentence_count: 3,
+  // self_check
+  original_attempt: "",
+  model_answer: "",
+  comparison_mode: "side_by_side",
+  // choice extra
+  audio_trigger: false,
+  // correction extra
+  explanation: "",
+  // v3
   pairs_text: "",
   tiles_text: "",
   sentence: "",
@@ -100,6 +136,19 @@ export interface ValidationErrors {
   audio_text?: string;
   expected_answers?: string;
   initial_text?: string;
+  // fill
+  context_word?: string;
+  display_text?: string;
+  // sentence_fill
+  sentence_template?: string;
+  blank_answer?: string;
+  context_sentence?: string;
+  // mini_text
+  sentence_count?: string;
+  // self_check
+  model_answer?: string;
+  comparison_mode?: string;
+  // v3
   pairs_text?: string;
   tiles_text?: string;
   sentence?: string;
@@ -137,55 +186,103 @@ function shuffleArray<T>(arr: T[]): T[] {
   return a;
 }
 
-function buildOptions(form: FormState, groups: OptionGroup[]): TaskOptions {
-  const opts: TaskOptions = {};
-  if (groups.includes("dictation")) {
-    const audioText = form.audio_text || form.correct_answer;
-    if (audioText) opts.audio_text = audioText;
-    const wordCount = audioText.trim().split(/\s+/).filter(Boolean).length;
-    if (wordCount > 0) opts.word_count = wordCount;
-    if (form.allow_partial) opts.allow_partial = true;
-  }
-  if (groups.includes("correction")) {
-    if (form.incorrect_text) opts.incorrect_text = form.incorrect_text;
-    if (form.correct_text) opts.correct_text = form.correct_text;
-    if (form.hint) opts.hint = form.hint;
-    if (form.error_type) opts.error_type = form.error_type;
-  }
-  if (groups.includes("match_pairs")) {
-    const pairs = parseLines(form.pairs_text)
-      .map((line) => {
-        const sep = line.includes("|") ? "|" : "—";
-        const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
-        return { left, right };
-      })
-      .filter((p) => p.left && p.right);
-    if (pairs.length > 0) opts.pairs = pairs;
-  }
-  if (groups.includes("assemble_word")) {
-    const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
-    if (segments.length > 0) {
-      opts.correct_order = segments;
-      opts.tiles = shuffleArray(segments);
+function buildOptions(form: FormState, group: OptionGroup): TaskOptions {
+  switch (group) {
+    case "choice": {
+      const wrong = parseLines(form.expected_answers);
+      return {
+        choices: [
+          { text: form.correct_answer, is_correct: true },
+          ...wrong.slice(0, 3).map((t) => ({ text: t, is_correct: false })),
+        ],
+        audio_trigger: form.audio_trigger,
+      };
     }
+    case "fill": {
+      const ctx = form.context_word.trim();
+      const pos = form.blank_position;
+      const blankAnswer = ctx[pos] ?? form.correct_answer;
+      const displayText = form.display_text.trim() ||
+        (ctx ? ctx.substring(0, pos) + "_" + ctx.substring(pos + 1) : "");
+      return {
+        display_text: displayText,
+        blank_position: pos,
+        blank_answer: blankAnswer,
+        context_word: ctx,
+      };
+    }
+    case "sentence_fill": {
+      return {
+        sentence_template: form.sentence_template,
+        blank_answer: form.correct_answer,
+        context_sentence: form.context_sentence,
+        ...(form.hint ? { hint: form.hint } : {}),
+      };
+    }
+    case "correction": {
+      return {
+        incorrect_text: form.incorrect_text,
+        correct_text: form.correct_text,
+        error_type: form.error_type || "B1",
+        hint: form.hint,
+        ...(form.explanation ? { explanation: form.explanation } : {}),
+      };
+    }
+    case "dictation": {
+      const audioText = form.audio_text || form.correct_answer;
+      const wordCount = audioText.trim().split(/\s+/).filter(Boolean).length;
+      const expected = parseLines(form.expected_answers);
+      return {
+        audio_text: audioText,
+        word_count: wordCount > 0 ? wordCount : 1,
+        expected_answers: expected.length > 0 ? expected : [form.correct_answer],
+        allow_partial: form.allow_partial,
+      };
+    }
+    case "mini_text": {
+      const audioText = form.audio_text || form.correct_answer;
+      const expected = parseLines(form.expected_answers);
+      return {
+        audio_text: audioText,
+        sentence_count: Math.min(5, Math.max(2, form.sentence_count)),
+        expected_answers: expected.length > 0 ? expected : [form.correct_answer],
+      };
+    }
+    case "self_check": {
+      return {
+        original_attempt: form.original_attempt,
+        model_answer: form.model_answer || form.correct_answer,
+        comparison_mode: (form.comparison_mode as "side_by_side" | "highlight_diff") || "side_by_side",
+      };
+    }
+    case "match_pairs": {
+      const pairs = parseLines(form.pairs_text)
+        .map((line) => {
+          const sep = line.includes("|") ? "|" : "—";
+          const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
+          return { left, right };
+        })
+        .filter((p) => p.left && p.right);
+      return { pairs };
+    }
+    case "assemble_word": {
+      const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
+      return { correct_order: segments, tiles: shuffleArray(segments) };
+    }
+    case "tap_find_error": {
+      return {
+        sentence: form.sentence,
+        error_word_index: form.error_word_index,
+        correct_text: form.correct_text,
+      };
+    }
+    default:
+      return {};
   }
-  if (groups.includes("tap_find_error")) {
-    if (form.sentence) opts.sentence = form.sentence;
-    if (form.error_word_index >= 0) opts.error_word_index = form.error_word_index;
-    if (form.correct_text) opts.correct_text = form.correct_text;
-  }
-  const wrongAnswers = parseLines(form.expected_answers);
-  if (wrongAnswers.length > 0) {
-    opts.choices = [
-      { text: form.correct_answer, is_correct: true },
-      ...wrongAnswers.map((t) => ({ text: t, is_correct: false })),
-    ];
-  }
-  return opts;
 }
 
-function deriveCorrectAnswer(form: FormState, groups: OptionGroup[]): string {
-  if (groups.includes("match_pairs")) {
+function deriveCorrectAnswer(form: FormState, group: OptionGroup): string {
+  if (group === "match_pairs") {
     const pairs = parseLines(form.pairs_text)
       .map((line) => {
         const sep = line.includes("|") ? "|" : "—";
@@ -195,12 +292,21 @@ function deriveCorrectAnswer(form: FormState, groups: OptionGroup[]): string {
       .filter(Boolean);
     return pairs.join(", ") || form.correct_answer;
   }
-  if (groups.includes("assemble_word")) {
+  if (group === "assemble_word") {
     const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
     return segments.join("") || form.correct_answer;
   }
-  if (groups.includes("tap_find_error")) {
+  if (group === "tap_find_error") {
     return form.correct_text || form.correct_answer;
+  }
+  if (group === "correction") {
+    return form.correct_text || form.correct_answer;
+  }
+  if (group === "fill") {
+    return form.context_word || form.correct_answer;
+  }
+  if (group === "self_check") {
+    return form.model_answer || form.correct_answer;
   }
   return form.correct_answer;
 }
@@ -214,6 +320,7 @@ export function useTaskForm() {
 
   const typeInfo: TaskTypeInfo | null = form.task_type ? TASK_TYPE_INFO[form.task_type] ?? null : null;
   const groups: OptionGroup[] = typeInfo?.groups ?? [];
+  const group: OptionGroup = (groups[0] ?? "choice") as OptionGroup;
 
   const set = useCallback(<K extends keyof FormState>(key: K, value: FormState[K]) => {
     if (DEFAULT_TRACKABLE_KEYS.has(key)) {
@@ -356,6 +463,17 @@ export function useTaskForm() {
         hint: "",
         audio_text: "",
         expected_answers: "",
+        display_text: "",
+        blank_position: 0,
+        context_word: "",
+        sentence_template: "",
+        context_sentence: "",
+        sentence_count: 3,
+        original_attempt: "",
+        model_answer: "",
+        comparison_mode: "side_by_side",
+        audio_trigger: false,
+        explanation: "",
         pairs_text: "",
         tiles_text: "",
         sentence: "",
@@ -390,43 +508,54 @@ export function useTaskForm() {
     else if (form.prompt_text.length > 1000) e.prompt_text = "1000 тэмдэгтээс хэтрэхгүй";
 
     const tt = form.task_type;
-    const currentGroups = tt ? (TASK_TYPE_INFO[tt]?.groups ?? []) : [];
+    const currentGroup = tt ? ((TASK_TYPE_INFO[tt]?.groups[0] ?? "choice") as OptionGroup) : null;
 
-    // Correction types use correct_text instead of correct_answer
-    if (currentGroups.includes("correction")) {
+    if (currentGroup === "choice") {
+      if (!form.correct_answer.trim()) e.correct_answer = "Зөв хариулт оруулна уу";
+      const lines = parseLines(form.expected_answers);
+      if (lines.length < 2) e.expected_answers = "Хамгийн багадаа 2 буруу сонголт оруулна уу";
+    } else if (currentGroup === "fill") {
+      if (!form.context_word.trim()) e.context_word = "Бүтэн үгийг оруулна уу";
+    } else if (currentGroup === "sentence_fill") {
+      if (!form.sentence_template.trim()) e.sentence_template = "Өгүүлбэрийн загварыг оруулна уу";
+      if (!form.correct_answer.trim()) e.correct_answer = "Цоорхойд орох зөв үгийг оруулна уу";
+      if (!form.context_sentence.trim()) e.context_sentence = "Контекст өгүүлбэрийг оруулна уу";
+    } else if (currentGroup === "correction") {
       if (!form.incorrect_text.trim()) e.incorrect_text = "Буруу текст оруулна уу";
       if (!form.correct_text.trim()) e.correct_text = "Зөв текст оруулна уу";
-    } else if (!form.correct_answer.trim()) {
-      e.correct_answer = "Зөв хариулт оруулна уу";
-    }
-
-    // Choice and fill types need expected_answers (wrong choices)
-    if (currentGroups.includes("choice") || currentGroups.includes("fill")) {
-      const lines = parseLines(form.expected_answers);
-      if (lines.length < 2) e.expected_answers = "Хамгийн багадаа 2 хариулт оруулна уу";
-    }
-
-    if (currentGroups.includes("match_pairs")) {
+    } else if (currentGroup === "dictation") {
+      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Цээжлэх текстийг оруулна уу";
+    } else if (currentGroup === "mini_text") {
+      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Цээжлэх эхийг оруулна уу";
+      const cnt = form.sentence_count;
+      if (cnt < 2 || cnt > 5) e.sentence_count = "Өгүүлбэрийн тоо 2–5 байх ёстой";
+    } else if (currentGroup === "self_check") {
+      if (!form.model_answer.trim() && !form.correct_answer.trim()) e.model_answer = "Жишиг хариултыг оруулна уу";
+    } else if (currentGroup === "match_pairs") {
       const pairs = parseLines(form.pairs_text).filter((l) => l.includes("|") || l.includes("—"));
       if (pairs.length < 2) e.pairs_text = "Хамгийн багадаа 2 хос оруулна уу (зүүн | баруун)";
-    }
-
-    if (currentGroups.includes("assemble_word")) {
+    } else if (currentGroup === "assemble_word") {
       const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
       if (segments.length < 2) e.tiles_text = "Хамгийн багадаа 2 хэсэг оруулна уу";
-    }
-
-    if (currentGroups.includes("tap_find_error")) {
+    } else if (currentGroup === "tap_find_error") {
       if (!form.sentence.trim()) e.sentence = "Өгүүлбэр оруулна уу";
       if (form.error_word_index < 0) e.error_word_index = "Алдаатай үгийг сонгоно уу";
       if (!form.correct_text.trim()) e.correct_text = "Засварласан өгүүлбэр оруулна уу";
+    } else if (!form.correct_answer.trim()) {
+      e.correct_answer = "Зөв хариулт оруулна уу";
     }
 
     return e;
   }, [form]);
 
   const step1Keys: (keyof ValidationErrors)[] = ["task_type", "grade_band", "primary_skill", "level_target", "difficulty", "lesson_slot_fit"];
-  const step2Keys: (keyof ValidationErrors)[] = ["title", "prompt_text", "correct_answer", "incorrect_text", "correct_text", "audio_text", "expected_answers", "initial_text", "pairs_text", "tiles_text", "sentence", "error_word_index"];
+  const step2Keys: (keyof ValidationErrors)[] = [
+    "title", "prompt_text", "correct_answer", "incorrect_text", "correct_text",
+    "audio_text", "expected_answers", "initial_text",
+    "context_word", "display_text", "sentence_template", "blank_answer", "context_sentence",
+    "sentence_count", "model_answer", "comparison_mode",
+    "pairs_text", "tiles_text", "sentence", "error_word_index",
+  ];
 
   const stepErrors: [boolean, boolean, boolean] = useMemo(() => [
     step1Keys.some((k) => errors[k]),
@@ -444,18 +573,22 @@ export function useTaskForm() {
   // Submission
   const mutation = useMutation({
     mutationFn: async () => {
-      const currentGroups = TASK_TYPE_INFO[form.task_type]?.groups ?? [];
+      const currentGroup = (TASK_TYPE_INFO[form.task_type]?.groups[0] ?? "choice") as OptionGroup;
+      // Map UI band selectors (G12/G24) → canonical per-grade codes (G1-G4), deduplicated
+      const canonicalGradeBand = [
+        ...new Set(form.grade_band.flatMap((b) => BAND_TO_GRADES[b] ?? [b])),
+      ];
       const payload: CreateTaskPayload = {
         task_type: form.task_type,
         title: form.title,
         prompt_text: form.prompt_text,
-        correct_answer: deriveCorrectAnswer(form, currentGroups),
-        options: buildOptions(form, currentGroups),
+        correct_answer: deriveCorrectAnswer(form, currentGroup),
+        options: buildOptions(form, currentGroup),
         primary_skill: form.primary_skill,
         secondary_skill: form.secondary_skill || null,
         level_target: form.level_target,
         error_targets: form.error_targets,
-        grade_band: form.grade_band,
+        grade_band: canonicalGradeBand,
         difficulty: parseInt(form.difficulty, 10) || 1,
         estimated_time_seconds: parseInt(form.estimated_time_seconds, 10) || 30,
         lesson_slot_fit: form.lesson_slot_fit,
@@ -520,6 +653,7 @@ export function useTaskForm() {
 
     typeInfo,
     groups,
+    group,
 
     audioPreview,
     setAudioPreview,

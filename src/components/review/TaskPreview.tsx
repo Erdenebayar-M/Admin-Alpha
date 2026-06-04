@@ -2,7 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import type { TaskContent } from "@/lib/types";
-import { TASK_TYPE_INFO } from "@/lib/task-defaults";
+import { TASK_TYPE_INFO, GRADE_LABELS, SKILL_LABELS as SKILL_LABELS_DEFAULTS, ERROR_LABELS as ERROR_LABELS_DEFAULTS } from "@/lib/task-defaults";
 import { MediaGenerator } from "./MediaGenerator";
 
 // Handles both full https:// R2 URLs and legacy /content/... local paths
@@ -10,52 +10,13 @@ function resolveAssetUrl(url: string): string {
   return url.startsWith("http") ? url : url;
 }
 
-const SKILL_LABELS: Record<string, string> = {
-  S1: "Үсэг-авиа ялгалт",
-  S2: "Үгийн зөв бичлэг",
-  S3: "Урт/богино эгшиг",
-  S4: "Балархай эгшиг",
-  S5: "Залгавар/нөхцөл",
-  S6: "Өгүүлбэрийн тэмдэглэгээ",
-  S7: "Сонсголоор буулгах",
-  S8: "Алдаа засах",
-};
-
-const ERROR_LABELS: Record<string, string> = {
-  A: "Эгшгийн зохилдолын алдаа",
-  B: "Буруу сонголт — тасалдуулагч",
-  C1: "Гийгүүлэгч үсэг орхигдсон",
-  C2: "Эгшиг үсэг орхигдсон",
-  D: "Үгийн бичлэгийн алдаа",
-  E1: "Нийлмэл үгийн алдаа",
-  E2: "Угтвар, дагаврын алдаа",
-  G1: "Өгүүлбэр том үсгээр эхлэх",
-  G2: "Цэг тэмдэглэгээний алдаа",
-  H4: "Агуулга тохирохгүй",
-};
-
-const LEVEL_LABELS: Record<string, string> = {
-  M0: "M0 — Анхан шат",
-  M1: "M1 — Суурь",
-  M2: "M2 — Дунд шат",
-  M3: "M3 — Ахисан шат",
-};
-
-const LESSON_SLOT_LABELS: Record<string, string> = {
-  WARM_UP: "Дулаалга",
-  MID: "Дундуур",
-  END: "Төгсгөл",
-  MIXED: "Холимог",
-};
+const SKILL_LABELS = SKILL_LABELS_DEFAULTS;
+const ERROR_LABELS = ERROR_LABELS_DEFAULTS;
 
 function formatGradeBand(bands: string[]): string {
-  return bands.map((g) => `${g.replace("G", "")}-р анги`).join(", ") || "—";
+  return bands.map((g) => GRADE_LABELS[g] ?? g).join(", ") || "—";
 }
 
-function formatReviewDays(days: number[]): string {
-  if (!days.length) return "—";
-  return days.map((d) => `${d}-р өдөр`).join(", ");
-}
 
 function fmtDateTime(iso: string) {
   const d = new Date(iso);
@@ -129,13 +90,16 @@ export function TaskPreview({
     ? (currentOpts.incorrect_text ?? rawInitialText)
     : rawInitialText;
 
-  const isChoiceTask = TASK_TYPE_INFO[task.task_type]?.groups.includes("choice") ?? false;
-  const hasWrongChoices = (opts.distractors?.length ?? 0) > 0;
-  const hasExpectedAnswers = (opts.expected_answers?.length ?? 0) > 0;
-  // Render correction layout if task_type matches OR if the data carries initial_text
-  const isCorrection =
-    task.task_type === "TT3_CORRECTION" ||
-    Boolean(rawInitialText || opts.correct_text);
+  const taskGroup = TASK_TYPE_INFO[task.task_type]?.groups[0] ?? "";
+  const isChoiceTask = taskGroup === "choice";
+  const isCorrectionTask = taskGroup === "correction";
+  const isFillTask = taskGroup === "fill";
+  const isSentenceFillTask = taskGroup === "sentence_fill";
+  const isDictationTask = taskGroup === "dictation";
+  const isMiniTextTask = taskGroup === "mini_text";
+  const isSelfCheckTask = taskGroup === "self_check";
+  // Legacy compatibility: correction layout for old tasks that carry incorrect_text or initial_text
+  const isCorrection = isCorrectionTask || Boolean(rawInitialText || opts.correct_text);
 
   return (
     <div className="rounded-lg border border-border bg-card p-5 space-y-5">
@@ -319,49 +283,53 @@ export function TaskPreview({
         />
       )}
 
-      {/* ── Wrong choices (choice-type tasks) ─────────────────────────────── */}
-      {hasWrongChoices && (
-        <Field label="Буруу хариултууд (сонголтууд)">
+      {/* ── Choice options ─────────────────────────────────────────────────── */}
+      {isChoiceTask && (opts.choices?.length ?? 0) > 0 && (
+        <Field label="Сонголтууд">
           <div className="flex flex-wrap gap-1.5">
-            {opts.distractors!.map((a, i) => (
+            {opts.choices!.map((c, i) => (
               <span
                 key={i}
-                className="rounded-md border border-red-300 bg-red-50 px-2.5 py-1 text-sm font-medium text-red-800"
+                className={cn(
+                  "rounded-md border px-2.5 py-1 text-sm font-medium",
+                  c.is_correct
+                    ? "border-green-400 bg-green-50 text-green-800"
+                    : "border-red-300 bg-red-50 text-red-800",
+                )}
               >
-                {a}
+                {c.text}
               </span>
             ))}
           </div>
+          {opts.audio_trigger && (
+            <p className="mt-1 text-xs text-muted-foreground">Аудио trigger идэвхтэй</p>
+          )}
         </Field>
       )}
 
-      {/* ── Expected answers (dictation / listening tasks) ─────────────────── */}
-      {hasExpectedAnswers && (
-        <Field label="Хүлээгдэж буй хариултууд">
-          <div className="flex flex-wrap gap-1.5">
-            {opts.expected_answers!.map((a, i) => (
-              <span
-                key={i}
-                className="rounded-md border border-green-300 bg-green-50 px-2.5 py-1 text-sm font-medium text-green-800"
-              >
-                {a}
-              </span>
-            ))}
-          </div>
-          {opts.audio_text && (
-            <p className="mt-2 font-mono text-xs text-muted-foreground">
-              Аудио текст: &ldquo;{opts.audio_text}&rdquo;
-            </p>
-          )}
-          <div className="mt-1.5 flex gap-4 text-xs text-muted-foreground">
-            {opts.word_count !== undefined && <span>{opts.word_count} үг</span>}
-            {opts.allow_partial !== undefined && (
-              <span>
-                Хэсэгчилсэн оноо: {opts.allow_partial ? "тийм" : "үгүй"}
-              </span>
-            )}
-          </div>
-        </Field>
+      {/* ── Fill (word-level) ──────────────────────────────────────────────── */}
+      {isFillTask && (
+        <FillSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+      )}
+
+      {/* ── Sentence fill ──────────────────────────────────────────────────── */}
+      {isSentenceFillTask && (
+        <SentenceFillSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+      )}
+
+      {/* ── Dictation answers ──────────────────────────────────────────────── */}
+      {isDictationTask && (
+        <DictationSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+      )}
+
+      {/* ── Mini text ──────────────────────────────────────────────────────── */}
+      {isMiniTextTask && (
+        <MiniTextSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+      )}
+
+      {/* ── Self check ─────────────────────────────────────────────────────── */}
+      {isSelfCheckTask && (
+        <SelfCheckSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
       )}
 
       {/* ── Correct answer (hidden for correction tasks — shown as "Target correct text") */}
@@ -493,6 +461,156 @@ export function TaskPreview({
       />
 
     </div>
+  );
+}
+
+function FillSection({
+  opts, isEditMode, onDraftChange, allOpts,
+}: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
+  return (
+    <>
+      <Field label="Дисплей текст">
+        {isEditMode ? (
+          <input className={inputClass} value={opts.display_text ?? ""} onChange={(e) => onDraftChange({ options: { ...allOpts, display_text: e.target.value } })} />
+        ) : (
+          <span className="font-mono text-sm">{opts.display_text || "—"}</span>
+        )}
+      </Field>
+      <Field label="Цоорхойн байрлал (0-based)">
+        {isEditMode ? (
+          <input className={inputClass} type="number" min={0} value={opts.blank_position ?? 0} onChange={(e) => onDraftChange({ options: { ...allOpts, blank_position: parseInt(e.target.value, 10) } })} />
+        ) : (
+          <span className="font-mono text-sm">{opts.blank_position ?? "—"}</span>
+        )}
+      </Field>
+      <Field label="Цоорхойн хариулт">
+        {isEditMode ? (
+          <input className={cn(inputClass, "border-green-400 bg-green-50 text-green-900")} value={opts.blank_answer ?? ""} onChange={(e) => onDraftChange({ options: { ...allOpts, blank_answer: e.target.value } })} />
+        ) : (
+          <span className="inline-block rounded-md border border-green-400 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-800">{opts.blank_answer || "—"}</span>
+        )}
+      </Field>
+      {opts.context_word && (
+        <Field label="Контекст үг">
+          <span className="font-mono text-sm">{opts.context_word}</span>
+        </Field>
+      )}
+    </>
+  );
+}
+
+function SentenceFillSection({
+  opts, isEditMode, onDraftChange, allOpts,
+}: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
+  return (
+    <>
+      <Field label="Өгүүлбэрийн загвар">
+        {isEditMode ? (
+          <input className={inputClass} value={opts.sentence_template ?? ""} onChange={(e) => onDraftChange({ options: { ...allOpts, sentence_template: e.target.value } })} />
+        ) : (
+          <p className="text-sm font-medium">{opts.sentence_template || "—"}</p>
+        )}
+      </Field>
+      {opts.context_sentence && (
+        <Field label="Контекст өгүүлбэр">
+          <p className="text-sm text-muted-foreground">{opts.context_sentence}</p>
+        </Field>
+      )}
+      {opts.hint && (
+        <Field label="Санамж">
+          <p className="text-sm text-muted-foreground">{opts.hint}</p>
+        </Field>
+      )}
+    </>
+  );
+}
+
+function DictationSection({
+  opts, isEditMode, onDraftChange, allOpts,
+}: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
+  return (
+    <>
+      {opts.audio_text && (
+        <Field label="Аудио текст">
+          {isEditMode ? (
+            <textarea className={textareaClass} rows={2} value={opts.audio_text} onChange={(e) => onDraftChange({ options: { ...allOpts, audio_text: e.target.value } })} />
+          ) : (
+            <p className="font-mono text-sm">{opts.audio_text}</p>
+          )}
+        </Field>
+      )}
+      {(opts.expected_answers?.length ?? 0) > 0 && (
+        <Field label="Зөвшөөрөгдсөн хариултууд">
+          <div className="flex flex-wrap gap-1.5">
+            {opts.expected_answers!.map((a, i) => (
+              <span key={i} className="rounded-md border border-green-300 bg-green-50 px-2.5 py-1 text-sm font-medium text-green-800">{a}</span>
+            ))}
+          </div>
+          <div className="mt-1.5 flex gap-4 text-xs text-muted-foreground">
+            {opts.word_count !== undefined && <span>{opts.word_count} үг</span>}
+            {opts.allow_partial !== undefined && <span>Хэсэгчилсэн: {opts.allow_partial ? "тийм" : "үгүй"}</span>}
+          </div>
+        </Field>
+      )}
+    </>
+  );
+}
+
+function MiniTextSection({
+  opts, isEditMode, onDraftChange, allOpts,
+}: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
+  return (
+    <>
+      {opts.audio_text && (
+        <Field label="Аудио эх">
+          {isEditMode ? (
+            <textarea className={textareaClass} rows={3} value={opts.audio_text} onChange={(e) => onDraftChange({ options: { ...allOpts, audio_text: e.target.value } })} />
+          ) : (
+            <p className="font-mono text-sm whitespace-pre-wrap">{opts.audio_text}</p>
+          )}
+        </Field>
+      )}
+      {opts.sentence_count !== undefined && (
+        <Field label="Өгүүлбэрийн тоо">
+          <span className="font-mono text-sm">{opts.sentence_count}</span>
+        </Field>
+      )}
+      {(opts.expected_answers?.length ?? 0) > 0 && (
+        <Field label="Зөвшөөрөгдсөн хариултууд">
+          <div className="space-y-1">
+            {opts.expected_answers!.map((a, i) => (
+              <p key={i} className="rounded border border-green-300 bg-green-50 px-2 py-1 text-sm text-green-800">{a}</p>
+            ))}
+          </div>
+        </Field>
+      )}
+    </>
+  );
+}
+
+function SelfCheckSection({
+  opts, isEditMode, onDraftChange, allOpts,
+}: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
+  return (
+    <>
+      {opts.original_attempt && (
+        <Field label="Анхны оролдлого">
+          <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 font-mono text-sm text-red-900 whitespace-pre-wrap">{opts.original_attempt}</p>
+        </Field>
+      )}
+      <Field label="Жишиг хариулт">
+        {isEditMode ? (
+          <textarea className={cn(textareaClass, "border-green-300 bg-green-50 text-green-900")} rows={3} value={opts.model_answer ?? ""} onChange={(e) => onDraftChange({ options: { ...allOpts, model_answer: e.target.value } })} />
+        ) : (
+          <p className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900 whitespace-pre-wrap">{opts.model_answer || "—"}</p>
+        )}
+      </Field>
+      {opts.comparison_mode && (
+        <Field label="Харьцуулах горим">
+          <span className="rounded bg-muted px-2 py-0.5 text-xs font-mono">{opts.comparison_mode}</span>
+        </Field>
+      )}
+    </>
   );
 }
 
@@ -779,6 +897,26 @@ function CorrectionSection({
             />
           ) : (
             <p className="text-sm text-muted-foreground">{opts.hint}</p>
+          )}
+        </div>
+      )}
+
+      {/* Explanation row */}
+      {(opts.explanation || isEditMode) && (
+        <div>
+          <p className="mb-1 text-xs font-medium">Тайлбар</p>
+          {isEditMode ? (
+            <textarea
+              className={textareaClass}
+              rows={2}
+              value={opts.explanation ?? ""}
+              onChange={(e) =>
+                onDraftChange({ options: { ...opts, explanation: e.target.value } })
+              }
+              placeholder="Тайлбар…"
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">{opts.explanation}</p>
           )}
         </div>
       )}

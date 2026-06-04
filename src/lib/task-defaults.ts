@@ -1,10 +1,11 @@
 export type OptionGroup =
   | "choice"
   | "fill"
+  | "sentence_fill"
   | "dictation"
+  | "mini_text"
   | "correction"
   | "self_check"
-  | "copy"
   | "match_pairs"
   | "assemble_word"
   | "tap_find_error";
@@ -275,8 +276,8 @@ export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
     label: "Хуулж бичих",
     shortLabel: "G12-004",
     description: "Өгсөн текстийг хуулж бичих",
-    groups: ["copy"],
-    category: "copy",
+    groups: ["correction"],
+    category: "correction",
     gradeBand: "G12",
   },
   TT_CHOOSE_CORRECT: {
@@ -363,8 +364,8 @@ export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
     label: "Өгүүлбэр нөхөх",
     shortLabel: "G12-015",
     description: "Өгүүлбэрийн дутууг нөхнө",
-    groups: ["fill"],
-    category: "fill",
+    groups: ["sentence_fill"],
+    category: "sentence_fill",
     gradeBand: "G12",
   },
   TT_MIXED_REVIEW: {
@@ -444,16 +445,16 @@ export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
     label: "Урт эгшиг өгүүлбэрт",
     shortLabel: "G24-010",
     description: "Өгүүлбэр доторх урт эгшгийг ялгах",
-    groups: ["choice"],
-    category: "choice",
+    groups: ["sentence_fill"],
+    category: "sentence_fill",
     gradeBand: "G24",
   },
   TT_REDUCED_VOWEL_IN_SENTENCE: {
     label: "Балархай эгшиг өгүүлбэрт",
     shortLabel: "G24-011",
     description: "Өгүүлбэрт балархай эгшгийг нөхөх",
-    groups: ["fill"],
-    category: "fill",
+    groups: ["sentence_fill"],
+    category: "sentence_fill",
     gradeBand: "G24",
   },
   TT_CASE_SUFFIX: {
@@ -516,8 +517,8 @@ export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
     label: "Мини эхийн диктант",
     shortLabel: "G24-019",
     description: "2–3 өгүүлбэртэй эхийг сонсоод бичих",
-    groups: ["dictation"],
-    category: "dictation",
+    groups: ["mini_text"],
+    category: "mini_text",
     gradeBand: "G24",
   },
   TT_OWN_WRITING_CORRECTION: {
@@ -589,11 +590,12 @@ export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
 
 export const CATEGORY_LABELS: Record<string, string> = {
   choice: "Сонгох",
-  fill: "Нөхөх",
+  fill: "Үсэг/үг нөхөх",
+  sentence_fill: "Өгүүлбэр нөхөх",
   dictation: "Цээжээр бичих",
+  mini_text: "Мини эхийн диктант",
   correction: "Алдааг засах",
   self_check: "Өөрийгөө шалгах",
-  copy: "Хуулж бичих",
   match_pairs: "Холбож тааруулах",
   assemble_word: "Угсрах",
   tap_find_error: "Алдаа олж товших",
@@ -602,10 +604,11 @@ export const CATEGORY_LABELS: Record<string, string> = {
 export const CATEGORY_ORDER = [
   "choice",
   "fill",
+  "sentence_fill",
   "dictation",
+  "mini_text",
   "correction",
   "self_check",
-  "copy",
   "match_pairs",
   "assemble_word",
   "tap_find_error",
@@ -634,6 +637,20 @@ export const LEVEL_LABELS: Record<string, string> = {
 export const GRADE_BAND_LABELS: Record<string, string> = {
   G12: "1–2-р анги",
   G24: "2–4-р анги",
+};
+
+// Maps UI band selector values to canonical grade codes sent to the backend
+export const BAND_TO_GRADES: Record<string, string[]> = {
+  G12: ["G1", "G2"],
+  G24: ["G3", "G4"],
+};
+
+// Display labels for canonical per-grade codes stored in the DB
+export const GRADE_LABELS: Record<string, string> = {
+  G1: "1-р анги",
+  G2: "2-р анги",
+  G3: "3-р анги",
+  G4: "4-р анги",
 };
 
 export const ERROR_LABELS: Record<string, string> = {
@@ -787,6 +804,7 @@ export function computeDefaults(
       slot = "WARM_UP";
       break;
     case "fill":
+    case "sentence_fill":
       difficulty = isG24 ? 3 : 2;
       level = isG24 ? "M2" : "M1";
       time = 45;
@@ -795,11 +813,13 @@ export function computeDefaults(
     case "dictation":
       difficulty = isG24 ? 3 : 2;
       level = isG24 ? "M2" : "M1";
-      time =
-        taskType === "TT_MINI_TEXT_DICTATION" ||
-        taskType === "TT_TWO_SENTENCE_DICTATION"
-          ? 120
-          : 60;
+      time = taskType === "TT_TWO_SENTENCE_DICTATION" ? 120 : 60;
+      slot = "CORE";
+      break;
+    case "mini_text":
+      difficulty = isG24 ? 3 : 2;
+      level = isG24 ? "M3" : "M2";
+      time = 120;
       slot = "CORE";
       break;
     case "correction":
@@ -813,12 +833,6 @@ export function computeDefaults(
       level = isG24 ? "M2" : "M1";
       time = 60;
       slot = "END";
-      break;
-    case "copy":
-      difficulty = 1;
-      level = "M0";
-      time = 45;
-      slot = "CORE";
       break;
     case "match_pairs":
       difficulty = 1;
@@ -856,10 +870,11 @@ export function computeDefaults(
 const CATEGORY_TO_INTERACTION_FORM: Record<string, string> = {
   choice: "CHOOSE",
   fill: "FILL",
+  sentence_fill: "FILL",
   dictation: "TRANSCRIBE",
+  mini_text: "TRANSCRIBE",
   correction: "CORRECT",
   self_check: "CORRECT",
-  copy: "FILL",
   match_pairs: "MATCH",
   assemble_word: "ASSEMBLE",
   tap_find_error: "TAP",
