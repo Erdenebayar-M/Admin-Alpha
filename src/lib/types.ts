@@ -10,13 +10,11 @@ export interface TaskOptions {
   // sentence_fill: sentenceFillOptions
   sentence_template?: string;
   context_sentence?: string;
-  // correction + sentence_fill shared
+  // sentence_fill
   hint?: string;
   // correction: correctionOptions
   incorrect_text?: string;
   correct_text?: string;
-  error_type?: string;
-  explanation?: string;
   // dictation: dictationOptions
   audio_text?: string;
   word_count?: number;
@@ -29,7 +27,8 @@ export interface TaskOptions {
   model_answer?: string;
   comparison_mode?: "side_by_side" | "highlight_diff";
   // match_pairs: matchPairsOptions
-  pairs?: Array<{ left: string; right: string }>;
+  pairs?: Array<{ left: string; right: string; left_image_url?: string; right_image_url?: string }>;
+  image_side?: "left" | "right" | "none";
   // assemble_word: assembleWordOptions
   tiles?: string[];
   correct_order?: string[];

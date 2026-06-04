@@ -706,3 +706,14 @@ export function parseLines(raw: string): string[] {
     .map((s) => s.trim())
     .filter(Boolean);
 }
+
+// TT_1_3: letters (left) → images of words (right)
+// TT_3_3: images of words (left) → word text (right)
+const MATCH_PAIRS_IMAGE_SIDE: Record<string, "left" | "right"> = {
+  TT_1_3: "right",
+  TT_3_3: "left",
+};
+
+export function deriveImageSide(taskType: string): "left" | "right" | "none" {
+  return MATCH_PAIRS_IMAGE_SIDE[taskType] ?? "none";
+}

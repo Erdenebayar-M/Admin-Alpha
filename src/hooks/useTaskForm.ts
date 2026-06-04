@@ -12,6 +12,7 @@ import {
   computeDefaults,
   parseLines,
   deriveInteractionForm,
+  deriveImageSide,
   type OptionGroup,
   type TaskTypeInfo,
 } from "@/lib/task-defaults";
@@ -39,7 +40,6 @@ export type FormState = {
   incorrect_text: string;
   correct_text: string;
   hint: string;
-  error_type: string;
   audio_text: string;
   word_count: string;
   allow_partial: boolean;
@@ -59,8 +59,6 @@ export type FormState = {
   comparison_mode: string;
   // choice extra
   audio_trigger: boolean;
-  // correction extra
-  explanation: string;
   // TT_MATCH_PAIRS: one "left | right" per line
   pairs_text: string;
   // TT_ASSEMBLE_WORD: space-separated segments in correct order
@@ -95,7 +93,6 @@ export const INITIAL_FORM: FormState = {
   incorrect_text: "",
   correct_text: "",
   hint: "",
-  error_type: "",
   audio_text: "",
   word_count: "",
   allow_partial: false,
@@ -115,8 +112,6 @@ export const INITIAL_FORM: FormState = {
   comparison_mode: "side_by_side",
   // choice extra
   audio_trigger: false,
-  // correction extra
-  explanation: "",
   // v3
   pairs_text: "",
   tiles_text: "",
@@ -226,7 +221,7 @@ function buildOptions(form: FormState, group: OptionGroup): TaskOptions {
       return {
         sentence_template: form.sentence_template,
         blank_answer: form.correct_answer,
-        context_sentence: form.context_sentence,
+        context_sentence: form.sentence_template.replace("___", form.correct_answer),
         ...(form.hint ? { hint: form.hint } : {}),
       };
     }
@@ -234,29 +229,25 @@ function buildOptions(form: FormState, group: OptionGroup): TaskOptions {
       return {
         incorrect_text: form.incorrect_text,
         correct_text: form.correct_text,
-        error_type: form.error_type || "B1",
-        hint: form.hint,
-        ...(form.explanation ? { explanation: form.explanation } : {}),
       };
     }
     case "dictation": {
       const audioText = form.audio_text || form.correct_answer;
       const wordCount = audioText.trim().split(/\s+/).filter(Boolean).length;
-      const expected = parseLines(form.expected_answers);
       return {
         audio_text: audioText,
         word_count: wordCount > 0 ? wordCount : 1,
-        expected_answers: expected.length > 0 ? expected : [form.correct_answer],
+        expected_answers: [audioText],
         allow_partial: form.allow_partial,
       };
     }
     case "mini_text": {
       const audioText = form.audio_text || form.correct_answer;
-      const expected = parseLines(form.expected_answers);
+      const autoCount = (audioText.match(/[.!?]/g) || []).length;
       return {
         audio_text: audioText,
-        sentence_count: Math.min(5, Math.max(2, form.sentence_count)),
-        expected_answers: expected.length > 0 ? expected : [form.correct_answer],
+        sentence_count: Math.min(5, Math.max(2, autoCount || 2)),
+        expected_answers: [audioText],
       };
     }
     case "self_check": {
@@ -274,7 +265,7 @@ function buildOptions(form: FormState, group: OptionGroup): TaskOptions {
           return { left, right };
         })
         .filter((p) => p.left && p.right);
-      return { pairs };
+      return { pairs, image_side: deriveImageSide(form.task_type) };
     }
     case "assemble_word": {
       const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
@@ -507,7 +498,6 @@ export function useTaskForm() {
         model_answer: "",
         comparison_mode: "side_by_side",
         audio_trigger: false,
-        explanation: "",
         pairs_text: "",
         tiles_text: "",
         sentence: "",
@@ -554,17 +544,15 @@ export function useTaskForm() {
       if (!form.context_word.trim()) e.context_word = "Бүтэн үгийг оруулна уу";
     } else if (currentGroup === "sentence_fill") {
       if (!form.sentence_template.trim()) e.sentence_template = "Өгүүлбэрийн загварыг оруулна уу";
+      else if (!form.sentence_template.includes("___")) e.sentence_template = "Загварт ___ цоорхой байх ёстой";
       if (!form.correct_answer.trim()) e.correct_answer = "Цоорхойд орох зөв үгийг оруулна уу";
-      if (!form.context_sentence.trim()) e.context_sentence = "Контекст өгүүлбэрийг оруулна уу";
     } else if (currentGroup === "correction") {
       if (!form.incorrect_text.trim()) e.incorrect_text = "Буруу текст оруулна уу";
       if (!form.correct_text.trim()) e.correct_text = "Зөв текст оруулна уу";
     } else if (currentGroup === "dictation") {
-      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Цээжлэх текстийг оруулна уу";
+      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Аудио болгох текстийг оруулна уу";
     } else if (currentGroup === "mini_text") {
-      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Цээжлэх эхийг оруулна уу";
-      const cnt = form.sentence_count;
-      if (cnt < 2 || cnt > 5) e.sentence_count = "Өгүүлбэрийн тоо 2–5 байх ёстой";
+      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Аудио болгох текстийг оруулна уу";
     } else if (currentGroup === "self_check") {
       if (!form.model_answer.trim() && !form.correct_answer.trim()) e.model_answer = "Жишиг хариултыг оруулна уу";
     } else if (currentGroup === "match_pairs") {
@@ -593,7 +581,7 @@ export function useTaskForm() {
   const step2Keys: (keyof ValidationErrors)[] = [
     "title", "prompt_text", "correct_answer", "incorrect_text", "correct_text",
     "audio_text", "expected_answers", "initial_text",
-    "context_word", "display_text", "sentence_template", "blank_answer", "context_sentence",
+    "context_word", "display_text", "sentence_template", "blank_answer",
     "sentence_count", "model_answer", "comparison_mode",
     "pairs_text", "tiles_text", "sentence", "error_word_index",
     "text_to_copy", "display_seconds",

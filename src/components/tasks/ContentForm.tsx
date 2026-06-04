@@ -10,6 +10,7 @@ import type { AudioPreviewState } from "./AudioPreview";
 import { ImagePreview } from "./ImagePreview";
 import type { ImagePreviewState } from "./ImagePreview";
 import type { FormState, ValidationErrors } from "@/hooks/useTaskForm";
+import { deriveImageSide } from "@/lib/task-defaults";
 import type { OptionGroup } from "@/lib/task-defaults";
 
 interface ContentFormProps {
@@ -339,15 +340,6 @@ function SentenceFillContent({ form, set, errors }: SubProps) {
           className="border-green-500/30"
         />
       </Field>
-      <Field label="Бүтэн контекст өгүүлбэр" required error={errors.context_sentence} hint="Эх өгүүлбэрийг бүтнээр нь оруулна">
-        <SuggestTextarea
-          rows={2}
-          value={form.context_sentence}
-          onChange={(v) => set("context_sentence", v)}
-          placeholder="Жнэ: Бид сургууль руу явна."
-          suggestions={[]}
-        />
-      </Field>
       <Field label="Санамж" hint="Сурагчид тусална (заавал биш)">
         <Input
           value={form.hint}
@@ -397,29 +389,6 @@ function CorrectionContent({ form, set, errors }: SubProps) {
           />
         </Field>
       </div>
-      <Field label="Алдааны код" hint="Алдааны ангилал (заавал биш)">
-        <Input
-          value={form.error_type}
-          onChange={(e) => set("error_type", e.target.value)}
-          placeholder="Жнэ: C1"
-        />
-      </Field>
-      <Field label="Санамж" hint="Сурагчид тусална (заавал биш)">
-        <Input
-          value={form.hint}
-          onChange={(e) => set("hint", e.target.value)}
-          placeholder="Жнэ: 'уу' ба 'у'-г ялга"
-        />
-      </Field>
-      <Field label="Тайлбар" hint="Дэлгэрэнгүй тайлбар (заавал биш)">
-        <Textarea
-          rows={2}
-          value={form.explanation}
-          onChange={(e) => set("explanation", e.target.value)}
-          placeholder="Жнэ: 'сургууль' үгэнд урт эгшиг хэрэглэнэ."
-          className="resize-y"
-        />
-      </Field>
       <FeedbackFields form={form} set={set} />
     </>
   );
@@ -491,7 +460,7 @@ function DictationContent({ form, set, errors, audioPreview, onAudioGenerated }:
         promptSuggestions={["Сонсоод бичнэ үү.", "Аудиог сонсоод бичнэ үү.", "Анхааралтай сонсоод бичнэ үү."]}
       />
       <Separator />
-      <Field label="Цээжлэх текст" required error={errors.audio_text} hint="Аудио энэ текстийн дагуу үүснэ">
+      <Field label="Аудио болгох текст" required error={errors.audio_text} hint="Энэ текстийг аудио болгоно — сурагч сонсоод бичнэ">
         <Textarea
           rows={2}
           value={form.audio_text}
@@ -500,19 +469,7 @@ function DictationContent({ form, set, errors, audioPreview, onAudioGenerated }:
           className="resize-y"
         />
       </Field>
-      <Field
-        label="Зөвшөөрөгдсөн хариултууд"
-        hint="Нэг мөрт нэг хариулт — олон зөв хэлбэр байж болно. Хоосон бол текстийг л хэрэглэнэ."
-      >
-        <Textarea
-          rows={3}
-          value={form.expected_answers}
-          onChange={(e) => set("expected_answers", e.target.value)}
-          placeholder={"Жнэ:\nсургууль руу явна\nСургууль руу явна."}
-          className="resize-y font-mono text-xs"
-        />
-      </Field>
-      <Field label="Хэсэгчилсэн оноо">
+      <Field label="Хэсэгчилсэн оноо" hint="Зөв бичсэн үгийн тоогоор хэсэгчилсэн оноо авна (бүхэлд нь биш)">
         <div className="flex h-9 items-center gap-2">
           <Checkbox
             id="allow_partial"
@@ -537,10 +494,12 @@ function DictationContent({ form, set, errors, audioPreview, onAudioGenerated }:
 // ─── mini_text ────────────────────────────────────────────────────────────────
 
 function MiniTextContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+  const autoSentenceCount = (form.audio_text.match(/[.!?]/g) || []).length;
+
   return (
     <>
       <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
-        Сурагч 2–5 өгүүлбэртэй мини эхийг сонсоод бичнэ.
+        Сурагч 2–5 өгүүлбэртэй мини эхийг сонсоод бичнэ. Сурагч бичих талбар нь сурагчдын апп дээр харагдана — энд зөвхөн агуулга тодорхойлно.
       </div>
       <Separator />
       <CommonFields
@@ -551,7 +510,7 @@ function MiniTextContent({ form, set, errors, audioPreview, onAudioGenerated }: 
         promptSuggestions={["Сонсоод бичнэ үү.", "Мини эхийг сонсоод бичнэ үү."]}
       />
       <Separator />
-      <Field label="Цээжлэх эх" required error={errors.audio_text}>
+      <Field label="Аудио болгох текст" required error={errors.audio_text} hint="Энэ текстийг аудио болгоно — сурагч сонсоод бичнэ">
         <Textarea
           rows={4}
           value={form.audio_text}
@@ -559,24 +518,15 @@ function MiniTextContent({ form, set, errors, audioPreview, onAudioGenerated }: 
           placeholder="Жнэ: Бид сургууль руу явна. Маргааш бид далайд очно."
           className="resize-y"
         />
-      </Field>
-      <Field label="Өгүүлбэрийн тоо (2–5)" required error={errors.sentence_count}>
-        <Input
-          type="number"
-          min={2}
-          max={5}
-          value={form.sentence_count}
-          onChange={(e) => set("sentence_count", parseInt(e.target.value, 10) || 3)}
-        />
-      </Field>
-      <Field label="Зөвшөөрөгдсөн хариултууд" hint="Нэг мөрт нэг хариулт. Хоосон бол аудио текстийг л хэрэглэнэ.">
-        <Textarea
-          rows={3}
-          value={form.expected_answers}
-          onChange={(e) => set("expected_answers", e.target.value)}
-          placeholder={"Жнэ:\nБид сургууль руу явна. Маргааш бид далайд очно."}
-          className="resize-y font-mono text-xs"
-        />
+        {form.audio_text.trim() && (
+          <p className="mt-1 text-xs text-muted-foreground">
+            Илрүүлсэн өгүүлбэрийн тоо:{" "}
+            <span className={`font-semibold ${autoSentenceCount < 2 || autoSentenceCount > 5 ? "text-destructive" : "text-foreground"}`}>
+              {autoSentenceCount}
+            </span>
+            {(autoSentenceCount < 2 || autoSentenceCount > 5) && " — 2–5 байх ёстой"}
+          </p>
+        )}
       </Field>
       <AudioPreview
         text={form.audio_text || form.correct_answer}
@@ -652,12 +602,25 @@ function SelfCheckContent({ form, set, errors }: SubProps) {
 // ─── v3: match_pairs ──────────────────────────────────────────────────────────
 
 function MatchPairsContent({ form, set, errors }: SubProps) {
+  const imageSide = deriveImageSide(form.task_type);
+  const isImageTask = imageSide !== "none";
+
+  const bannerText = imageSide === "left"
+    ? "Зүүн талд зургийн үг, баруун талд тааруулах текст бичнэ үү. Зургийг хоолойн дараа автоматаар нэмнэ."
+    : imageSide === "right"
+    ? "Зүүн талд текст, баруун талд зургийн үг бичнэ үү. Зургийг хоолойн дараа автоматаар нэмнэ."
+    : null;
+
   return (
     <>
       <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 text-xs text-violet-800 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-200">
-        Мөр бүрт{" "}
-        <code className="rounded bg-violet-200 px-1 dark:bg-violet-800">зүүн | баруун</code>{" "}
-        хэлбэрээр бичнэ үү.
+        {bannerText ?? (
+          <>
+            Мөр бүрт{" "}
+            <code className="rounded bg-violet-200 px-1 dark:bg-violet-800">зүүн | баруун</code>{" "}
+            хэлбэрээр бичнэ үү.
+          </>
+        )}
       </div>
       <Separator />
       <CommonFields
@@ -691,12 +654,29 @@ function MatchPairsContent({ form, set, errors }: SubProps) {
               .filter(Boolean)
               .map((pair, i) => (
                 <div key={i} className="flex items-center gap-2 text-sm">
-                  <span className="rounded border px-2 py-0.5 font-medium">{pair!.left}</span>
+                  {imageSide === "left" ? (
+                    <span className="rounded border border-dashed border-violet-400 bg-violet-50 px-2 py-0.5 text-xs text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                      🖼 {pair!.left}
+                    </span>
+                  ) : (
+                    <span className="rounded border px-2 py-0.5 font-medium">{pair!.left}</span>
+                  )}
                   <span className="text-muted-foreground">→</span>
-                  <span className="rounded border px-2 py-0.5 font-medium">{pair!.right}</span>
+                  {imageSide === "right" ? (
+                    <span className="rounded border border-dashed border-violet-400 bg-violet-50 px-2 py-0.5 text-xs text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
+                      🖼 {pair!.right}
+                    </span>
+                  ) : (
+                    <span className="rounded border px-2 py-0.5 font-medium">{pair!.right}</span>
+                  )}
                 </div>
               ))}
           </div>
+          {isImageTask && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              🖼 тэмдэгтэй нүдэнд зурагны хоолой ажилласны дараа зураг автоматаар орно.
+            </p>
+          )}
         </div>
       )}
       <FeedbackFields form={form} set={set} />
@@ -1103,17 +1083,8 @@ function AudioSentenceFillContent({ form, set, errors, audioPreview, onAudioGene
           className="border-green-500/30"
         />
       </Field>
-      <Field label="Бүтэн контекст өгүүлбэр" required error={errors.context_sentence}>
-        <SuggestTextarea
-          rows={2}
-          value={form.context_sentence}
-          onChange={(v) => set("context_sentence", v)}
-          placeholder="Жнэ: Бид сургууль руу явна."
-          suggestions={[]}
-        />
-      </Field>
       <AudioPreview
-        text={form.context_sentence || form.correct_answer}
+        text={form.sentence_template.replace("___", form.correct_answer) || form.correct_answer}
         slot="dictation"
         onGenerated={onAudioGenerated}
       />

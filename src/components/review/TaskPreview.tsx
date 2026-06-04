@@ -882,44 +882,6 @@ function CorrectionSection({
         )}
       </div>
 
-      {/* Hint row */}
-      {(opts.hint || isEditMode) && (
-        <div>
-          <p className="mb-1 text-xs font-medium">Дохио (hint)</p>
-          {isEditMode ? (
-            <input
-              className={inputClass}
-              value={opts.hint ?? ""}
-              onChange={(e) =>
-                onDraftChange({ options: { ...opts, hint: e.target.value } })
-              }
-              placeholder="Дохио…"
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">{opts.hint}</p>
-          )}
-        </div>
-      )}
-
-      {/* Explanation row */}
-      {(opts.explanation || isEditMode) && (
-        <div>
-          <p className="mb-1 text-xs font-medium">Тайлбар</p>
-          {isEditMode ? (
-            <textarea
-              className={textareaClass}
-              rows={2}
-              value={opts.explanation ?? ""}
-              onChange={(e) =>
-                onDraftChange({ options: { ...opts, explanation: e.target.value } })
-              }
-              placeholder="Тайлбар…"
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">{opts.explanation}</p>
-          )}
-        </div>
-      )}
     </>
   );
 }
