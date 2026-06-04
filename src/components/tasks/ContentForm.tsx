@@ -425,6 +425,55 @@ function CorrectionContent({ form, set, errors }: SubProps) {
   );
 }
 
+// ─── tap_correction (TT_6_3, TT_6_4) ─────────────────────────────────────────
+
+function TapCorrectionContent({ form, set, errors }: SubProps) {
+  return (
+    <>
+      <div className="rounded-lg border border-amber-200 bg-amber-50/50 p-3 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
+        Сурагч текст дотроос тэмдэглэгээ орох байрыг олж товшино (бичдэггүй).
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={() => {}} onImageGenerated={() => {}}
+        audioPreview={null} imagePreview={null}
+        titleSuggestions={["Таслал нэмэх", "Өгүүлбэрийн төгсгөл олох"]}
+        promptSuggestions={["Тэмдэглэгээ дутуу байгаа байрыг олж товшино уу.", "Зохистой байрыг олж товшино уу."]}
+      />
+      <Separator />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <Field label="Тэмдэглэгүйгүй текст" required error={errors.incorrect_text} hint="Оноо/таслалгүй текст">
+          <Textarea
+            rows={3}
+            value={form.incorrect_text}
+            onChange={(e) => set("incorrect_text", e.target.value)}
+            placeholder="Жнэ: Би сургуульд явав гэртээ ирэв"
+            className="resize-y border-amber-400/40"
+          />
+        </Field>
+        <Field label="Зөв хувилбар" required error={errors.correct_text} hint="Зөв тэмдэглэгэлтэй">
+          <Textarea
+            rows={3}
+            value={form.correct_text}
+            onChange={(e) => set("correct_text", e.target.value)}
+            placeholder="Жнэ: Би сургуульд явав, гэртээ ирэв."
+            className="resize-y border-green-500/30"
+          />
+        </Field>
+      </div>
+      <Field label="Санамж" hint="Сурагчид тусална (заавал биш)">
+        <Input
+          value={form.hint}
+          onChange={(e) => set("hint", e.target.value)}
+          placeholder="Жнэ: Хоёр үйлдэл залгаа явагдаж байна"
+        />
+      </Field>
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
 // ─── dictation ────────────────────────────────────────────────────────────────
 
 function DictationContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
@@ -1112,8 +1161,8 @@ const TYPE_CONTENT_MAP: Record<string, React.FC<SubProps>> = {
   // S6 — Өгүүлбэрийн тэмдэглэгээ
   TT_6_1: ChoiceContent,
   TT_6_2: ChoiceContent,
-  TT_6_3: CorrectionContent,
-  TT_6_4: CorrectionContent,
+  TT_6_3: TapCorrectionContent,
+  TT_6_4: TapCorrectionContent,
   // S7 — Цээж бичиг
   TT_7_1: CopyContent,
   TT_7_2: VisualMemoryContent,
