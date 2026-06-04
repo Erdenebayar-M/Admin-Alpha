@@ -11,6 +11,7 @@ import {
   TASK_TYPE_BLUEPRINT,
   computeDefaults,
   parseLines,
+  deriveInteractionForm,
   type OptionGroup,
   type TaskTypeInfo,
 } from "@/lib/task-defaults";
@@ -43,6 +44,13 @@ export type FormState = {
   word_count: string;
   allow_partial: boolean;
   expected_answers: string;
+  // TT_MATCH_PAIRS: one "left | right" per line
+  pairs_text: string;
+  // TT_ASSEMBLE_WORD: space-separated segments in correct order
+  tiles_text: string;
+  // TT_TAP_FIND_ERROR
+  sentence: string;
+  error_word_index: number;
 };
 
 export const INITIAL_FORM: FormState = {
@@ -71,6 +79,10 @@ export const INITIAL_FORM: FormState = {
   word_count: "",
   allow_partial: false,
   expected_answers: "",
+  pairs_text: "",
+  tiles_text: "",
+  sentence: "",
+  error_word_index: -1,
 };
 
 export interface ValidationErrors {
@@ -88,6 +100,10 @@ export interface ValidationErrors {
   audio_text?: string;
   expected_answers?: string;
   initial_text?: string;
+  pairs_text?: string;
+  tiles_text?: string;
+  sentence?: string;
+  error_word_index?: string;
 }
 
 export interface TaskTemplate {
@@ -112,10 +128,18 @@ const DEFAULT_TRACKABLE_KEYS = new Set([
   "lesson_slot_fit",
 ]);
 
+function shuffleArray<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
 function buildOptions(form: FormState, groups: OptionGroup[]): TaskOptions {
   const opts: TaskOptions = {};
   if (groups.includes("dictation")) {
-    // auto-derive audio_text and word_count from correct_answer
     const audioText = form.audio_text || form.correct_answer;
     if (audioText) opts.audio_text = audioText;
     const wordCount = audioText.trim().split(/\s+/).filter(Boolean).length;
@@ -128,6 +152,28 @@ function buildOptions(form: FormState, groups: OptionGroup[]): TaskOptions {
     if (form.hint) opts.hint = form.hint;
     if (form.error_type) opts.error_type = form.error_type;
   }
+  if (groups.includes("match_pairs")) {
+    const pairs = parseLines(form.pairs_text)
+      .map((line) => {
+        const sep = line.includes("|") ? "|" : "—";
+        const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
+        return { left, right };
+      })
+      .filter((p) => p.left && p.right);
+    if (pairs.length > 0) opts.pairs = pairs;
+  }
+  if (groups.includes("assemble_word")) {
+    const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
+    if (segments.length > 0) {
+      opts.correct_order = segments;
+      opts.tiles = shuffleArray(segments);
+    }
+  }
+  if (groups.includes("tap_find_error")) {
+    if (form.sentence) opts.sentence = form.sentence;
+    if (form.error_word_index >= 0) opts.error_word_index = form.error_word_index;
+    if (form.correct_text) opts.correct_text = form.correct_text;
+  }
   const wrongAnswers = parseLines(form.expected_answers);
   if (wrongAnswers.length > 0) {
     opts.choices = [
@@ -136,6 +182,27 @@ function buildOptions(form: FormState, groups: OptionGroup[]): TaskOptions {
     ];
   }
   return opts;
+}
+
+function deriveCorrectAnswer(form: FormState, groups: OptionGroup[]): string {
+  if (groups.includes("match_pairs")) {
+    const pairs = parseLines(form.pairs_text)
+      .map((line) => {
+        const sep = line.includes("|") ? "|" : "—";
+        const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
+        return left && right ? `${left}—${right}` : "";
+      })
+      .filter(Boolean);
+    return pairs.join(", ") || form.correct_answer;
+  }
+  if (groups.includes("assemble_word")) {
+    const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
+    return segments.join("") || form.correct_answer;
+  }
+  if (groups.includes("tap_find_error")) {
+    return form.correct_text || form.correct_answer;
+  }
+  return form.correct_answer;
 }
 
 export function useTaskForm() {
@@ -289,6 +356,10 @@ export function useTaskForm() {
         hint: "",
         audio_text: "",
         expected_answers: "",
+        pairs_text: "",
+        tiles_text: "",
+        sentence: "",
+        error_word_index: -1,
       });
       for (const key of DEFAULT_TRACKABLE_KEYS) {
         dirtyFields.current.add(key);
@@ -335,11 +406,27 @@ export function useTaskForm() {
       if (lines.length < 2) e.expected_answers = "Хамгийн багадаа 2 хариулт оруулна уу";
     }
 
+    if (currentGroups.includes("match_pairs")) {
+      const pairs = parseLines(form.pairs_text).filter((l) => l.includes("|") || l.includes("—"));
+      if (pairs.length < 2) e.pairs_text = "Хамгийн багадаа 2 хос оруулна уу (зүүн | баруун)";
+    }
+
+    if (currentGroups.includes("assemble_word")) {
+      const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
+      if (segments.length < 2) e.tiles_text = "Хамгийн багадаа 2 хэсэг оруулна уу";
+    }
+
+    if (currentGroups.includes("tap_find_error")) {
+      if (!form.sentence.trim()) e.sentence = "Өгүүлбэр оруулна уу";
+      if (form.error_word_index < 0) e.error_word_index = "Алдаатай үгийг сонгоно уу";
+      if (!form.correct_text.trim()) e.correct_text = "Засварласан өгүүлбэр оруулна уу";
+    }
+
     return e;
   }, [form]);
 
   const step1Keys: (keyof ValidationErrors)[] = ["task_type", "grade_band", "primary_skill", "level_target", "difficulty", "lesson_slot_fit"];
-  const step2Keys: (keyof ValidationErrors)[] = ["title", "prompt_text", "correct_answer", "incorrect_text", "correct_text", "audio_text", "expected_answers", "initial_text"];
+  const step2Keys: (keyof ValidationErrors)[] = ["title", "prompt_text", "correct_answer", "incorrect_text", "correct_text", "audio_text", "expected_answers", "initial_text", "pairs_text", "tiles_text", "sentence", "error_word_index"];
 
   const stepErrors: [boolean, boolean, boolean] = useMemo(() => [
     step1Keys.some((k) => errors[k]),
@@ -362,7 +449,7 @@ export function useTaskForm() {
         task_type: form.task_type,
         title: form.title,
         prompt_text: form.prompt_text,
-        correct_answer: form.correct_answer,
+        correct_answer: deriveCorrectAnswer(form, currentGroups),
         options: buildOptions(form, currentGroups),
         primary_skill: form.primary_skill,
         secondary_skill: form.secondary_skill || null,
@@ -378,6 +465,7 @@ export function useTaskForm() {
         initial_text: form.initial_text || undefined,
         audio_url: null,
         image_url: null,
+        interaction_form: deriveInteractionForm(form.task_type),
       };
       const result = await createTask(payload);
 

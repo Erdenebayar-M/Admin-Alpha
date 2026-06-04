@@ -84,7 +84,7 @@ export function TaskPreviewCard({
             </div>
           )}
 
-          {groups.includes("multiple_choice") && (
+          {groups.includes("choice") && (
             <div className="space-y-2">
               {[form.correct_answer, ...parseLines(form.expected_answers)]
                 .filter(Boolean)
@@ -100,71 +100,66 @@ export function TaskPreviewCard({
             </div>
           )}
 
-          {groups.includes("rewrite") && form.initial_text && (
-            <div className="rounded-md border bg-background p-3">
-              <p className="text-xs font-medium text-muted-foreground mb-1">
-                Эх бичвэр:
-              </p>
-              <p className="text-sm">{form.initial_text}</p>
+          {groups.includes("match_pairs") && form.pairs_text && (
+            <div className="space-y-1.5">
+              {form.pairs_text.split("\n").map((line, i) => {
+                const sep = line.includes("|") ? "|" : "—";
+                const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
+                if (!left || !right) return null;
+                return (
+                  <div key={i} className="flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+                    <span className="font-medium">{left}</span>
+                    <span className="text-muted-foreground mx-1">⟷</span>
+                    <span className="rounded border border-dashed px-2 py-0.5 text-muted-foreground">?</span>
+                  </div>
+                );
+              })}
             </div>
           )}
 
-          {taskType === "TT9" && form.initial_text && (
-            <div className="rounded-md border bg-background p-3">
-              <p className="text-xs font-medium text-muted-foreground mb-1">
-                Холилдсон үсгүүд:
-              </p>
-              <p className="text-lg font-mono tracking-[0.5em] text-center py-2">
-                {form.initial_text}
-              </p>
-            </div>
-          )}
-
-          {taskType === "TT10" && form.initial_text && (
-            <div className="rounded-md border bg-background p-3">
-              <p className="text-xs font-medium text-muted-foreground mb-1">
-                Дутуу үг:
-              </p>
-              <p className="text-lg font-mono text-center py-2">
-                {form.initial_text}
-              </p>
-            </div>
-          )}
-
-          {taskType === "TT11" && (
-            <div className="flex gap-3 justify-center py-2">
-              {["Зөв", "Буруу"].map((opt) => (
-                <div
-                  key={opt}
-                  className="flex items-center gap-2 rounded-lg border px-5 py-3 text-sm font-medium"
-                >
-                  <div className="h-4 w-4 rounded-full border-2 border-muted-foreground/40" />
-                  {opt}
-                </div>
+          {groups.includes("assemble_word") && form.tiles_text && (
+            <div className="flex flex-wrap gap-1.5 rounded-md border border-dashed p-3">
+              {form.tiles_text.trim().split(/\s+/).filter(Boolean).map((seg, i) => (
+                <span key={i} className="rounded border bg-background px-2.5 py-1.5 font-mono text-sm font-medium shadow-sm">
+                  {seg}
+                </span>
               ))}
             </div>
           )}
 
-          {!groups.includes("multiple_choice") &&
+          {groups.includes("tap_find_error") && form.sentence && (
+            <div className="flex flex-wrap gap-1.5 rounded-md border p-3">
+              {form.sentence.trim().split(/\s+/).map((word, i) => (
+                <span
+                  key={i}
+                  className={`rounded px-2 py-1 text-sm font-medium ${
+                    i === form.error_word_index
+                      ? "border border-destructive/50 bg-destructive/10 text-destructive"
+                      : "border border-transparent"
+                  }`}
+                >
+                  {word}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {!groups.includes("choice") &&
             !groups.includes("correction") &&
-            !groups.includes("rewrite") &&
             !groups.includes("dictation") &&
-            taskType !== "TT9" &&
-            taskType !== "TT10" &&
-            taskType !== "TT11" && (
+            !groups.includes("match_pairs") &&
+            !groups.includes("assemble_word") &&
+            !groups.includes("tap_find_error") && (
               <div className="rounded-md border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
                 Сурагч энд хариулт бичнэ...
               </div>
             )}
 
-          {(groups.includes("dictation") || groups.includes("rewrite")) &&
-            !form.initial_text &&
-            taskType !== "TT9" &&
-            taskType !== "TT10" && (
-              <div className="rounded-md border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
-                Сурагч энд хариулт бичнэ...
-              </div>
-            )}
+          {groups.includes("dictation") && (
+            <div className="rounded-md border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+              Сурагч энд хариулт бичнэ...
+            </div>
+          )}
         </div>
 
         {/* Answer reveal */}

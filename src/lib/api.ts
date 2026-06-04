@@ -262,6 +262,7 @@ export interface CreateTaskPayload {
   initial_text?: string;
   audio_url?: string | null;
   image_url?: string | null;
+  interaction_form?: string | null;
 }
 
 export interface CreateTaskResult {

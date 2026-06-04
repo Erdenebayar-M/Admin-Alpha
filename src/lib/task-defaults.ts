@@ -4,7 +4,10 @@ export type OptionGroup =
   | "dictation"
   | "correction"
   | "self_check"
-  | "copy";
+  | "copy"
+  | "match_pairs"
+  | "assemble_word"
+  | "tap_find_error";
 
 export interface TaskBlueprint {
   primary_skill: string;
@@ -213,6 +216,22 @@ export const TASK_TYPE_BLUEPRINT: Record<string, TaskBlueprint> = {
   TT_EXPLAINED_CORRECTION: {
     primary_skill: "S8",
     level_target: "M3",
+    error_targets: ["H4"],
+  },
+  // v3 interaction forms
+  TT_MATCH_PAIRS: {
+    primary_skill: "S1",
+    level_target: "M0",
+    error_targets: ["A2"],
+  },
+  TT_ASSEMBLE_WORD: {
+    primary_skill: "S1",
+    level_target: "M0",
+    error_targets: ["A3", "B3"],
+  },
+  TT_TAP_FIND_ERROR: {
+    primary_skill: "S8",
+    level_target: "M2",
     error_targets: ["H4"],
   },
 };
@@ -541,6 +560,31 @@ export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
     category: "correction",
     gradeBand: "G24",
   },
+  // v3 interaction forms
+  TT_MATCH_PAIRS: {
+    label: "Холбож тааруулах",
+    shortLabel: "v3-001",
+    description: "Зүүн баганы зүйлийг баруун баганы зүйлтэй холбох",
+    groups: ["match_pairs"],
+    category: "match_pairs",
+    gradeBand: "both",
+  },
+  TT_ASSEMBLE_WORD: {
+    label: "Угсрах",
+    shortLabel: "v3-002",
+    description: "Холилдсон үсэг/үеүдийг зөв дарааллаар угсрах",
+    groups: ["assemble_word"],
+    category: "assemble_word",
+    gradeBand: "both",
+  },
+  TT_TAP_FIND_ERROR: {
+    label: "Алдаа олж товших",
+    shortLabel: "v3-003",
+    description: "Өгүүлбэрийн алдаатай үгийг олж товших",
+    groups: ["tap_find_error"],
+    category: "tap_find_error",
+    gradeBand: "both",
+  },
 };
 
 export const CATEGORY_LABELS: Record<string, string> = {
@@ -550,6 +594,9 @@ export const CATEGORY_LABELS: Record<string, string> = {
   correction: "Алдааг засах",
   self_check: "Өөрийгөө шалгах",
   copy: "Хуулж бичих",
+  match_pairs: "Холбож тааруулах",
+  assemble_word: "Угсрах",
+  tap_find_error: "Алдаа олж товших",
 };
 
 export const CATEGORY_ORDER = [
@@ -559,6 +606,9 @@ export const CATEGORY_ORDER = [
   "correction",
   "self_check",
   "copy",
+  "match_pairs",
+  "assemble_word",
+  "tap_find_error",
 ] as const;
 
 export const SKILL_LABELS: Record<string, string> = {
@@ -770,6 +820,24 @@ export function computeDefaults(
       time = 45;
       slot = "CORE";
       break;
+    case "match_pairs":
+      difficulty = 1;
+      level = "M0";
+      time = 40;
+      slot = "WARM_UP";
+      break;
+    case "assemble_word":
+      difficulty = 1;
+      level = "M0";
+      time = 35;
+      slot = "WARM_UP";
+      break;
+    case "tap_find_error":
+      difficulty = isG24 ? 2 : 2;
+      level = "M2";
+      time = 30;
+      slot = "MIXED";
+      break;
     default:
       difficulty = 2;
       level = "M1";
@@ -783,6 +851,24 @@ export function computeDefaults(
     estimated_time_seconds: String(time),
     lesson_slot_fit: slot,
   };
+}
+
+const CATEGORY_TO_INTERACTION_FORM: Record<string, string> = {
+  choice: "CHOOSE",
+  fill: "FILL",
+  dictation: "TRANSCRIBE",
+  correction: "CORRECT",
+  self_check: "CORRECT",
+  copy: "FILL",
+  match_pairs: "MATCH",
+  assemble_word: "ASSEMBLE",
+  tap_find_error: "TAP",
+};
+
+export function deriveInteractionForm(taskType: string): string | null {
+  const info = TASK_TYPE_INFO[taskType];
+  if (!info) return null;
+  return CATEGORY_TO_INTERACTION_FORM[info.category] ?? null;
 }
 
 export function parseLines(raw: string): string[] {

@@ -4,7 +4,7 @@ export interface TaskOptions {
   word_count?: number;
   expected_answers?: string[];
   allow_partial?: boolean;
-  // correction (TT3_CORRECTION)
+  // correction
   incorrect_text?: string;
   correct_text?: string;
   hint?: string;
@@ -12,6 +12,14 @@ export interface TaskOptions {
   // choice tasks — stored as [{text, is_correct}], distractors extracted by backend
   choices?: Array<{ text: string; is_correct: boolean }>;
   distractors?: string[];
+  // TT_MATCH_PAIRS
+  pairs?: Array<{ left: string; right: string }>;
+  // TT_ASSEMBLE_WORD
+  tiles?: string[];
+  correct_order?: string[];
+  // TT_TAP_FIND_ERROR
+  sentence?: string;
+  error_word_index?: number;
 }
 
 export interface TaskContent {
@@ -35,6 +43,8 @@ export interface TaskContent {
   feedback_correct?: string;
   feedback_wrong?: string;
   initial_text?: string;
+  interaction_form?: string | null;
+  source?: string;
 }
 
 // Shape returned by GET /content/tasks and GET /content/tasks/:task_id

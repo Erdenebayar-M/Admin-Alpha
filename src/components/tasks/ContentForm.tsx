@@ -700,6 +700,227 @@ function FreeWriteContent({ form, set, errors }: SubProps) {
   );
 }
 
+// ─── v3 interaction forms ─────────────────────────────────────────────────────
+
+function MatchPairsContent({ form, set, errors }: SubProps) {
+  return (
+    <>
+      <div className="rounded-lg border border-violet-200 bg-violet-50/50 p-3 text-xs text-violet-800 dark:border-violet-800 dark:bg-violet-950/30 dark:text-violet-200">
+        Зүүн ба баруун баганы зүйлсийг хосоор холбоно. Мөр бүрт{" "}
+        <code className="rounded bg-violet-200 px-1 dark:bg-violet-800">зүүн | баруун</code>{" "}
+        хэлбэрээр бичнэ үү.
+      </div>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
+        <SuggestInput
+          value={form.title}
+          onChange={(v) => set("title", v)}
+          placeholder="Жнэ: Үсэг-зурагтай тааруулах"
+          suggestions={["Холбож тааруулах дасгал", "Хосоор тааруулах", "Зүүн-баруун холболт"]}
+        />
+      </Field>
+      <Field label="Заавар" required error={errors.prompt_text}>
+        <SuggestInput
+          value={form.prompt_text}
+          onChange={(v) => set("prompt_text", v)}
+          placeholder="Жнэ: Тохирох хосуудыг холбоно уу."
+          suggestions={["Тохирох хосуудыг холбоно уу.", "Зүүн ба баруун баганыг тааруулна уу.", "Хосуудыг чирж холбоно уу."]}
+        />
+      </Field>
+      <Separator />
+      <Field
+        label="Хосуудын жагсаалт"
+        required
+        error={errors.pairs_text}
+        hint="Мөр бүрт нэг хос — 'зүүн | баруун' хэлбэрт (2–6 хос)"
+      >
+        <textarea
+          rows={6}
+          className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          value={form.pairs_text}
+          onChange={(e) => set("pairs_text", e.target.value)}
+          placeholder={"м | нар\nн | мод\nг | гэр"}
+        />
+      </Field>
+      {form.pairs_text && (
+        <div className="rounded-md bg-muted/40 p-3">
+          <p className="mb-2 text-xs font-medium text-muted-foreground">Хосуудын урьдчилан харагдац</p>
+          <div className="space-y-1.5">
+            {form.pairs_text
+              .split("\n")
+              .map((line) => {
+                const sep = line.includes("|") ? "|" : "—";
+                const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
+                return left && right ? { left, right } : null;
+              })
+              .filter(Boolean)
+              .map((pair, i) => (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span className="rounded border px-2 py-0.5 font-medium">{pair!.left}</span>
+                  <span className="text-muted-foreground">→</span>
+                  <span className="rounded border px-2 py-0.5 font-medium">{pair!.right}</span>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+      <FeedbackField form={form} set={set} />
+    </>
+  );
+}
+
+function AssembleWordContent({ form, set, errors }: SubProps) {
+  const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
+
+  return (
+    <>
+      <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 text-xs text-teal-800 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-200">
+        Сурагч холилдсон үсэг/үеүдийг зөв дарааллаар угсрана. Сегментүүдийг{" "}
+        <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.
+      </div>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
+        <SuggestInput
+          value={form.title}
+          onChange={(v) => set("title", v)}
+          placeholder="Жнэ: Үсэг угсрах"
+          suggestions={["Үсэг угсрах дасгал", "Угсрах", "Холилдсон үсэг"]}
+        />
+      </Field>
+      <Field label="Заавар" required error={errors.prompt_text}>
+        <SuggestInput
+          value={form.prompt_text}
+          onChange={(v) => set("prompt_text", v)}
+          placeholder="Жнэ: Үсгүүдийг зөв байрлуулж үг бүтээнэ үү."
+          suggestions={["Үсгүүдийг зөв байрлуулж үг бүтээнэ үү.", "Холилдсон үсгүүдийг эрэмбэлнэ үү.", "Зөв дарааллаар угсарна уу."]}
+        />
+      </Field>
+      <Separator />
+      <Field
+        label="Зөв дарааллын сегментүүд"
+        required
+        error={errors.tiles_text}
+        hint="Зайгаар тусгаарлан зөв дарааллаар бичнэ үү (≥2 хэсэг)"
+      >
+        <input
+          type="text"
+          className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          value={form.tiles_text}
+          onChange={(e) => set("tiles_text", e.target.value)}
+          placeholder="Жнэ: г э р э л"
+        />
+      </Field>
+      {segments.length >= 2 && (
+        <div className="rounded-md bg-muted/40 p-3 space-y-2">
+          <p className="text-xs font-medium text-muted-foreground">Урьдчилан харагдац</p>
+          <div className="flex flex-wrap gap-1.5">
+            {segments.map((seg, i) => (
+              <span
+                key={i}
+                className="rounded border border-primary/30 bg-primary/5 px-2.5 py-1 font-mono text-sm font-medium"
+              >
+                {seg}
+              </span>
+            ))}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Угсраад:{" "}
+            <span className="font-mono font-semibold text-foreground">{segments.join("")}</span>
+          </p>
+        </div>
+      )}
+      <FeedbackField form={form} set={set} />
+    </>
+  );
+}
+
+function TapFindErrorContent({ form, set, errors }: SubProps) {
+  const words = form.sentence.trim().split(/\s+/).filter(Boolean);
+
+  return (
+    <>
+      <div className="rounded-lg border border-orange-200 bg-orange-50/50 p-3 text-xs text-orange-800 dark:border-orange-800 dark:bg-orange-950/30 dark:text-orange-200">
+        Өгүүлбэрт нэг алдаатай үг байрлуулна. Сурагч аль үгийг товшихад зөв байх тэр үгийг
+        доороос сонгоно уу.
+      </div>
+      <Separator />
+      <Field label="Гарчиг оруулах" required error={errors.title}>
+        <SuggestInput
+          value={form.title}
+          onChange={(v) => set("title", v)}
+          placeholder="Жнэ: Алдаатай үгийг ол"
+          suggestions={["Алдаатай үгийг олж товш", "Буруу үгийг тодорхойл", "Алдаа олох дасгал"]}
+        />
+      </Field>
+      <Field label="Заавар" required error={errors.prompt_text}>
+        <SuggestInput
+          value={form.prompt_text}
+          onChange={(v) => set("prompt_text", v)}
+          placeholder="Жнэ: Алдаатай үгийг олоод товшино уу."
+          suggestions={["Алдаатай үгийг олоод товшино уу.", "Буруу бичигдсэн үгийг товш.", "Бичгийн алдаатай үгийг ол."]}
+        />
+      </Field>
+      <Separator />
+      <Field label="Алдаатай өгүүлбэр" required error={errors.sentence} hint="Нэг үг нь буруу бичигдсэн өгүүлбэр">
+        <input
+          type="text"
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          value={form.sentence}
+          onChange={(e) => {
+            set("sentence", e.target.value);
+            set("error_word_index", -1);
+          }}
+          placeholder="Жнэ: Бид сургуль руу явна."
+        />
+      </Field>
+      {words.length > 0 && (
+        <Field
+          label="Алдаатай үгийг сонгоно уу"
+          required
+          error={errors.error_word_index}
+          hint="Товшиход зөв байх (буруу бичигдсэн) үгийг тэмдэглэ"
+        >
+          <div className="flex flex-wrap gap-1.5">
+            {words.map((word, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => set("error_word_index", i)}
+                className={`rounded border px-2.5 py-1 text-sm font-medium transition-colors ${
+                  form.error_word_index === i
+                    ? "border-destructive bg-destructive/10 text-destructive ring-1 ring-destructive"
+                    : "border-border bg-background hover:border-foreground/30"
+                }`}
+              >
+                {word}
+              </button>
+            ))}
+          </div>
+          {form.error_word_index >= 0 && words[form.error_word_index] && (
+            <p className="mt-1 text-xs text-muted-foreground">
+              Сонгосон:{" "}
+              <span className="font-medium text-destructive">
+                {words[form.error_word_index]}
+              </span>{" "}
+              (индекс {form.error_word_index})
+            </p>
+          )}
+        </Field>
+      )}
+      <Field label="Засварласан өгүүлбэр (зөв хэлбэр)" required error={errors.correct_text}>
+        <input
+          type="text"
+          className="w-full rounded-md border border-green-500/30 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          value={form.correct_text}
+          onChange={(e) => set("correct_text", e.target.value)}
+          placeholder="Жнэ: Бид сургууль руу явна."
+        />
+      </Field>
+      <FeedbackField form={form} set={set} />
+    </>
+  );
+}
+
 // ─── Shared helpers ──────────────────────────────────────────────────────────
 
 function FeedbackField({ form, set }: { form: FormState; set: ContentFormProps["set"] }) {
@@ -820,6 +1041,10 @@ const TYPE_CONTENT_MAP: Record<string, React.FC<SubProps>> = {
   TT_COMPOUND_SUFFIX:        FillBlankContent,
   TT_MIXED_CHECKPOINT:       ChooseCorrectContent,
   TT_EXPLAINED_CORRECTION:   CorrectionContent,
+  // v3 interaction forms
+  TT_MATCH_PAIRS:            MatchPairsContent,
+  TT_ASSEMBLE_WORD:          AssembleWordContent,
+  TT_TAP_FIND_ERROR:         TapFindErrorContent,
 };
 
 export function ContentForm({ form, set, toggleList, groups, errors, taskType, audioPreview, onAudioGenerated, imagePreview, onImageGenerated }: ContentFormProps) {

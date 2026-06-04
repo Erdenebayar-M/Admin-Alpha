@@ -278,13 +278,44 @@ export function TaskPreview({
         )}
       </Field>
 
-      {/* ── Correction layout (TT3_CORRECTION only) ───────────────────────── */}
+      {/* ── Correction layout ─────────────────────────────────────────────── */}
       {isCorrection && (
         <CorrectionSection
           initialText={initialText}
           opts={currentOpts}
           isEditMode={isEditMode}
           onDraftChange={onDraftChange}
+        />
+      )}
+
+      {/* ── Match pairs ────────────────────────────────────────────────────── */}
+      {task.task_type === "TT_MATCH_PAIRS" && (opts.pairs?.length ?? 0) > 0 && (
+        <MatchPairsSection
+          pairs={currentOpts.pairs ?? opts.pairs ?? []}
+          isEditMode={isEditMode}
+          onDraftChange={onDraftChange}
+          allOpts={currentOpts}
+        />
+      )}
+
+      {/* ── Assemble word ──────────────────────────────────────────────────── */}
+      {task.task_type === "TT_ASSEMBLE_WORD" && (opts.correct_order?.length ?? 0) > 0 && (
+        <AssembleWordSection
+          tiles={opts.tiles ?? []}
+          correctOrder={currentOpts.correct_order ?? opts.correct_order ?? []}
+          isEditMode={isEditMode}
+          onDraftChange={onDraftChange}
+          allOpts={currentOpts}
+        />
+      )}
+
+      {/* ── Tap find error ─────────────────────────────────────────────────── */}
+      {task.task_type === "TT_TAP_FIND_ERROR" && opts.sentence && (
+        <TapFindErrorSection
+          opts={currentOpts}
+          isEditMode={isEditMode}
+          onDraftChange={onDraftChange}
+          allOpts={currentOpts}
         />
       )}
 
@@ -462,6 +493,186 @@ export function TaskPreview({
       />
 
     </div>
+  );
+}
+
+function MatchPairsSection({
+  pairs,
+  isEditMode,
+  onDraftChange,
+  allOpts,
+}: {
+  pairs: Array<{ left: string; right: string }>;
+  isEditMode: boolean;
+  onDraftChange: (patch: Partial<TaskContent>) => void;
+  allOpts: TaskContent["options"];
+}) {
+  const raw = pairs.map((p) => `${p.left} | ${p.right}`).join("\n");
+
+  return (
+    <Field label="Хосуудын жагсаалт">
+      {isEditMode ? (
+        <textarea
+          className={textareaClass}
+          rows={Math.max(4, pairs.length + 1)}
+          value={raw}
+          placeholder={"м | нар\nн | мод"}
+          onChange={(e) => {
+            const updated = e.target.value
+              .split("\n")
+              .map((line) => {
+                const [left = "", right = ""] = line.split("|").map((s) => s.trim());
+                return { left, right };
+              })
+              .filter((p) => p.left && p.right);
+            onDraftChange({ options: { ...allOpts, pairs: updated } });
+          }}
+        />
+      ) : (
+        <div className="space-y-1.5">
+          {pairs.map((p, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm">
+              <span className="rounded border px-2 py-0.5 font-medium">{p.left}</span>
+              <span className="text-muted-foreground">→</span>
+              <span className="rounded border px-2 py-0.5 font-medium">{p.right}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </Field>
+  );
+}
+
+function AssembleWordSection({
+  tiles,
+  correctOrder,
+  isEditMode,
+  onDraftChange,
+  allOpts,
+}: {
+  tiles: string[];
+  correctOrder: string[];
+  isEditMode: boolean;
+  onDraftChange: (patch: Partial<TaskContent>) => void;
+  allOpts: TaskContent["options"];
+}) {
+  return (
+    <>
+      <Field label="Зөв дараалал (сегментүүд)">
+        {isEditMode ? (
+          <input
+            className={inputClass}
+            value={correctOrder.join(" ")}
+            placeholder="г э р э л"
+            onChange={(e) => {
+              const segs = e.target.value.trim().split(/\s+/).filter(Boolean);
+              const shuffled = [...segs].sort(() => Math.random() - 0.5);
+              onDraftChange({ options: { ...allOpts, correct_order: segs, tiles: shuffled } });
+            }}
+          />
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {correctOrder.map((s, i) => (
+              <span key={i} className="rounded border border-green-400 bg-green-50 px-2 py-0.5 font-mono text-sm font-medium text-green-800">
+                {s}
+              </span>
+            ))}
+          </div>
+        )}
+      </Field>
+      <Field label="Сурагчид харуулах холилдсон хэсгүүд">
+        <div className="flex flex-wrap gap-1.5">
+          {tiles.map((s, i) => (
+            <span key={i} className="rounded border px-2 py-0.5 font-mono text-sm font-medium">
+              {s}
+            </span>
+          ))}
+        </div>
+      </Field>
+    </>
+  );
+}
+
+function TapFindErrorSection({
+  opts,
+  isEditMode,
+  onDraftChange,
+  allOpts,
+}: {
+  opts: TaskContent["options"];
+  isEditMode: boolean;
+  onDraftChange: (patch: Partial<TaskContent>) => void;
+  allOpts: TaskContent["options"];
+}) {
+  const words = (opts.sentence ?? "").trim().split(/\s+/).filter(Boolean);
+
+  return (
+    <>
+      <Field label="Алдаатай өгүүлбэр">
+        {isEditMode ? (
+          <input
+            className={inputClass}
+            value={opts.sentence ?? ""}
+            onChange={(e) =>
+              onDraftChange({ options: { ...allOpts, sentence: e.target.value } })
+            }
+          />
+        ) : (
+          <div className="flex flex-wrap gap-1.5">
+            {words.map((word, i) => (
+              <span
+                key={i}
+                className={`rounded px-2 py-1 text-sm font-medium ${
+                  i === opts.error_word_index
+                    ? "border border-destructive/50 bg-destructive/10 text-destructive"
+                    : "border border-border"
+                }`}
+              >
+                {word}
+              </span>
+            ))}
+          </div>
+        )}
+      </Field>
+      <Field label="Алдаатай үгийн индекс (0-based)">
+        {isEditMode ? (
+          <input
+            className={inputClass}
+            type="number"
+            min={0}
+            max={words.length - 1}
+            value={opts.error_word_index ?? ""}
+            onChange={(e) =>
+              onDraftChange({
+                options: { ...allOpts, error_word_index: parseInt(e.target.value, 10) },
+              })
+            }
+          />
+        ) : (
+          <span className="font-mono text-sm">
+            {opts.error_word_index ?? "—"}{" "}
+            {opts.error_word_index !== undefined && words[opts.error_word_index]
+              ? `→ "${words[opts.error_word_index]}"`
+              : ""}
+          </span>
+        )}
+      </Field>
+      <Field label="Засварласан өгүүлбэр">
+        {isEditMode ? (
+          <input
+            className={inputClass}
+            value={opts.correct_text ?? ""}
+            onChange={(e) =>
+              onDraftChange({ options: { ...allOpts, correct_text: e.target.value } })
+            }
+          />
+        ) : (
+          <span className="inline-block rounded-md border border-green-400 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-800">
+            {opts.correct_text || "—"}
+          </span>
+        )}
+      </Field>
+    </>
   );
 }
 
