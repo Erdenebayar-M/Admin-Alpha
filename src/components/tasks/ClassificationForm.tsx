@@ -113,8 +113,8 @@ export function ClassificationForm({
                       className={cn(
                         "rounded border px-2.5 py-1 text-xs font-medium transition-colors",
                         active
-                          ? "border-foreground bg-foreground text-background"
-                          : "border-border text-foreground hover:border-foreground/40 hover:bg-muted/50",
+                          ? "border-primary bg-primary text-primary-foreground"
+                          : "border-border text-foreground hover:border-primary/40 hover:bg-muted/50",
                       )}
                     >
                       {ERROR_LABELS[code]}

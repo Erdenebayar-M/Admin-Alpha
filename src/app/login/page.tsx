@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { GraduationCap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export default function LoginPage() {
@@ -36,48 +37,63 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="bg-card rounded-xl shadow-sm border border-border p-8 w-full max-w-sm">
-        <div className="mb-6">
-          <h1 className="text-lg font-semibold text-foreground">Админ самбар</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Монгол бичгийн апп</p>
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="w-full max-w-sm">
+        {/* Brand header */}
+        <div className="mb-6 flex flex-col items-center gap-3">
+          <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md">
+            <GraduationCap className="size-6" />
+          </div>
+          <div className="text-center">
+            <h1 className="text-xl font-bold text-foreground">Боловсролын Систем</h1>
+            <p className="mt-0.5 text-sm text-muted-foreground">Монгол бичгийн апп · Админ самбар</p>
+          </div>
         </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground" htmlFor="email">
-              И-мэйл
-            </label>
-            <input
-              id="email"
-              type="email"
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition"
-              placeholder="admin@example.com"
-              required
-              autoComplete="email"
-              autoFocus
-            />
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <label className="text-sm font-medium text-foreground" htmlFor="password">
-              Нууц үг
-            </label>
-            <input
-              id="password"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="rounded-lg border border-input bg-background text-foreground px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition"
-              required
-              autoComplete="current-password"
-            />
-          </div>
-          {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={loading} className="w-full mt-1">
-            {loading ? 'Нэвтэрч байна…' : 'Нэвтрэх'}
-          </Button>
-        </form>
+
+        {/* Login card */}
+        <div className="rounded-xl border border-border bg-card px-8 py-7 shadow-sm">
+          <h2 className="mb-5 text-sm font-semibold text-foreground">Нэвтрэх</h2>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-foreground" htmlFor="email">
+                И-мэйл
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={e => setEmail(e.target.value)}
+                className="rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
+                placeholder="admin@example.com"
+                required
+                autoComplete="email"
+                autoFocus
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-xs font-medium text-foreground" htmlFor="password">
+                Нууц үг
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                className="rounded-md border border-input bg-background text-foreground px-3 py-2 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            {error && (
+              <p className="rounded-md border border-destructive/20 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+                {error}
+              </p>
+            )}
+            <Button type="submit" disabled={loading} className="mt-1 w-full">
+              {loading ? 'Нэвтэрч байна…' : 'Нэвтрэх'}
+            </Button>
+          </form>
+        </div>
       </div>
     </div>
   )

@@ -10,6 +10,7 @@ import { useUpdateTaskContent } from '@/hooks/useTaskActions';
 import { useHotkeys } from '@/hooks/useHotkeys';
 import { TaskPreview } from '@/components/review/TaskPreview';
 import { ReviewPanel, type ReviewPanelRef } from '@/components/review/ReviewPanel';
+import { PageHeader } from '@/components/ui/page-header';
 import {
   KeyboardShortcutsHelp,
   ShortcutsHelpButton,
@@ -123,11 +124,8 @@ export default function ReviewDetailPage() {
   if (isError || !item || !displayTask) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-16 text-center">
-        <p className="text-muted-foreground mb-4">Зүйл олдсонгүй.</p>
-        <Link
-          href="/admin/review"
-          className="text-sm underline text-muted-foreground hover:text-foreground"
-        >
+        <p className="text-muted-foreground mb-3">Зүйл олдсонгүй.</p>
+        <Link href="/admin/review" className="text-sm text-primary hover:underline">
           Дараалал руу буцах
         </Link>
       </div>
@@ -135,22 +133,17 @@ export default function ReviewDetailPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      {/* Header: breadcrumb + help */}
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-6">
-        <div className="flex items-center gap-2 text-sm text-muted-foreground min-w-0">
-          <Link href="/admin/review" className="hover:text-foreground transition-colors shrink-0">
-            Хяналтын дараалал
-          </Link>
-          <span className="shrink-0">/</span>
-          <span className="font-mono text-foreground truncate">{item.task.task_id}</span>
-        </div>
+    <div>
+      <PageHeader
+        breadcrumbs={[
+          { label: "Хяналт", href: "/admin/review" },
+          { label: item.task.task_id },
+        ]}
+        title={item.task.title || item.task.task_id}
+        actions={<ShortcutsHelpButton onClick={() => setIsHelpOpen(true)} />}
+      />
 
-        <div className="flex items-center gap-2 shrink-0">
-          <ShortcutsHelpButton onClick={() => setIsHelpOpen(true)} />
-        </div>
-      </div>
-
+      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
       {/* 2-col layout on md+, stacked on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6 items-start">
         <TaskPreview
@@ -186,13 +179,16 @@ export default function ReviewDetailPage() {
       {/* Toast */}
       <div
         className={cn(
-          'fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-foreground text-background px-5 py-3 text-sm font-medium shadow-lg transition-all duration-300',
+          'fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-primary text-primary-foreground px-5 py-3 text-sm font-medium shadow-lg transition-all duration-300',
           toast.visible
             ? 'opacity-100 translate-y-0'
             : 'opacity-0 translate-y-2 pointer-events-none',
         )}
+        role="status"
+        aria-live="polite"
       >
         {toast.message}
+      </div>
       </div>
     </div>
   );

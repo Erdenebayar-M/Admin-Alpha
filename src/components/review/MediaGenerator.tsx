@@ -197,7 +197,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
                     type="button"
                     onClick={handleGenerateImage}
                     disabled={!imgPrompt.trim()}
-                    className={cn(btnBase, 'bg-foreground text-background hover:opacity-80')}
+                    className={cn(btnBase, 'bg-primary text-primary-foreground hover:bg-primary/90')}
                   >
                     Generate image
                   </button>
@@ -299,7 +299,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
                     type="button"
                     onClick={handleGenerateAudio}
                     disabled={!audioText.trim()}
-                    className={cn(btnBase, 'bg-foreground text-background hover:opacity-80')}
+                    className={cn(btnBase, 'bg-primary text-primary-foreground hover:bg-primary/90')}
                   >
                     Generate audio
                   </button>

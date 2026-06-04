@@ -186,7 +186,7 @@ function ReviewDetailContent({ id, onClose }: { id: string; onClose: () => void 
 
       <div
         className={cn(
-          "fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-lg bg-foreground text-background px-5 py-3 text-sm font-medium shadow-lg transition-all duration-300",
+          "fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-lg bg-primary text-primary-foreground px-5 py-3 text-sm font-medium shadow-lg transition-all duration-300",
           toast.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
         )}
       >

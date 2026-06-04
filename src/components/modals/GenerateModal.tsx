@@ -58,8 +58,8 @@ function ToggleChip<T extends string | number>({
       className={cn(
         "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
         active
-          ? "border-foreground bg-foreground text-background"
-          : "border-border bg-background text-muted-foreground hover:border-foreground hover:text-foreground",
+          ? "border-primary bg-primary text-primary-foreground"
+          : "border-border bg-background text-muted-foreground hover:border-primary hover:text-foreground",
       )}
     >
       {children}
@@ -80,7 +80,7 @@ function SpecCard({
     <label
       className={cn(
         "flex cursor-pointer items-start gap-2.5 rounded-lg border p-3 transition-colors",
-        selected ? "border-foreground bg-foreground/5" : "border-border hover:border-foreground/40",
+        selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/40",
       )}
     >
       <input
@@ -297,7 +297,7 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-md bg-foreground px-3 py-1.5 text-xs font-medium text-background hover:opacity-90 transition-opacity"
+                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90 transition-colors"
                 >
                   Хяналтад харах →
                 </button>
@@ -329,7 +329,7 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
                 type="button"
                 onClick={() => mutation.mutate()}
                 disabled={mutation.isPending}
-                className="rounded-md bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 transition-opacity disabled:pointer-events-none disabled:opacity-60"
+                className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors disabled:pointer-events-none disabled:opacity-60 shadow-sm"
               >
                 Үүсгэх
               </button>

@@ -57,7 +57,7 @@ export function ToggleChip({
       className={cn(
         "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
         selected
-          ? "border-foreground bg-foreground text-background"
+          ? "border-primary bg-primary text-primary-foreground"
           : "border-border bg-background text-muted-foreground hover:text-foreground",
       )}
     >

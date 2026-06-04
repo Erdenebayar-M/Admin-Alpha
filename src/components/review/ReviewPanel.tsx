@@ -208,7 +208,7 @@ function ActionButton({
       disabled={disabled}
       className={cn(
         "relative w-full rounded-md px-4 py-2 text-sm font-medium transition-colors disabled:pointer-events-none disabled:opacity-50",
-        variant === "save" && "bg-blue-600 text-white hover:bg-blue-700",
+        variant === "save" && "bg-primary text-primary-foreground hover:bg-primary/90",
         variant === "approve" && "bg-green-600 text-white hover:bg-green-700",
         variant === "reject" &&
           "border border-red-200 bg-red-100 text-red-700 hover:bg-red-200",

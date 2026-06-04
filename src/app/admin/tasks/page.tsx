@@ -2,11 +2,16 @@
 
 import { TasksTab } from "@/components/admin/TasksTab";
 import { ConnectedStatusBar } from "@/components/admin/ConnectedStatusBar";
+import { PageHeader } from "@/components/ui/page-header";
 
 export default function TasksPage() {
   return (
-    <div className="mx-auto max-w-7xl px-0">
-      <div className="sticky top-12 z-20 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 px-4 py-3">
+    <div className="mx-auto max-w-7xl">
+      <PageHeader
+        title="Даалгаврууд"
+        subtitle="Батлагдсан даалгаврын жагсаалт"
+      />
+      <div className="border-b border-border bg-card px-4 py-3 sm:px-6">
         <ConnectedStatusBar />
       </div>
       <TasksTab />
