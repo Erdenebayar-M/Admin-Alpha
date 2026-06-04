@@ -31,7 +31,7 @@ function needsAudio(task: TaskContent): boolean {
     (task.options.expected_answers?.length ?? 0) > 0 ||
     task.primary_skill === 'S7' ||
     task.task_type === 'TT_LISTEN_CHOOSE' ||
-    (TASK_TYPE_INFO[task.task_type]?.groups.includes('dictation') ?? false)
+    (TASK_TYPE_INFO[task.task_type]?.groups.some((g) => g === 'dictation' || g === 'mini_text') ?? false)
   );
 }
 

@@ -139,6 +139,48 @@ function ChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
   );
 }
 
+// ─── choice + audio (TT_LISTEN_CHOOSE) ───────────────────────────────────────
+
+function ListenChoiceContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+  return (
+    <>
+      <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
+        Аудио сонсоод зөв үгийг сонгоно. Сонгох хэд хэдэн сонголт бичиж, аудио үүсгэнэ үү.
+      </div>
+      <Separator />
+      <CommonFields
+        form={form} set={set} errors={errors}
+        onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
+        audioPreview={audioPreview} imagePreview={null}
+        titleSuggestions={["Аудио сонсоод сонго", "Сонсоод зөв үгийг тэмдэглэ"]}
+        promptSuggestions={["Аудиог сонсоод зөв үгийг сонгоно уу.", "Сонсоод тохирох үгийг сонгоно уу."]}
+      />
+      <Separator />
+      <Field label="Зөв хариулт" required error={errors.correct_answer}>
+        <Input
+          value={form.correct_answer}
+          onChange={(e) => set("correct_answer", e.target.value)}
+          placeholder="Зөв сонголт"
+          className="border-green-500/30"
+        />
+      </Field>
+      <Field label="Буруу сонголтууд (2–3)" required error={errors.expected_answers} hint="Enter дарж нэмнэ, хамгийн ихдээ 3">
+        <ChipInput
+          value={form.expected_answers}
+          onChange={(v) => set("expected_answers", v)}
+          placeholder="Буруу сонголт бичээд Enter дарна..."
+        />
+      </Field>
+      <AudioPreview
+        text={form.correct_answer}
+        slot="dictation"
+        onGenerated={onAudioGenerated}
+      />
+      <FeedbackFields form={form} set={set} />
+    </>
+  );
+}
+
 // ─── choice + image (TT_IMAGE_WORD_MATCH) ────────────────────────────────────
 
 function ImageChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
@@ -768,8 +810,8 @@ function MetadataSection({ form, set, groups }: Pick<ContentFormProps, "form" | 
 // ─── TYPE_CONTENT_MAP ─────────────────────────────────────────────────────────
 
 const TYPE_CONTENT_MAP: Record<string, React.FC<SubProps>> = {
-  // G12 — choice
-  TT_LISTEN_CHOOSE:          ChoiceContent,
+  // G12 — choice + audio
+  TT_LISTEN_CHOOSE:          ListenChoiceContent,
   TT_CHOOSE_CORRECT:         ChoiceContent,
   TT_SIMPLE_SUFFIX:          ChoiceContent,
   TT_MIXED_REVIEW:           ChoiceContent,
