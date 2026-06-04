@@ -123,18 +123,6 @@ function ChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
           placeholder="Буруу сонголт бичээд Enter дарна..."
         />
       </Field>
-      <Field label="Аудио trigger">
-        <div className="flex h-9 items-center gap-2">
-          <Checkbox
-            id="audio_trigger"
-            checked={form.audio_trigger}
-            onCheckedChange={(c) => set("audio_trigger", c === true)}
-          />
-          <label htmlFor="audio_trigger" className="cursor-pointer text-sm text-muted-foreground">
-            Аудио тоглуулах trigger байна
-          </label>
-        </div>
-      </Field>
       <FeedbackFields form={form} set={set} />
     </>
   );
@@ -214,18 +202,6 @@ function ImageChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
           placeholder="Буруу сонголт бичээд Enter дарна..."
         />
       </Field>
-      <Field label="Аудио trigger">
-        <div className="flex h-9 items-center gap-2">
-          <Checkbox
-            id="audio_trigger_img"
-            checked={form.audio_trigger}
-            onCheckedChange={(c) => set("audio_trigger", c === true)}
-          />
-          <label htmlFor="audio_trigger_img" className="cursor-pointer text-sm text-muted-foreground">
-            Аудио trigger байна
-          </label>
-        </div>
-      </Field>
       <ImagePreview
         correctAnswer={form.correct_answer}
         imageDescription={form.image_description}
@@ -260,7 +236,7 @@ function WordFillContent({ form, set, errors }: SubProps) {
         promptSuggestions={["Дутуу үсгийг бөглөнө үү.", "Зөв үсгийг нөхнэ үү."]}
       />
       <Separator />
-      <Field label="Бүтэн зөв үг" required error={errors.context_word} hint="Үгийн бүх үсгийг оруулна">
+      <Field label="Нөхөх үг" required error={errors.context_word} hint="Бүтэн хэлбэрээр бичнэ — доор дутуу үсгийг сонгоно">
         <Input
           value={form.context_word}
           onChange={(e) => {
@@ -299,6 +275,13 @@ function WordFillContent({ form, set, errors }: SubProps) {
           )}
         </Field>
       )}
+      <Field label="Харуулах текст" hint="Хоосон үлдвэл үгнээс автоматаар үүснэ">
+        <Input
+          value={form.display_text}
+          onChange={(e) => set("display_text", e.target.value)}
+          placeholder="Жнэ: Г_рэл мандана"
+        />
+      </Field>
       <FeedbackFields form={form} set={set} />
     </>
   );
@@ -688,29 +671,40 @@ function MatchPairsContent({ form, set, errors }: SubProps) {
 
 function AssembleWordContent({ form, set, errors }: SubProps) {
   const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
+  const isSyllable = form.task_type === "TT_1_4";
 
   return (
     <>
       <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 text-xs text-teal-800 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-200">
-        Сурагч холилдсон сегментүүдийг зөв дарааллаар угсрана. Сегментүүдийг{" "}
-        <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.
+        {isSyllable ? (
+          <>Сурагч холилдсон үеүүдийг зөв дарааллаар угсрана. Үеүүдийг{" "}
+          <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.</>
+        ) : (
+          <>Сурагч холилдсон сегментүүдийг зөв дарааллаар угсрана. Сегментүүдийг{" "}
+          <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.</>
+        )}
       </div>
       <Separator />
       <CommonFields
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
-        titleSuggestions={["Үсэг угсрах дасгал", "Угсрах"]}
-        promptSuggestions={["Үсгүүдийг зөв байрлуулж үг бүтээнэ үү."]}
+        titleSuggestions={isSyllable ? ["Үе угсрах дасгал", "Үгийг үеээр угсрах"] : ["Үсэг угсрах дасгал", "Угсрах"]}
+        promptSuggestions={isSyllable ? ["Үеүүдийг зөв байрлуулж үг бүтээнэ үү."] : ["Үсгүүдийг зөв байрлуулж үг бүтээнэ үү."]}
       />
       <Separator />
-      <Field label="Зөв дарааллын сегментүүд" required error={errors.tiles_text} hint="Зайгаар тусгаарлан зөв дарааллаар бичнэ үү (≥2 хэсэг)">
+      <Field
+        label={isSyllable ? "Зөв дарааллын үеүүд" : "Зөв дарааллын сегментүүд"}
+        required
+        error={errors.tiles_text}
+        hint={isSyllable ? "Зайгаар тусгаарлан зөв дарааллаар бичнэ үү (≥2 үе)" : "Зайгаар тусгаарлан зөв дарааллаар бичнэ үү (≥2 хэсэг)"}
+      >
         <input
           type="text"
           className="w-full rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           value={form.tiles_text}
           onChange={(e) => set("tiles_text", e.target.value)}
-          placeholder="Жнэ: г э р э л"
+          placeholder={isSyllable ? "Жнэ: гэр эл" : "Жнэ: г э р э л"}
         />
       </Field>
       {segments.length >= 2 && (
@@ -930,7 +924,7 @@ function AudioFillContent({ form, set, errors, audioPreview, onAudioGenerated }:
         promptSuggestions={["Аудиог сонсоод дутуу үсгийг нөхнэ үү."]}
       />
       <Separator />
-      <Field label="Бүтэн зөв үг" required error={errors.context_word}>
+      <Field label="Нөхөх үг" required error={errors.context_word} hint="Бүтэн хэлбэрээр бичнэ — доор дутуу үсгийг сонгоно">
         <Input
           value={form.context_word}
           onChange={(e) => {
@@ -967,6 +961,13 @@ function AudioFillContent({ form, set, errors, audioPreview, onAudioGenerated }:
           )}
         </Field>
       )}
+      <Field label="Харуулах текст" hint="Хоосон үлдвэл үгнээс автоматаар үүснэ">
+        <Input
+          value={form.display_text}
+          onChange={(e) => set("display_text", e.target.value)}
+          placeholder="Жнэ: Г_рэл мандана"
+        />
+      </Field>
       <AudioPreview
         text={form.context_word || form.correct_answer}
         slot="dictation"
@@ -1000,7 +1001,7 @@ function ImageFillContent({ form, set, errors, onImageGenerated }: SubProps) {
         promptSuggestions={["Зургийг харж дутуу үсгийг нөхнэ үү."]}
       />
       <Separator />
-      <Field label="Бүтэн зөв үг" required error={errors.context_word}>
+      <Field label="Нөхөх үг" required error={errors.context_word} hint="Бүтэн хэлбэрээр бичнэ — доор дутуу үсгийг сонгоно">
         <Input
           value={form.context_word}
           onChange={(e) => {
@@ -1037,6 +1038,13 @@ function ImageFillContent({ form, set, errors, onImageGenerated }: SubProps) {
           )}
         </Field>
       )}
+      <Field label="Харуулах текст" hint="Хоосон үлдвэл үгнээс автоматаар үүснэ">
+        <Input
+          value={form.display_text}
+          onChange={(e) => set("display_text", e.target.value)}
+          placeholder="Жнэ: _ар тусгална"
+        />
+      </Field>
       <ImagePreview
         correctAnswer={form.context_word || form.correct_answer}
         imageDescription={form.image_description}

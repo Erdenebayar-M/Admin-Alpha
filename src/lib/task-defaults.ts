@@ -109,9 +109,9 @@ export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
     grades: ["G1"],
   },
   TT_1_4: {
-    label: "Үг угсрах",
+    label: "Үгийг үеээр угсрах",
     shortLabel: "1.4",
-    description: "Холилдсон үсгүүдийг зөв дарааллаар угсрах",
+    description: "Холилдсон үеүүдийг зөв дарааллаар угсрах",
     groups: ["assemble_word"],
     category: "assemble_word",
     grades: ["G1"],
