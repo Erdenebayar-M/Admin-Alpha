@@ -233,7 +233,6 @@ export function ReviewTab() {
                   />
                 </th>
                 <th className={tableStyles.th}>Төрөл</th>
-                <th className={tableStyles.th}>Гарчиг</th>
                 <th className={tableStyles.th}>Асуулт</th>
                 <th className={tableStyles.th}>Хариулт</th>
                 <th className={tableStyles.th}>Анги</th>
@@ -287,10 +286,7 @@ export function ReviewTab() {
                           {TASK_TYPE_INFO[item.task.task_type]?.label ?? item.task.task_type}
                         </span>
                       </td>
-                      <td className={cn(tableStyles.cell, "max-w-[180px]")}>
-                        <span className="line-clamp-1 text-sm font-medium">{item.task.title}</span>
-                      </td>
-                      <td className={cn(tableStyles.cell, "max-w-[160px]")}>
+                      <td className={cn(tableStyles.cell, "max-w-[200px]")}>
                         <PromptCell text={item.task.prompt_text} />
                       </td>
                       <td className={cn(tableStyles.cell, "max-w-[120px]")}>

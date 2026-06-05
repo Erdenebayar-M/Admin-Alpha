@@ -21,7 +21,6 @@ export function variantToReviewItem(v: TaskVariant): ReviewItem {
     task: {
       task_id: v.task_id,
       task_type: v.task_type ?? "",
-      title: v.title ?? "",
       prompt_text: v.prompt_text ?? "",
       correct_answer: v.correct_answer ?? "",
       options: v.options ?? {},

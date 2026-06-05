@@ -54,7 +54,6 @@ function ReviewDetailContent({ id, onClose }: { id: string; onClose: () => void 
   const handleEnterEdit = useCallback(() => {
     if (!item) return;
     setEditDraft({
-      title: item.task.title,
       prompt_text: item.task.prompt_text,
       correct_answer: item.task.correct_answer,
       feedback_text: item.task.feedback_text,

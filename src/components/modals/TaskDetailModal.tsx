@@ -64,7 +64,6 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
   const handleEnterEdit = useCallback(() => {
     if (!task) return;
     setEditDraft({
-      title: task.title,
       prompt_text: task.prompt_text,
       correct_answer: task.correct_answer,
       feedback_text: task.feedback_text,

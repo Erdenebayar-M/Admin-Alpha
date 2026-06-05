@@ -21,7 +21,6 @@ import type { ImagePreviewState } from "@/components/tasks/ImagePreview";
 
 export type FormState = {
   task_type: string;
-  title: string;
   prompt_text: string;
   correct_answer: string;
   image_description: string;
@@ -74,7 +73,6 @@ export type FormState = {
 
 export const INITIAL_FORM: FormState = {
   task_type: "",
-  title: "",
   prompt_text: "",
   correct_answer: "",
   image_description: "",
@@ -130,7 +128,6 @@ export interface ValidationErrors {
   level_target?: string;
   difficulty?: string;
   lesson_slot_fit?: string;
-  title?: string;
   prompt_text?: string;
   correct_answer?: string;
   incorrect_text?: string;
@@ -476,7 +473,6 @@ export function useTaskForm() {
       dirtyFields.current.clear();
       setForm({
         ...last,
-        title: "",
         prompt_text: "",
         correct_answer: "",
         feedback_text: "",
@@ -527,9 +523,6 @@ export function useTaskForm() {
     if (isNaN(d) || d < 1 || d > 5) e.difficulty = "1-5 хоорондох тоо оруулна уу";
     if (!form.lesson_slot_fit) e.lesson_slot_fit = "Хичээлийн үе сонгоно уу";
 
-    if (!form.title.trim()) e.title = "Гарчиг оруулна уу";
-    else if (form.title.length > 200) e.title = "Гарчиг 200 тэмдэгтээс хэтрэхгүй";
-
     if (!form.prompt_text.trim()) e.prompt_text = "Даалгаврын текст оруулна уу";
     else if (form.prompt_text.length > 1000) e.prompt_text = "1000 тэмдэгтээс хэтрэхгүй";
 
@@ -579,7 +572,7 @@ export function useTaskForm() {
 
   const step1Keys: (keyof ValidationErrors)[] = ["task_type", "grade_band", "primary_skill", "level_target", "difficulty", "lesson_slot_fit"];
   const step2Keys: (keyof ValidationErrors)[] = [
-    "title", "prompt_text", "correct_answer", "incorrect_text", "correct_text",
+    "prompt_text", "correct_answer", "incorrect_text", "correct_text",
     "audio_text", "expected_answers", "initial_text",
     "context_word", "display_text", "sentence_template", "blank_answer",
     "sentence_count", "model_answer", "comparison_mode",
@@ -607,7 +600,6 @@ export function useTaskForm() {
       const canonicalGradeBand = [...new Set(form.grade_band)];
       const payload: CreateTaskPayload = {
         task_type: form.task_type,
-        title: form.title,
         prompt_text: form.prompt_text,
         correct_answer: deriveCorrectAnswer(form, currentGroup),
         options: buildOptions(form, currentGroup),

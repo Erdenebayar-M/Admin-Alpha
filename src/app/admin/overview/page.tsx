@@ -128,7 +128,7 @@ export default function OverviewPage() {
                     >
                       <Lozenge tone={meta.tone} className="shrink-0">{meta.label}</Lozenge>
                       <span className="min-w-0 flex-1 truncate font-medium text-foreground">
-                        {item.task.title || item.task.prompt_text || item.task.task_id}
+                        {item.task.prompt_text || item.task.task_id}
                       </span>
                       <span className="shrink-0 text-xs text-muted-foreground tabular-nums">
                         {fmtDate(item.created_at)}

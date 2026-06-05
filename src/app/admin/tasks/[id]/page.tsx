@@ -58,7 +58,6 @@ export default function LiveTaskDetailPage() {
   const handleEnterEdit = useCallback(() => {
     if (!task) return;
     setEditDraft({
-      title: task.title,
       prompt_text: task.prompt_text,
       correct_answer: task.correct_answer,
       feedback_text: task.feedback_text,
@@ -106,7 +105,7 @@ export default function LiveTaskDetailPage() {
           { label: "Даалгаврууд", href: "/admin/tasks" },
           { label: task.task_id },
         ]}
-        title={task.title || task.task_id}
+        title={task.task_id}
       />
 
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">

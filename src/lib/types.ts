@@ -45,7 +45,6 @@ export interface TaskOptions {
 export interface TaskContent {
   task_id: string;
   task_type: string;
-  title: string;
   prompt_text: string;
   correct_answer: string;
   options: TaskOptions;

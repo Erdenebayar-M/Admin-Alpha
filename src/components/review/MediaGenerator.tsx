@@ -58,7 +58,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
   const [tab, setTab] = useState<Tab>(() => (showAudio ? 'audio' : 'image'));
 
   // Image state
-  const [imgPrompt, setImgPrompt] = useState(task.prompt_text || task.title);
+  const [imgPrompt, setImgPrompt] = useState(task.prompt_text);
   const [imgStatus, setImgStatus] = useState<GenStatus>('idle');
   const [imgTempId, setImgTempId] = useState('');
   const [imgBase64, setImgBase64] = useState('');

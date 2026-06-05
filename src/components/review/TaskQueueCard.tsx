@@ -64,7 +64,6 @@ function CardBody({
           <span className="font-mono text-xs text-muted-foreground">{task.task_id}</span>
           <span className="rounded bg-muted px-1 py-0.5 text-xs">{task.task_type}</span>
         </div>
-        <p className="mb-1 text-sm font-medium">{task.title}</p>
         <p className="mb-2 line-clamp-2 text-sm text-muted-foreground">{task.prompt_text}</p>
         {item.ai_review_issues.length > 0 && (
           <div className="flex flex-wrap gap-1">

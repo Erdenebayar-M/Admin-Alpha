@@ -58,8 +58,6 @@ export function TaskPreview({
   onCancelEdit,
   onMediaAccepted,
 }: Props) {
-  const title =
-    isEditMode && editDraft.title !== undefined ? editDraft.title : task.title;
   const promptText =
     isEditMode && editDraft.prompt_text !== undefined
       ? editDraft.prompt_text
@@ -213,20 +211,6 @@ export function TaskPreview({
           </div>
         </Field>
       )}
-
-      {/* ── Title ──────────────────────────────────────────────────────────── */}
-      <Field label="Дасгалын нэр">
-        {isEditMode ? (
-          <input
-            className={inputClass}
-            value={title}
-            onChange={(e) => onDraftChange({ title: e.target.value })}
-            placeholder="Гарчиг"
-          />
-        ) : (
-          <p className="text-sm font-medium">{task.title}</p>
-        )}
-      </Field>
 
       {/* ── Prompt ─────────────────────────────────────────────────────────── */}
       <Field label="Асуулт">

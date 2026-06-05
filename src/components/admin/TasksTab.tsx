@@ -142,7 +142,7 @@ export function TasksTab() {
               <tr>
                 <th className={tableStyles.th}>Төрөл</th>
                 <th className={tableStyles.th}>Анги</th>
-                <th className={tableStyles.th}>Гарчиг</th>
+                <th className={tableStyles.th}>Заавар</th>
                 <th className={tableStyles.th}>Чадвар</th>
                 <th className={tableStyles.th}>Хүндрэл</th>
                 <th className={tableStyles.th}>Медиа</th>
@@ -188,7 +188,7 @@ export function TasksTab() {
                         </div>
                       </td>
                       <td className={cn(tableStyles.cell, "max-w-[200px]")}>
-                        <span className="line-clamp-1 font-medium text-sm">{task.title || task.prompt_text}</span>
+                        <span className="line-clamp-1 font-medium text-sm">{task.prompt_text}</span>
                       </td>
                       <td className={tableStyles.cell}>
                         <div className="text-xs font-medium text-foreground leading-tight">

@@ -56,7 +56,6 @@ export default function ReviewDetailPage() {
   const handleEnterEdit = useCallback(() => {
     if (!item) return;
     setEditDraft({
-      title: item.task.title,
       prompt_text: item.task.prompt_text,
       correct_answer: item.task.correct_answer,
       feedback_text: item.task.feedback_text,
@@ -139,7 +138,7 @@ export default function ReviewDetailPage() {
           { label: "Хяналт", href: "/admin/review" },
           { label: item.task.task_id },
         ]}
-        title={item.task.title || item.task.task_id}
+        title={item.task.task_id}
         actions={<ShortcutsHelpButton onClick={() => setIsHelpOpen(true)} />}
       />
 

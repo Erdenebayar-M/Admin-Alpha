@@ -244,7 +244,6 @@ export async function saveAudioAndUpdateTask(
 
 export interface CreateTaskPayload {
   task_type: string;
-  title: string;
   prompt_text: string;
   correct_answer: string;
   options: TaskOptions;
