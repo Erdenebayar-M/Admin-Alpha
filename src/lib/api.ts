@@ -285,7 +285,7 @@ export { type ReviewAction, type TaskContent };
 import type { LiveTask, LiveTaskListResponse } from './types';
 
 export interface LiveTaskFilters {
-  grade?: 'G12' | 'G24';
+  grade?: 'G1' | 'G2' | 'G3' | 'G4';
   type?: string;
   skill?: string;
 }

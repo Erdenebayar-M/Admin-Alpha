@@ -19,7 +19,14 @@ import {
   DialogBody,
 } from "@/components/ui/dialog";
 
-type GradeBand = "G12" | "G24" | "all";
+type GradeFilter = "G1" | "G2" | "G3" | "G4" | "all";
+
+const GRADE_LABELS: Record<string, string> = {
+  G1: "1-р анги",
+  G2: "2-р анги",
+  G3: "3-р анги",
+  G4: "4-р анги",
+};
 
 const SKILL_NAMES: Record<string, string> = {
   S1: "Үсэг-авиа ялгалт",
@@ -32,8 +39,8 @@ const SKILL_NAMES: Record<string, string> = {
   S8: "Алдаа засах",
 };
 
-function specGrade(spec: GenerateSpec): "G12" | "G24" {
-  return spec.id.startsWith("G12") ? "G12" : "G24";
+function gradeLabel(grades: string[]): string {
+  return grades.map((g) => GRADE_LABELS[g] ?? g).join(", ");
 }
 
 function difficultyStars(n: number) {
@@ -94,6 +101,9 @@ function SpecCard({
         <p className="mt-0.5 text-[10px] text-muted-foreground">
           {SKILL_NAMES[spec.primary_skill] ?? spec.primary_skill} · {difficultyStars(spec.difficulty)}
         </p>
+        <p className="mt-0.5 text-[10px] text-muted-foreground">
+          {gradeLabel(spec.grade_band)}
+        </p>
       </div>
     </label>
   );
@@ -124,6 +134,7 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [maxItems, setMaxItems] = useState<1 | 2 | 3>(3);
   const [maxCost, setMaxCost] = useState<1 | 5 | 10 | 20>(5);
+  const [gradeFilter, setGradeFilter] = useState<GradeFilter>("all");
   const [results, setResults] = useState<{
     rows: GenerateTaskResult[];
     total_cost_usd: number;
@@ -134,8 +145,13 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
     queryFn: getGenerateSpecs,
   });
 
-  const g12Specs = useMemo(() => specs.filter((s) => specGrade(s) === "G12"), [specs]);
-  const g24Specs = useMemo(() => specs.filter((s) => specGrade(s) === "G24"), [specs]);
+  const filteredSpecs = useMemo(
+    () =>
+      gradeFilter === "all"
+        ? specs
+        : specs.filter((s) => s.grade_band.includes(gradeFilter)),
+    [specs, gradeFilter],
+  );
 
   function toggleSpec(id: string) {
     setSelectedIds((prev) => {
@@ -145,11 +161,11 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
     });
   }
 
-  function selectGroup(band: GradeBand) {
+  function selectByGrade(grade: GradeFilter) {
     const ids =
-      band === "all"
+      grade === "all"
         ? specs.map((s) => s.id)
-        : specs.filter((s) => specGrade(s) === band).map((s) => s.id);
+        : specs.filter((s) => s.grade_band.includes(grade)).map((s) => s.id);
     setSelectedIds((prev) => new Set([...prev, ...ids]));
   }
 
@@ -202,25 +218,33 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
+        {/* Grade filter */}
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <ToggleChip value={"all" as GradeFilter} active={gradeFilter === "all"} onClick={setGradeFilter}>
+            Бүгд
+          </ToggleChip>
+          {(["G1", "G2", "G3", "G4"] as const).map((g) => (
+            <ToggleChip key={g} value={g} active={gradeFilter === g} onClick={setGradeFilter}>
+              {GRADE_LABELS[g]}
+            </ToggleChip>
+          ))}
+        </div>
+
         {/* Select shortcuts */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
+          {(["G1", "G2", "G3", "G4"] as const).map((g) => (
+            <button
+              key={g}
+              type="button"
+              onClick={() => selectByGrade(g)}
+              className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground"
+            >
+              {GRADE_LABELS[g]} бүгд
+            </button>
+          ))}
           <button
             type="button"
-            onClick={() => selectGroup("G12")}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground"
-          >
-            1–2-р анги бүгд
-          </button>
-          <button
-            type="button"
-            onClick={() => selectGroup("G24")}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground"
-          >
-            2–4-р анги бүгд
-          </button>
-          <button
-            type="button"
-            onClick={() => selectGroup("all")}
+            onClick={() => selectByGrade("all")}
             className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground"
           >
             Бүгдийг сонгох
@@ -236,39 +260,22 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
           )}
         </div>
 
-        {/* Spec grids */}
+        {/* Spec grid */}
         {isLoading ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="h-20 animate-pulse rounded-lg border border-border bg-muted" />
             ))}
           </div>
+        ) : filteredSpecs.length === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            Тохирох даалгавар олдсонгүй
+          </p>
         ) : (
-          <div className="space-y-6">
-            {g12Specs.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  1–2-р анги ({g12Specs.length})
-                </h2>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                  {g12Specs.map((s) => (
-                    <SpecCard key={s.id} spec={s} selected={selectedIds.has(s.id)} onToggle={toggleSpec} />
-                  ))}
-                </div>
-              </div>
-            )}
-            {g24Specs.length > 0 && (
-              <div>
-                <h2 className="mb-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                  2–4-р анги ({g24Specs.length})
-                </h2>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                  {g24Specs.map((s) => (
-                    <SpecCard key={s.id} spec={s} selected={selectedIds.has(s.id)} onToggle={toggleSpec} />
-                  ))}
-                </div>
-              </div>
-            )}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+            {filteredSpecs.map((s) => (
+              <SpecCard key={s.id} spec={s} selected={selectedIds.has(s.id)} onToggle={toggleSpec} />
+            ))}
           </div>
         )}
 

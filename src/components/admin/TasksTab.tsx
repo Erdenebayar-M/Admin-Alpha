@@ -45,7 +45,7 @@ function DescriptionCell({ text }: { text: string }) {
   );
 }
 
-type GradeFilter = "all" | "G12" | "G24";
+type GradeFilter = "all" | "G1" | "G2" | "G3" | "G4";
 type SortOrder = "newest" | "oldest";
 
 export function TasksTab() {
@@ -87,7 +87,7 @@ export function TasksTab() {
       <div className="mb-4 flex flex-wrap items-center gap-3">
         {/* Grade band chips */}
         <div className="flex gap-1.5">
-          {(["all", "G12", "G24"] as const).map((g) => (
+          {(["all", "G1", "G2", "G3", "G4"] as const).map((g) => (
             <button
               key={g}
               type="button"
@@ -99,7 +99,7 @@ export function TasksTab() {
                   : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
               )}
             >
-              {g === "all" ? "Бүгд" : g === "G12" ? "1–2-р анги" : "2–4-р анги"}
+              {g === "all" ? "Бүгд" : GRADE_LABELS[g]}
             </button>
           ))}
         </div>
