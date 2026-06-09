@@ -327,7 +327,7 @@ export interface GenerateSpec {
 }
 
 export interface GenerateTaskResult {
-  task_id: string;
+  task_type: string;
   passed: number;
   rejected: number;
   drafts_created: number;

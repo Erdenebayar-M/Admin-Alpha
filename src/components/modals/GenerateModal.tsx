@@ -112,7 +112,7 @@ function SpecCard({
 function ResultRow({ r }: { r: GenerateTaskResult }) {
   return (
     <div className="flex items-center justify-between gap-4 py-2 text-sm">
-      <span className="font-mono text-xs font-medium">{r.task_id}</span>
+      <span className="font-mono text-xs font-medium">{r.task_type}</span>
       <div className="flex items-center gap-3">
         <span className="text-xs text-green-600">✓ {r.drafts_created} хянах</span>
         {r.ai_blocked > 0 && (
@@ -285,7 +285,7 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
             <h2 className="mb-3 text-sm font-semibold">Үүсгэлт дуусгавар болов</h2>
             <div className="divide-y divide-border">
               {results.rows.map((r) => (
-                <ResultRow key={r.task_id} r={r} />
+                <ResultRow key={r.task_type} r={r} />
               ))}
             </div>
             <div className="mt-3 flex items-center justify-between border-t border-border pt-3">
