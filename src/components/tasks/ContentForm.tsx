@@ -28,6 +28,106 @@ interface ContentFormProps {
 
 type SubProps = Pick<ContentFormProps, "form" | "set" | "errors" | "audioPreview" | "onAudioGenerated" | "imagePreview" | "onImageGenerated">;
 
+// ─── Per-type prompt suggestions ─────────────────────────────────────────────
+
+const PROMPT_SUGGESTIONS: Record<string, string[]> = {
+  listen_choice: [
+    "Аудио сонсоод зөв үгийг сонго.",
+    "Аудиог сонсоод зөв хариултыг сонго.",
+    "Сонсоод тохирох үгийг сонго.",
+  ],
+  image_choice: [
+    "Зурагт тохирох үгийг сонго.",
+    "Зурагт тохирох зөв хариултыг сонго.",
+    "Зурагт харж тохирох үгийг сонго.",
+  ],
+  choice: [
+    "Зөв хариултыг сонго.",
+    "Тохирох хариултыг сонгоно уу.",
+    "Зөв үгийг сонго.",
+  ],
+  match_pairs: [
+    "Холбож тааруулна уу.",
+    "Тохирох хосуудыг холбоно уу.",
+    "Зөв хосыг олж холбоно уу.",
+  ],
+  assemble_syllable: [
+    "Үеүүдийг зөв дарааллаар угсра.",
+    "Холилдсон үеүүдийг зөв дарааллаар угсра.",
+    "Үеүүдийг зөв байрлуулна уу.",
+  ],
+  assemble_word: [
+    "Үсгүүдийг зөв дарааллаар угсра.",
+    "Холилдсон үсгүүдийг зөв дарааллаар угсра.",
+    "Үсгүүдийг зөв байрлуулна уу.",
+  ],
+  word_fill: [
+    "Дутуу үсгийг бөгл.",
+    "Үгийн дутуу үсгийг нөхө.",
+    "Цоорхой үсгийг бичнэ үү.",
+  ],
+  sentence_fill: [
+    "Цоорхойг зөв үгээр бөгл.",
+    "Дутуу үгийг нөхнө үү.",
+    "Тохирох үгийг цоорхойд бичнэ үү.",
+  ],
+  correction: [
+    "Алдааг ол, засвар хий.",
+    "Алдаатай үгийг зөв хэлбэрт оруул.",
+    "Буруу бичигдсэн үгийг засна уу.",
+  ],
+  tap_correction: [
+    "Тэмдэглэгүй байрыг ол, товш.",
+    "Оноо/таслал орох байрыг олж товшино уу.",
+    "Тэмдэглэгүй байрыг олж товш.",
+  ],
+  dictation: [
+    "Аудио сонсоод бич.",
+    "Сонсоод бичнэ үү.",
+    "Аудиог сонсоод дагаж бич.",
+  ],
+  mini_text: [
+    "Аудио сонсоод бич.",
+    "Эхийг сонсоод бичнэ үү.",
+    "Аудиог сонсоод дагаж бич.",
+  ],
+  copy: [
+    "Дараах үгсийг хуулж бич.",
+    "Дараах текстийг хуулж бичнэ үү.",
+    "Харж хуулж бична уу.",
+  ],
+  visual_memory: [
+    "Санаж ав, дараа бич.",
+    "Текстийг тогтоогоод бичнэ үү.",
+    "Санаж авч бичнэ үү.",
+  ],
+  audio_fill: [
+    "Аудио сонсоод дутуу үсгийг нөхө.",
+    "Сонсоод цоорхой үсгийг бичнэ үү.",
+    "Аудиог сонсоод дутуу үсгийг бичнэ үү.",
+  ],
+  image_fill: [
+    "Зурагт харж дутуу үсгийг нөхө.",
+    "Зурагт харж цоорхой үсгийг бичнэ үү.",
+    "Зургийг харж дутуу үсгийг нөхнө үү.",
+  ],
+  audio_sentence_fill: [
+    "Аудио сонсоод цоорхойг бөгл.",
+    "Сонсоод дутуу үгийг нөхнө үү.",
+    "Аудиог сонсоод цоорхойд зөв үг бичнэ үү.",
+  ],
+  tap_find_error: [
+    "Алдаатай үгийг ол, товш.",
+    "Өгүүлбэрийн алдаатай үгийг олж товшино уу.",
+    "Буруу бичигдсэн үгийг олж товш.",
+  ],
+  self_check: [
+    "Бичвэрийг жишиг хариулттай харьцуул.",
+    "Өөрийн хариултыг шалгана уу.",
+    "Жишиг хариулттай харьцуулж шалгана уу.",
+  ],
+};
+
 // ─── Shared: title + prompt + feedback ───────────────────────────────────────
 
 function CommonFields({ form, set, errors, promptSuggestions = [] }: SubProps & { promptSuggestions?: string[] }) {
@@ -96,6 +196,7 @@ function ChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={onImageGenerated}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.choice}
       />
       <Separator />
       <Field label="Зөв хариулт" required error={errors.correct_answer}>
@@ -131,6 +232,7 @@ function ListenChoiceContent({ form, set, errors, audioPreview, onAudioGenerated
         form={form} set={set} errors={errors}
         onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
         audioPreview={audioPreview} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.listen_choice}
       />
       <Separator />
       <Field label="Зөв хариулт" required error={errors.correct_answer}>
@@ -171,6 +273,7 @@ function ImageChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={onImageGenerated}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.image_choice}
       />
       <Separator />
       <Field label="Зөв хариулт" required error={errors.correct_answer}>
@@ -218,6 +321,7 @@ function WordFillContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.word_fill}
       />
       <Separator />
       <Field label="Нөхөх үг" required error={errors.context_word} hint="Бүтэн хэлбэрээр бичнэ — доор дутуу үсгийг сонгоно">
@@ -285,6 +389,7 @@ function SentenceFillContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.sentence_fill}
       />
       <Separator />
       <Field label="Өгүүлбэрийн загвар (___-аар цоорхой тэмдэглэ)" required error={errors.sentence_template}>
@@ -330,6 +435,7 @@ function CorrectionContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.correction}
       />
       <Separator />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -370,6 +476,7 @@ function TapCorrectionContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.tap_correction}
       />
       <Separator />
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -417,6 +524,7 @@ function DictationContent({ form, set, errors, audioPreview, onAudioGenerated }:
         form={form} set={set} errors={errors}
         onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
         audioPreview={audioPreview} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.dictation}
       />
       <Separator />
       <Field label="Аудио болгох текст" required error={errors.audio_text} hint="Энэ текстийг аудио болгоно — сурагч сонсоод бичнэ">
@@ -465,6 +573,7 @@ function MiniTextContent({ form, set, errors, audioPreview, onAudioGenerated }: 
         form={form} set={set} errors={errors}
         onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
         audioPreview={audioPreview} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.mini_text}
       />
       <Separator />
       <Field label="Аудио болгох текст" required error={errors.audio_text} hint="Энэ текстийг аудио болгоно — сурагч сонсоод бичнэ">
@@ -508,6 +617,7 @@ function SelfCheckContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.self_check}
       />
       <Separator />
       <Field label="Анхны оролдлого (original_attempt)" hint="Сурагчийн бичсэн эх (AI/seed-ийн тохиолдолд)">
@@ -582,6 +692,7 @@ function MatchPairsContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.match_pairs}
       />
       <Separator />
       <Field label="Хосуудын жагсаалт" required error={errors.pairs_text} hint="Мөр бүрт нэг хос — 'зүүн | баруун' (2–6 хос)">
@@ -659,6 +770,7 @@ function AssembleWordContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={isSyllable ? PROMPT_SUGGESTIONS.assemble_syllable : PROMPT_SUGGESTIONS.assemble_word}
       />
       <Separator />
       <Field
@@ -711,6 +823,7 @@ function TapFindErrorContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.tap_find_error}
       />
       <Separator />
       <Field label="Алдаатай өгүүлбэр" required error={errors.sentence} hint="Нэг үг нь буруу бичигдсэн өгүүлбэр">
@@ -809,6 +922,7 @@ function CopyContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.copy}
       />
       <Separator />
       <Field label="Хуулах текст" required error={errors.text_to_copy}>
@@ -838,6 +952,7 @@ function VisualMemoryContent({ form, set, errors }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={() => {}}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.visual_memory}
       />
       <Separator />
       <Field label="Тогтоох текст" required error={errors.correct_answer}>
@@ -882,6 +997,7 @@ function AudioFillContent({ form, set, errors, audioPreview, onAudioGenerated }:
         form={form} set={set} errors={errors}
         onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
         audioPreview={audioPreview} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.audio_fill}
       />
       <Separator />
       <Field label="Нөхөх үг" required error={errors.context_word} hint="Бүтэн хэлбэрээр бичнэ — доор дутуу үсгийг сонгоно">
@@ -957,6 +1073,7 @@ function ImageFillContent({ form, set, errors, onImageGenerated }: SubProps) {
         form={form} set={set} errors={errors}
         onAudioGenerated={() => {}} onImageGenerated={onImageGenerated}
         audioPreview={null} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.image_fill}
       />
       <Separator />
       <Field label="Нөхөх үг" required error={errors.context_word} hint="Бүтэн хэлбэрээр бичнэ — доор дутуу үсгийг сонгоно">
@@ -1027,6 +1144,7 @@ function AudioSentenceFillContent({ form, set, errors, audioPreview, onAudioGene
         form={form} set={set} errors={errors}
         onAudioGenerated={onAudioGenerated} onImageGenerated={() => {}}
         audioPreview={audioPreview} imagePreview={null}
+        promptSuggestions={PROMPT_SUGGESTIONS.audio_sentence_fill}
       />
       <Separator />
       <Field label="Өгүүлбэрийн загвар (___-аар цоорхой тэмдэглэ)" required error={errors.sentence_template}>
