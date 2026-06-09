@@ -25,16 +25,13 @@ const btnBase =
   'rounded-md px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50 disabled:pointer-events-none';
 
 const AUDIO_TASK_TYPES = new Set([
-  'TT_1_1', 'TT_1_4', 'TT_1_5',
-  'TT_2_4',
-  'TT_3_1', 'TT_3_2', 'TT_3_3',
-  'TT_4_1', 'TT_4_2', 'TT_4_4',
-  'TT_7_3', 'TT_7_4', 'TT_7_5', 'TT_7_6', 'TT_7_7',
+  'TT_LISTEN_CHOOSE',
+  // dictation/mini_text/sentence_fill groups are already covered by the groups check in needsAudio()
 ]);
 
 const IMAGE_TASK_TYPES = new Set([
-  'TT_1_2', 'TT_1_3',
-  'TT_2_1', 'TT_2_2', 'TT_2_3',
+  'TT_IMAGE_WORD_MATCH',
+  'TT_MATCH_PAIRS',
 ]);
 
 function needsAudio(task: TaskContent): boolean {
