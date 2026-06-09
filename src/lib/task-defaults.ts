@@ -8,7 +8,9 @@ export type OptionGroup =
   | "self_check"
   | "match_pairs"
   | "assemble_word"
-  | "tap_find_error";
+  | "tap_find_error"
+  | "copy"
+  | "visual_memory";
 
 export interface TaskBlueprint {
   primary_skill: string;
@@ -19,55 +21,56 @@ export interface TaskBlueprint {
 
 export const TASK_TYPE_BLUEPRINT: Record<string, TaskBlueprint> = {
   // S1 — Үсэг-авиаг зөв таних
-  TT_LISTEN_CHOOSE:             { primary_skill: "S1", level_target: "M0", error_targets: ["B1"] },
-  TT_LETTER_FILL:               { primary_skill: "S1", level_target: "M0", error_targets: ["B1"] },
-  TT_MISSING_LETTER:            { primary_skill: "S1", level_target: "M1", error_targets: ["B1"] },
-  TT_CONSONANT_CONFUSION:       { primary_skill: "S1", level_target: "M2", error_targets: ["D3"] },
-  TT_MATCH_PAIRS:               { primary_skill: "S1", level_target: "M0", error_targets: ["A2"] },
-  TT_ASSEMBLE_WORD:             { primary_skill: "S1", level_target: "M0", error_targets: ["A3", "B3"] },
+  TT_1_1: { primary_skill: "S1", level_target: "M0", error_targets: ["A1"] },
+  TT_1_2: { primary_skill: "S1", level_target: "M0", error_targets: ["A1"] },
+  TT_1_3: { primary_skill: "S1", level_target: "M0", error_targets: ["A2"] },
+  TT_1_4: { primary_skill: "S1", level_target: "M0", error_targets: ["A3"] },
+  TT_1_5: { primary_skill: "S1", level_target: "M0", error_targets: ["A2"] },
   // S2 — Үгийг зөв бичих
-  TT_IMAGE_WORD_MATCH:          { primary_skill: "S2", level_target: "M0", error_targets: ["B1"] },
-  TT_COPY_WRITE:                { primary_skill: "S2", level_target: "M0", error_targets: ["B1"] },
-  TT_CHOOSE_CORRECT:            { primary_skill: "S2", level_target: "M1", error_targets: ["B1"] },
-  TT_FILL_WRITE:                { primary_skill: "S2", level_target: "M1", error_targets: ["B1"] },
-  TT_SENTENCE_FILL:             { primary_skill: "S2", level_target: "M1", error_targets: ["B1"] },
-  TT_MIXED_REVIEW:              { primary_skill: "S2", level_target: "M1", error_targets: ["B1", "E1"] },
-  TT_FIND_OMITTED_LETTER:       { primary_skill: "S2", level_target: "M2", error_targets: ["B1"] },
-  TT_MIXED_WORD_SET:            { primary_skill: "S2", level_target: "M2", error_targets: ["C1", "E2"] },
-  TT_MIXED_CHECKPOINT:          { primary_skill: "S2", level_target: "M3", error_targets: ["C1", "E2", "G2"] },
-  // S3 — Урт эгшиг
-  TT_LONG_VOWEL_FILL:           { primary_skill: "S3", level_target: "M2", error_targets: ["C1", "C2"] },
-  TT_LONG_VOWEL_IN_SENTENCE:    { primary_skill: "S3", level_target: "M2", error_targets: ["C1", "C2"] },
-  TT_LONG_VOWEL_CHALLENGE:      { primary_skill: "S3", level_target: "M3", error_targets: ["C1", "C2"] },
-  // S4 — Балархай эгшиг
-  TT_REDUCED_VOWEL:             { primary_skill: "S4", level_target: "M2", error_targets: ["C4"] },
-  TT_REDUCED_VOWEL_IN_SENTENCE: { primary_skill: "S4", level_target: "M2", error_targets: ["C4"] },
+  TT_2_1: { primary_skill: "S2", level_target: "M1", error_targets: ["B1"] },
+  TT_2_2: { primary_skill: "S2", level_target: "M1", error_targets: ["B3"] },
+  TT_2_3: { primary_skill: "S2", level_target: "M1", error_targets: ["B1", "B2"] },
+  TT_2_4: { primary_skill: "S2", level_target: "M1", error_targets: ["B1"] },
+  TT_2_5: { primary_skill: "S2", level_target: "M2", error_targets: ["F2"] },
+  TT_2_6: { primary_skill: "S2", level_target: "M3", error_targets: ["F1", "F3", "F4"] },
+  // S3 — Урт/богино, балархай эгшиг
+  TT_3_1: { primary_skill: "S3", level_target: "M1", error_targets: ["C1", "C2"] },
+  TT_3_2: { primary_skill: "S3", level_target: "M1", error_targets: ["C4"] },
+  TT_3_3: { primary_skill: "S3", level_target: "M1", error_targets: ["C1", "C3"] },
+  TT_3_4: { primary_skill: "S3", level_target: "M2", error_targets: ["C6"] },
+  TT_3_5: { primary_skill: "S3", level_target: "M2", error_targets: ["C5"] },
+  // S4 — Гийгүүлэгчийг зөв ялгах
+  TT_4_1: { primary_skill: "S4", level_target: "M1", error_targets: ["D3"] },
+  TT_4_2: { primary_skill: "S4", level_target: "M2", error_targets: ["D5"] },
+  TT_4_3: { primary_skill: "S4", level_target: "M2", error_targets: ["D4"] },
+  TT_4_4: { primary_skill: "S4", level_target: "M2", error_targets: ["D1"] },
+  TT_4_5: { primary_skill: "S4", level_target: "M2", error_targets: ["D2"] },
   // S5 — Залгаварыг зөв залгах
-  TT_SIMPLE_SUFFIX:             { primary_skill: "S5", level_target: "M1", error_targets: ["E1", "E2"] },
-  TT_WORD_ENDING:               { primary_skill: "S5", level_target: "M1", error_targets: ["E2"] },
-  TT_WORD_FORM_CHOOSE:          { primary_skill: "S5", level_target: "M2", error_targets: ["E2"] },
-  TT_SUFFIX_CHOOSE:             { primary_skill: "S5", level_target: "M2", error_targets: ["E2"] },
-  TT_CASE_SUFFIX:               { primary_skill: "S5", level_target: "M2", error_targets: ["E2"] },
-  TT_WORD_FORM_FIX:             { primary_skill: "S5", level_target: "M2", error_targets: ["E2"] },
-  TT_SUFFIX_WRITE:              { primary_skill: "S5", level_target: "M3", error_targets: ["E2", "E7"] },
-  TT_COMPOUND_SUFFIX:           { primary_skill: "S5", level_target: "M3", error_targets: ["E2", "E7"] },
+  TT_5_1: { primary_skill: "S5", level_target: "M2", error_targets: ["E2", "E4"] },
+  TT_5_2: { primary_skill: "S5", level_target: "M2", error_targets: ["E2"] },
+  TT_5_3: { primary_skill: "S5", level_target: "M2", error_targets: ["E3"] },
+  TT_5_4: { primary_skill: "S5", level_target: "M2", error_targets: ["E6"] },
+  TT_5_5: { primary_skill: "S5", level_target: "M2", error_targets: ["E1"] },
+  TT_5_6: { primary_skill: "S5", level_target: "M2", error_targets: ["E5"] },
+  TT_5_7: { primary_skill: "S5", level_target: "M2", error_targets: ["E7"] },
   // S6 — Өгүүлбэрийн тэмдэглэгээ
-  TT_CAPITAL_PUNCTUATION:       { primary_skill: "S6", level_target: "M1", error_targets: ["G1", "G2"] },
-  TT_BASIC_COMMA:               { primary_skill: "S6", level_target: "M2", error_targets: ["G2"] },
-  TT_SENTENCE_BOUNDARY:         { primary_skill: "S6", level_target: "M2", error_targets: ["G1", "G2"] },
+  TT_6_1: { primary_skill: "S6", level_target: "M1", error_targets: ["G1"] },
+  TT_6_2: { primary_skill: "S6", level_target: "M2", error_targets: ["G2", "G3"] },
+  TT_6_3: { primary_skill: "S6", level_target: "M2", error_targets: ["G5"] },
+  TT_6_4: { primary_skill: "S6", level_target: "M2", error_targets: ["G4"] },
   // S7 — Цээж бичиг
-  TT_WORD_SET_DICTATION:        { primary_skill: "S7", level_target: "M1", error_targets: ["B1"] },
-  TT_TWO_WORD_DICTATION:        { primary_skill: "S7", level_target: "M1", error_targets: ["B1"] },
-  TT_SHORT_SENTENCE_DICTATION:  { primary_skill: "S7", level_target: "M2", error_targets: ["C1"] },
-  TT_TWO_SENTENCE_DICTATION:    { primary_skill: "S7", level_target: "M2", error_targets: ["C1"] },
-  TT_MINI_TEXT_DICTATION:       { primary_skill: "S7", level_target: "M3", error_targets: ["C1", "C4", "E1"] },
+  TT_7_1: { primary_skill: "S7", level_target: "M0", error_targets: ["B1"] },
+  TT_7_2: { primary_skill: "S7", level_target: "M1", error_targets: ["B4", "H4"] },
+  TT_7_3: { primary_skill: "S7", level_target: "M1", error_targets: ["H1", "B1"] },
+  TT_7_4: { primary_skill: "S7", level_target: "M2", error_targets: ["H1"] },
+  TT_7_5: { primary_skill: "S7", level_target: "M2", error_targets: ["B4", "E1"] },
+  TT_7_6: { primary_skill: "S7", level_target: "M3", error_targets: ["H1", "B4"] },
+  TT_7_7: { primary_skill: "S7", level_target: "M2", error_targets: ["H1"] },
   // S8 — Алдаагаа зөв таних / засах
-  TT_FIND_ERROR:                { primary_skill: "S8", level_target: "M1", error_targets: ["B1"] },
-  TT_FIX_ERROR:                 { primary_skill: "S8", level_target: "M2", error_targets: ["C1", "E2"] },
-  TT_SELF_CHECK:                { primary_skill: "S8", level_target: "M1", error_targets: ["H4"] },
-  TT_OWN_WRITING_CORRECTION:    { primary_skill: "S8", level_target: "M2", error_targets: ["H4"] },
-  TT_TAP_FIND_ERROR:            { primary_skill: "S8", level_target: "M2", error_targets: ["H4"] },
-  TT_EXPLAINED_CORRECTION:      { primary_skill: "S8", level_target: "M3", error_targets: ["C1", "E2"] },
+  TT_8_1: { primary_skill: "S8", level_target: "M2", error_targets: ["H4"] },
+  TT_8_2: { primary_skill: "S8", level_target: "M2", error_targets: ["H4"] },
+  TT_8_3: { primary_skill: "S8", level_target: "M2", error_targets: ["H4"] },
+  TT_8_4: { primary_skill: "S8", level_target: "M2", error_targets: ["H4"] },
 };
 
 export interface TaskTypeInfo {
@@ -81,347 +84,355 @@ export interface TaskTypeInfo {
 
 export const TASK_TYPE_INFO: Record<string, TaskTypeInfo> = {
   // S1 — Үсэг-авиаг зөв таних
-  TT_LISTEN_CHOOSE: {
-    label: "Сонсож сонгох",
+  TT_1_1: {
+    label: "Авиа сонсоод үсэг сонгох",
     shortLabel: "1.1",
-    description: "Аудио уншиж сонссон үгийг 3 сонголтоос ялгах",
+    description: "Аудио сонсоод тохирох үсгийг сонгох",
     groups: ["choice"],
     category: "choice",
-    grades: ["G1", "G2"],
+    grades: ["G1"],
   },
-  TT_LETTER_FILL: {
-    label: "Үсэг нөхөх",
+  TT_1_2: {
+    label: "Зурагт юу зурсныг үсгээр таних",
     shortLabel: "1.2",
-    description: "Үгийн дотор 1 үсгийг blank болгож тэмдэглэх",
-    groups: ["fill"],
-    category: "fill",
-    grades: ["G1", "G2"],
-  },
-  TT_MISSING_LETTER: {
-    label: "Дутуу үсэг",
-    shortLabel: "1.3",
-    description: "Үгээс нэг үсэг орхигдсон байх",
-    groups: ["fill"],
-    category: "fill",
-    grades: ["G1", "G2"],
-  },
-  TT_CONSONANT_CONFUSION: {
-    label: "Гийгүүлэгч андуурал",
-    shortLabel: "1.4",
-    description: "Ойролцоо дуудлагатай гийгүүлэгчийг ялгах",
+    description: "Зургийг харж тохирох үсгийг таних",
     groups: ["choice"],
     category: "choice",
-    grades: ["G2", "G3"],
+    grades: ["G1"],
   },
-  TT_MATCH_PAIRS: {
-    label: "Холбож тааруулах",
-    shortLabel: "1.5",
-    description: "Зүүн баганад үсэг/дуу, баруун баганад зураг/үг холбох",
+  TT_1_3: {
+    label: "Үсгүүдийг тохирох зургуудтай холбох",
+    shortLabel: "1.3",
+    description: "Үсэг ба зургийн хосыг холбох",
     groups: ["match_pairs"],
     category: "match_pairs",
-    grades: ["G1", "G2", "G3"],
+    grades: ["G1"],
   },
-  TT_ASSEMBLE_WORD: {
-    label: "Угсрах (үсэг/үе)",
-    shortLabel: "1.6",
-    description: "Холимог дарааллыг зөв болгох",
+  TT_1_4: {
+    label: "Үгийг үеээр угсрах",
+    shortLabel: "1.4",
+    description: "Холилдсон үеүүдийг зөв дарааллаар угсрах",
     groups: ["assemble_word"],
     category: "assemble_word",
-    grades: ["G1", "G2"],
+    grades: ["G1"],
+  },
+  TT_1_5: {
+    label: "Төсөөтэй үсгүүдийг ялгах",
+    shortLabel: "1.5",
+    description: "Ижил төстэй үсгүүдийг ялгаж сонгох",
+    groups: ["choice"],
+    category: "choice",
+    grades: ["G1"],
   },
   // S2 — Үгийг зөв бичих
-  TT_IMAGE_WORD_MATCH: {
-    label: "Зураг-үг тааруулах",
+  TT_2_1: {
+    label: "Зураг харж дутуу үсэг нөхөх",
     shortLabel: "2.1",
-    description: "Зурагт харагдаж буй биетийн зөв нэрийг 3 сонголтоос сонгох",
-    groups: ["choice"],
-    category: "choice",
+    description: "Зургийг харж хоосон зайд үсэг нөхөх",
+    groups: ["fill"],
+    category: "fill",
     grades: ["G1", "G2"],
   },
-  TT_COPY_WRITE: {
-    label: "Хуулж бичих",
+  TT_2_2: {
+    label: "Үсэг угсарч үг болгох",
     shortLabel: "2.2",
-    description: "Богино үг эсвэл өгүүлбэрийг яг хуулж бичүүлэх",
-    groups: ["correction"],
-    category: "correction",
-    grades: ["G1", "G2"],
+    description: "Тарааж өгсөн үсгүүдийг зөв дарааллаар угсрах",
+    groups: ["assemble_word"],
+    category: "assemble_word",
+    grades: ["G2"],
   },
-  TT_CHOOSE_CORRECT: {
-    label: "Зөвийг сонгох",
+  TT_2_3: {
+    label: "Зөв бичлэгийг сонгох",
     shortLabel: "2.3",
-    description: "Үгийн 3 бичлэгээс зөвийг сонгох",
+    description: "Зургийг харж зөв бичигдсэн үгийг сонгох",
     groups: ["choice"],
     category: "choice",
-    grades: ["G1", "G2"],
+    grades: ["G2"],
   },
-  TT_FILL_WRITE: {
-    label: "Нөхөж бичих",
+  TT_2_4: {
+    label: "Сонсоод үгт дутуу байгаа үсгийг нөхөх",
     shortLabel: "2.4",
-    description: "Өгүүлбэр эсвэл хэллэгт дутуу үгийг бичих",
+    description: "Аудио сонсоод дутуу үсгийг нөхөх",
     groups: ["fill"],
     category: "fill",
-    grades: ["G1", "G2"],
+    grades: ["G2"],
   },
-  TT_SENTENCE_FILL: {
-    label: "Өгүүлбэр нөхөх",
+  TT_2_5: {
+    label: "Нийлмэл үг зөв бичих",
     shortLabel: "2.5",
-    description: "4–7 үгт өгүүлбэрт нэг үгийг blank болгох",
-    groups: ["sentence_fill"],
-    category: "sentence_fill",
-    grades: ["G1", "G2"],
-  },
-  TT_MIXED_REVIEW: {
-    label: "Холимог давталт",
-    shortLabel: "2.6",
-    description: "Өмнө үзсэн төрөл бүрийн алдааг хольж шалгах сонголтот даалгавар",
-    groups: ["choice"],
-    category: "choice",
-    grades: ["G1", "G2"],
-  },
-  TT_FIND_OMITTED_LETTER: {
-    label: "Үсэг орхигдол олох",
-    shortLabel: "2.7",
-    description: "Үгийн дотор үсэг орхигдсон — орхигдсон үсгийг нөхөж зөв үгийг бичнэ",
+    description: "Нийлмэл үгийн алдааг олж засах",
     groups: ["correction"],
     category: "correction",
-    grades: ["G2", "G3"],
+    grades: ["G3"],
   },
-  TT_MIXED_WORD_SET: {
-    label: "Холимог үгийн багц",
-    shortLabel: "2.8",
-    description: "Өөр өөр алдааны төрлийг хольсон сонголтот даалгавар",
-    groups: ["choice"],
-    category: "choice",
-    grades: ["G2", "G3"],
-  },
-  TT_MIXED_CHECKPOINT: {
-    label: "Холимог checkpoint",
-    shortLabel: "2.9",
-    description: "Checkpoint-д ашиглах олон скиллийг хольсон сонголтот даалгавар",
-    groups: ["choice"],
-    category: "choice",
+  TT_2_6: {
+    label: "Үгийн хэлбэр/бүтэц засах",
+    shortLabel: "2.6",
+    description: "Үгийн буруу хэлбэр/бүтцийг засах",
+    groups: ["correction"],
+    category: "correction",
     grades: ["G3", "G4"],
   },
-  // S3 — Урт эгшиг
-  TT_LONG_VOWEL_FILL: {
-    label: "Урт эгшиг нөхөх",
+  // S3 — Урт/богино, балархай эгшиг
+  TT_3_1: {
+    label: "Урт/богино эгшиг сонсоод сонгох",
     shortLabel: "3.1",
-    description: "Үгэнд урт эгшгийн нэг үсгийг орхих",
-    groups: ["fill"],
-    category: "fill",
-    grades: ["G2", "G3"],
-  },
-  TT_LONG_VOWEL_IN_SENTENCE: {
-    label: "Урт эгшиг өгүүлбэрт",
-    shortLabel: "3.2",
-    description: "4–8 үгт өгүүлбэр, урт эгшигтэй нэг зорилтот үг blank",
-    groups: ["sentence_fill"],
-    category: "sentence_fill",
-    grades: ["G2", "G3"],
-  },
-  TT_LONG_VOWEL_CHALLENGE: {
-    label: "Урт эгшиг challenge",
-    shortLabel: "3.3",
-    description: "Урт эгшгийн challenge: ойролцоо урт/богино эгшгийн хосыг ялгах",
+    description: "Аудио сонсоод урт/богино эгшгийг ялгах",
     groups: ["choice"],
     category: "choice",
-    grades: ["G3", "G4"],
+    grades: ["G2"],
   },
-  // S4 — Балархай эгшиг
-  TT_REDUCED_VOWEL: {
-    label: "Балархай эгшиг",
-    shortLabel: "4.1",
-    description: "Балархай эгшгийг (э/е, ө/о) нөхөх",
+  TT_3_2: {
+    label: "Балархай эгшиг нөхөх",
+    shortLabel: "3.2",
+    description: "Аудио сонсоод балархай эгшгийг нөхөх",
     groups: ["fill"],
     category: "fill",
     grades: ["G2", "G3"],
   },
-  TT_REDUCED_VOWEL_IN_SENTENCE: {
-    label: "Балархай эгшиг өгүүлбэрт",
+  TT_3_3: {
+    label: "Зургуудийг тохирох үгтэй нь холбох",
+    shortLabel: "3.3",
+    description: "Зураг ба үгийн хосыг холбох",
+    groups: ["match_pairs"],
+    category: "match_pairs",
+    grades: ["G2"],
+  },
+  TT_3_4: {
+    label: "Эгшгийн зохицол шалгах",
+    shortLabel: "3.4",
+    description: "Эгшгийн зохицлын алдааг олж засах",
+    groups: ["choice"],
+    category: "choice",
+    grades: ["G3"],
+  },
+  TT_3_5: {
+    label: "Илүү эгшиг олж засах",
+    shortLabel: "3.5",
+    description: "Илүүдсэн эгшгийг олж засах",
+    groups: ["correction"],
+    category: "correction",
+    grades: ["G3"],
+  },
+  // S4 — Гийгүүлэгчийг зөв ялгах
+  TT_4_1: {
+    label: "Төстэй сонсогддог гийгүүлэгчүүдийг ялгах",
+    shortLabel: "4.1",
+    description: "Аудио сонсоод төстэй гийгүүлэгчийг ялгах",
+    groups: ["choice"],
+    category: "choice",
+    grades: ["G2"],
+  },
+  TT_4_2: {
+    label: "Үгийн төгсгөлийн гийгүүлэгч сонгох",
     shortLabel: "4.2",
-    description: "4–8 үгт өгүүлбэр, балархай эгшигтэй нэг зорилтот үг blank",
-    groups: ["sentence_fill"],
-    category: "sentence_fill",
+    description: "Аудио сонсоод үгийн төгсгөлийн гийгүүлэгчийг сонгох",
+    groups: ["choice"],
+    category: "choice",
     grades: ["G2", "G3"],
+  },
+  TT_4_3: {
+    label: "Дараалж орох гийгүүлэгчийг нөхөх",
+    shortLabel: "4.3",
+    description: "Давхар гийгүүлэгчийн дутуу хэсгийг нөхөх",
+    groups: ["fill"],
+    category: "fill",
+    grades: ["G3"],
+  },
+  TT_4_4: {
+    label: "Орхигдсон гийгүүлэгч нөхөх",
+    shortLabel: "4.4",
+    description: "Аудио сонсоод орхигдсон гийгүүлэгчийг нөхөх",
+    groups: ["fill"],
+    category: "fill",
+    grades: ["G2", "G3"],
+  },
+  TT_4_5: {
+    label: "Илүү гийгүүлэгч олж засах",
+    shortLabel: "4.5",
+    description: "Илүүдсэн гийгүүлэгчийг олж засах",
+    groups: ["correction"],
+    category: "correction",
+    grades: ["G3"],
   },
   // S5 — Залгаварыг зөв залгах
-  TT_SIMPLE_SUFFIX: {
-    label: "Энгийн залгавар",
+  TT_5_1: {
+    label: "Зөв нөхцлийг сонгох",
     shortLabel: "5.1",
-    description: "3–6 үгт өгүүлбэр, нэг үгийн залгавар сонгох",
+    description: "Тохирох нөхцлийг хувилбаруудаас сонгох",
     groups: ["choice"],
     category: "choice",
-    grades: ["G1", "G2"],
+    grades: ["G2", "G3"],
   },
-  TT_WORD_ENDING: {
-    label: "Үгийн төгсгөл",
+  TT_5_2: {
+    label: "Чиглэлийн нөхцөл нөхөх",
     shortLabel: "5.2",
-    description: "Үгийн төгсгөлийн үсэг/залгавар дутуу",
-    groups: ["fill"],
-    category: "fill",
-    grades: ["G1", "G2"],
+    description: "Өгүүлбэрт чиглэлийн нөхцлийг нөхөх",
+    groups: ["sentence_fill"],
+    category: "sentence_fill",
+    grades: ["G3"],
   },
-  TT_WORD_FORM_CHOOSE: {
-    label: "Үгийн зөв хэлбэр сонгох",
+  TT_5_3: {
+    label: "Үгийн зөв залгаврыг холбох",
     shortLabel: "5.3",
-    description: "Өгүүлбэр доторх үгийн зөв морфологийн хэлбэрийг сонгох",
-    groups: ["choice"],
-    category: "choice",
-    grades: ["G2", "G3"],
+    description: "Үг ба зохих залгаврыг холбох",
+    groups: ["match_pairs"],
+    category: "match_pairs",
+    grades: ["G3"],
   },
-  TT_SUFFIX_CHOOSE: {
-    label: "Залгавар сонгох",
+  TT_5_4: {
+    label: "Үйл үгийн цаг сонгох",
     shortLabel: "5.4",
-    description: "Өгүүлбэрт зөв залгаврыг сонгох",
+    description: "Үйл үгийн зөв цагийн хэлбэрийг сонгох",
     groups: ["choice"],
     category: "choice",
-    grades: ["G2", "G3"],
-  },
-  TT_CASE_SUFFIX: {
-    label: "Тийн ялгал",
-    shortLabel: "5.5",
-    description: "Тийн ялгалын зөв нөхцөлийг сонгох",
-    groups: ["choice"],
-    category: "choice",
-    grades: ["G2", "G3"],
-  },
-  TT_WORD_FORM_FIX: {
-    label: "Үгийн хэлбэр засах",
-    shortLabel: "5.6",
-    description: "Үгийн морфологийн буруу хэлбэрийг зөв болгох",
-    groups: ["correction"],
-    category: "correction",
-    grades: ["G2", "G3"],
-  },
-  TT_SUFFIX_WRITE: {
-    label: "Залгавар бичлэг",
-    shortLabel: "5.7",
-    description: "Үгийн залгаврыг өөрөө бичих",
-    groups: ["fill"],
-    category: "fill",
     grades: ["G3", "G4"],
   },
-  TT_COMPOUND_SUFFIX: {
-    label: "Нийлмэл залгавар",
-    shortLabel: "5.8",
-    description: "Олон давхар залгавартай үгийг нөхөх",
+  TT_5_5: {
+    label: "Тохирох залгаврыг нөхөх",
+    shortLabel: "5.5",
+    description: "Хоосон зайд зохих залгаврыг нөхөх",
     groups: ["fill"],
     category: "fill",
+    grades: ["G3"],
+  },
+  TT_5_6: {
+    label: "Олон тоо/харьяалал сонгох",
+    shortLabel: "5.6",
+    description: "Олон тоо эсвэл харьяаллын зөв хэлбэрийг сонгох",
+    groups: ["choice"],
+    category: "choice",
+    grades: ["G3"],
+  },
+  TT_5_7: {
+    label: "Залгаврын зөв бичлэг сонгох",
+    shortLabel: "5.7",
+    description: "Залгаврын зөв бичлэгийн хувилбарыг сонгох",
+    groups: ["choice"],
+    category: "choice",
     grades: ["G3", "G4"],
   },
   // S6 — Өгүүлбэрийн тэмдэглэгээ
-  TT_CAPITAL_PUNCTUATION: {
-    label: "Том үсэг, цэг",
+  TT_6_1: {
+    label: "Өгүүлбэрийн эхэнд орох зөв хариулт сонгох",
     shortLabel: "6.1",
-    description: "3–5 үгт өгүүлбэр — том үсэг + цэгийн алдааг засах",
-    groups: ["correction"],
-    category: "correction",
-    grades: ["G1", "G2"],
+    description: "Өгүүлбэрийн эхний том үсгийн хувилбарыг сонгох",
+    groups: ["choice"],
+    category: "choice",
+    grades: ["G2"],
   },
-  TT_BASIC_COMMA: {
-    label: "Таслалын анхан хэрэглээ",
+  TT_6_2: {
+    label: "Өгүүлбэрийн төгсгөлийн тэмдэг сонгох",
     shortLabel: "6.2",
-    description: "Таслал орхигдсон/буруу байрласан өгүүлбэрийг засах",
-    groups: ["correction"],
-    category: "correction",
+    description: "Зохих төгсгөлийн тэмдэгтийг сонгох",
+    groups: ["choice"],
+    category: "choice",
     grades: ["G2", "G3"],
   },
-  TT_SENTENCE_BOUNDARY: {
-    label: "Өгүүлбэрийн хил зааг",
+  TT_6_3: {
+    label: "Өгүүлбэрийн төгсгөлийг олох",
     shortLabel: "6.3",
-    description: "Холбоо өгүүлбэрийг зөв хил зааглах (том үсэг + цэг)",
+    description: "Өгүүлбэрийн хил заагийн алдааг засах",
     groups: ["correction"],
     category: "correction",
-    grades: ["G2", "G3"],
-  },
-  // S7 — Цээж бичиг
-  TT_WORD_SET_DICTATION: {
-    label: "Үгийн багц диктант",
-    shortLabel: "7.1",
-    description: "3 богино үг (2–5 үсэг, 1–2 үетэй) сонсоод бичих",
-    groups: ["dictation"],
-    category: "dictation",
-    grades: ["G1", "G2"],
-  },
-  TT_TWO_WORD_DICTATION: {
-    label: "2 үгийн диктант",
-    shortLabel: "7.2",
-    description: "Яг 2 богино үг сонсоод бичих",
-    groups: ["dictation"],
-    category: "dictation",
-    grades: ["G1", "G2"],
-  },
-  TT_SHORT_SENTENCE_DICTATION: {
-    label: "Богино өгүүлбэрийн диктант",
-    shortLabel: "7.3",
-    description: "3–6 үгт нэг богино өгүүлбэр сонсоод бичих",
-    groups: ["dictation"],
-    category: "dictation",
-    grades: ["G2", "G3"],
-  },
-  TT_TWO_SENTENCE_DICTATION: {
-    label: "2 өгүүлбэрийн диктант",
-    shortLabel: "7.4",
-    description: "Яг 2 богино өгүүлбэр сонсоод бичих",
-    groups: ["dictation"],
-    category: "dictation",
-    grades: ["G2", "G3"],
-  },
-  TT_MINI_TEXT_DICTATION: {
-    label: "Мини эхийн диктант",
-    shortLabel: "7.5",
-    description: "2–3 өгүүлбэрт жижиг эх сонсоод бичих",
-    groups: ["mini_text"],
-    category: "mini_text",
     grades: ["G3", "G4"],
   },
+  TT_6_4: {
+    label: "Таслал нэмэх",
+    shortLabel: "6.4",
+    description: "Өгүүлбэрт таслал нэмэх",
+    groups: ["correction"],
+    category: "correction",
+    grades: ["G3", "G4"],
+  },
+  // S7 — Цээж бичиг
+  TT_7_1: {
+    label: "Хуулж бичих",
+    shortLabel: "7.1",
+    description: "Өгсөн текстийг хуулж бичих",
+    groups: ["copy"],
+    category: "copy",
+    grades: ["G1"],
+  },
+  TT_7_2: {
+    label: "Харж тогтоон бичих",
+    shortLabel: "7.2",
+    description: "Текстийг харж тогтоон, нуусны дараа бичих",
+    groups: ["visual_memory"],
+    category: "visual_memory",
+    grades: ["G2"],
+  },
+  TT_7_3: {
+    label: "Сонсож бичих — үг",
+    shortLabel: "7.3",
+    description: "Аудио сонсоод үг бичих",
+    groups: ["dictation"],
+    category: "dictation",
+    grades: ["G2"],
+  },
+  TT_7_4: {
+    label: "Сонсож бичих — өгүүлбэр",
+    shortLabel: "7.4",
+    description: "Аудио сонсоод өгүүлбэр бичих",
+    groups: ["dictation"],
+    category: "dictation",
+    grades: ["G3"],
+  },
+  TT_7_5: {
+    label: "Нөхөж бичих цээж бичиг",
+    shortLabel: "7.5",
+    description: "Аудио сонсоод өгүүлбэрийн дутуу хэсгийг нөхөж бичих",
+    groups: ["sentence_fill"],
+    category: "sentence_fill",
+    grades: ["G3"],
+  },
+  TT_7_6: {
+    label: "Сонсож бичих — мини эх",
+    shortLabel: "7.6",
+    description: "Аудио сонсоод мини эхийг бичих",
+    groups: ["mini_text"],
+    category: "mini_text",
+    grades: ["G4"],
+  },
+  TT_7_7: {
+    label: "Сонсоод зөв хувилбар сонгох",
+    shortLabel: "7.7",
+    description: "Аудио сонсоод зөв бичлэгийн хувилбарыг сонгох",
+    groups: ["choice"],
+    category: "choice",
+    grades: ["G2", "G3"],
+  },
   // S8 — Алдаагаа зөв таних / засах
-  TT_FIND_ERROR: {
-    label: "Алдаа олох",
-    shortLabel: "8.1",
-    description: "Богино өгүүлбэрт нэг алдаатай үгийг олж засах",
-    groups: ["correction"],
-    category: "correction",
-    grades: ["G1", "G2"],
-  },
-  TT_FIX_ERROR: {
-    label: "Алдаа засах",
-    shortLabel: "8.2",
-    description: "Өгүүлбэрт нэг алдаа — засах",
-    groups: ["correction"],
-    category: "correction",
-    grades: ["G2", "G3"],
-  },
-  TT_SELF_CHECK: {
-    label: "Өөрийгөө шалгах",
-    shortLabel: "8.3",
-    description: "Өөрийн хариуг загвар хариутай харьцуулан шалгах",
-    groups: ["self_check"],
-    category: "self_check",
-    grades: ["G1", "G2"],
-  },
-  TT_OWN_WRITING_CORRECTION: {
-    label: "Өөрийн бичвэр засвар",
-    shortLabel: "8.4",
-    description: "Өөрийн өмнөх бичвэрийг загвартай харьцуулна",
-    groups: ["self_check"],
-    category: "self_check",
-    grades: ["G2", "G3"],
-  },
-  TT_TAP_FIND_ERROR: {
+  TT_8_1: {
     label: "Алдаа олж товших",
-    shortLabel: "8.5",
-    description: "Өгүүлбэрт нэг алдаатай үг байрлуулах — товшиж олох",
+    shortLabel: "8.1",
+    description: "Өгүүлбэрийн алдаатай үгийг олж товших",
     groups: ["tap_find_error"],
     category: "tap_find_error",
     grades: ["G2", "G3"],
   },
-  TT_EXPLAINED_CORRECTION: {
-    label: "Тайлбартай засвар",
-    shortLabel: "8.6",
-    description: "Алдааг засаад яагаад буруу/зөв болохыг тайлбарлах",
+  TT_8_2: {
+    label: "Алдааг засах",
+    shortLabel: "8.2",
+    description: "Олсон алдааг засах",
     groups: ["correction"],
     category: "correction",
+    grades: ["G3"],
+  },
+  TT_8_3: {
+    label: "Зөв/буруу өгүүлбэр сонгох",
+    shortLabel: "8.3",
+    description: "Зөв бичигдсэн өгүүлбэрийг сонгох",
+    groups: ["choice"],
+    category: "choice",
+    grades: ["G3"],
+  },
+  TT_8_4: {
+    label: "Өөрийн хариуг дахин шалгах",
+    shortLabel: "8.4",
+    description: "Өөрийн хариуг загвар хариутай харьцуулан шалгах",
+    groups: ["self_check"],
+    category: "self_check",
     grades: ["G3", "G4"],
   },
 };
@@ -437,6 +448,8 @@ export const CATEGORY_LABELS: Record<string, string> = {
   match_pairs: "Холбож тааруулах",
   assemble_word: "Угсрах",
   tap_find_error: "Алдаа олж товших",
+  copy: "Хуулж бичих",
+  visual_memory: "Харж тогтоон бичих",
 };
 
 export const CATEGORY_ORDER = [
@@ -450,6 +463,8 @@ export const CATEGORY_ORDER = [
   "match_pairs",
   "assemble_word",
   "tap_find_error",
+  "copy",
+  "visual_memory",
 ] as const;
 
 export const SKILL_LABELS: Record<string, string> = {
@@ -598,7 +613,7 @@ export function computeDefaults(
     case "dictation":
       difficulty = isG34 ? 3 : 2;
       level = isG34 ? "M2" : "M1";
-      time = 60;
+      time = taskType === "TT_7_4" ? 90 : 60;
       slot = "CORE";
       break;
     case "mini_text":
@@ -636,6 +651,18 @@ export function computeDefaults(
       level = "M2";
       time = 30;
       slot = "MIXED";
+      break;
+    case "copy":
+      difficulty = 1;
+      level = "M0";
+      time = 30;
+      slot = "CORE";
+      break;
+    case "visual_memory":
+      difficulty = 2;
+      level = "M1";
+      time = 45;
+      slot = "CORE";
       break;
     default:
       difficulty = 2;
@@ -680,8 +707,12 @@ export function parseLines(raw: string): string[] {
     .filter(Boolean);
 }
 
-// image_side is set per-task in MatchPairsOptions; this map is kept for future per-type defaults
-const MATCH_PAIRS_IMAGE_SIDE: Record<string, "left" | "right"> = {};
+// TT_1_3: letters (left) → images of words (right)
+// TT_3_3: images of words (left) → word text (right)
+const MATCH_PAIRS_IMAGE_SIDE: Record<string, "left" | "right"> = {
+  TT_1_3: "right",
+  TT_3_3: "left",
+};
 
 export function deriveImageSide(taskType: string): "left" | "right" | "none" {
   return MATCH_PAIRS_IMAGE_SIDE[taskType] ?? "none";

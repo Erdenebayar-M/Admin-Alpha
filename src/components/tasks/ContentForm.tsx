@@ -752,12 +752,18 @@ function MatchPairsContent({ form, set, errors }: SubProps) {
 
 function AssembleWordContent({ form, set, errors }: SubProps) {
   const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
+  const isSyllable = form.task_type === "TT_1_4";
 
   return (
     <>
       <div className="rounded-lg border border-teal-200 bg-teal-50/50 p-3 text-xs text-teal-800 dark:border-teal-800 dark:bg-teal-950/30 dark:text-teal-200">
-        <>Сурагч холилдсон сегментүүдийг зөв дарааллаар угсрана. Сегментүүдийг{" "}
-        <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.</>
+        {isSyllable ? (
+          <>Сурагч холилдсон үеүүдийг зөв дарааллаар угсрана. Үеүүдийг{" "}
+          <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.</>
+        ) : (
+          <>Сурагч холилдсон сегментүүдийг зөв дарааллаар угсрана. Сегментүүдийг{" "}
+          <strong>зайгаар тусгаарлаж</strong> зөв дарааллаар бичнэ үү.</>
+        )}
       </div>
       <Separator />
       <CommonFields
@@ -1173,55 +1179,56 @@ function AudioSentenceFillContent({ form, set, errors, audioPreview, onAudioGene
 
 const TYPE_CONTENT_MAP: Record<string, React.FC<SubProps>> = {
   // S1 — Үсэг-авиаг зөв таних
-  TT_LISTEN_CHOOSE:             ListenChoiceContent,
-  TT_LETTER_FILL:               WordFillContent,
-  TT_MISSING_LETTER:            WordFillContent,
-  TT_CONSONANT_CONFUSION:       ChoiceContent,
-  TT_MATCH_PAIRS:               MatchPairsContent,
-  TT_ASSEMBLE_WORD:             AssembleWordContent,
+  TT_1_1: ListenChoiceContent,
+  TT_1_2: ImageChoiceContent,
+  TT_1_3: MatchPairsContent,
+  TT_1_4: AssembleWordContent,
+  TT_1_5: ListenChoiceContent,
   // S2 — Үгийг зөв бичих
-  TT_IMAGE_WORD_MATCH:          ImageChoiceContent,
-  TT_COPY_WRITE:                CorrectionContent,
-  TT_CHOOSE_CORRECT:            ChoiceContent,
-  TT_FILL_WRITE:                WordFillContent,
-  TT_SENTENCE_FILL:             SentenceFillContent,
-  TT_MIXED_REVIEW:              ChoiceContent,
-  TT_FIND_OMITTED_LETTER:       CorrectionContent,
-  TT_MIXED_WORD_SET:            ChoiceContent,
-  TT_MIXED_CHECKPOINT:          ChoiceContent,
-  // S3 — Урт эгшиг
-  TT_LONG_VOWEL_FILL:           WordFillContent,
-  TT_LONG_VOWEL_IN_SENTENCE:    SentenceFillContent,
-  TT_LONG_VOWEL_CHALLENGE:      ChoiceContent,
-  // S4 — Балархай эгшиг
-  TT_REDUCED_VOWEL:             WordFillContent,
-  TT_REDUCED_VOWEL_IN_SENTENCE: SentenceFillContent,
+  TT_2_1: ImageFillContent,
+  TT_2_2: AssembleWordContent,
+  TT_2_3: ImageChoiceContent,
+  TT_2_4: AudioFillContent,
+  TT_2_5: CorrectionContent,
+  TT_2_6: CorrectionContent,
+  // S3 — Урт/богино, балархай эгшиг
+  TT_3_1: ListenChoiceContent,
+  TT_3_2: AudioFillContent,
+  TT_3_3: MatchPairsContent,
+  TT_3_4: ChoiceContent,
+  TT_3_5: CorrectionContent,
+  // S4 — Гийгүүлэгчийг зөв ялгах
+  TT_4_1: ListenChoiceContent,
+  TT_4_2: ListenChoiceContent,
+  TT_4_3: WordFillContent,
+  TT_4_4: AudioFillContent,
+  TT_4_5: CorrectionContent,
   // S5 — Залгаварыг зөв залгах
-  TT_SIMPLE_SUFFIX:             ChoiceContent,
-  TT_WORD_ENDING:               WordFillContent,
-  TT_WORD_FORM_CHOOSE:          ChoiceContent,
-  TT_SUFFIX_CHOOSE:             ChoiceContent,
-  TT_CASE_SUFFIX:               ChoiceContent,
-  TT_WORD_FORM_FIX:             CorrectionContent,
-  TT_SUFFIX_WRITE:              WordFillContent,
-  TT_COMPOUND_SUFFIX:           WordFillContent,
+  TT_5_1: ChoiceContent,
+  TT_5_2: SentenceFillContent,
+  TT_5_3: MatchPairsContent,
+  TT_5_4: ChoiceContent,
+  TT_5_5: WordFillContent,
+  TT_5_6: ChoiceContent,
+  TT_5_7: ChoiceContent,
   // S6 — Өгүүлбэрийн тэмдэглэгээ
-  TT_CAPITAL_PUNCTUATION:       CorrectionContent,
-  TT_BASIC_COMMA:               CorrectionContent,
-  TT_SENTENCE_BOUNDARY:         CorrectionContent,
+  TT_6_1: ChoiceContent,
+  TT_6_2: ChoiceContent,
+  TT_6_3: TapCorrectionContent,
+  TT_6_4: TapCorrectionContent,
   // S7 — Цээж бичиг
-  TT_WORD_SET_DICTATION:        DictationContent,
-  TT_TWO_WORD_DICTATION:        DictationContent,
-  TT_SHORT_SENTENCE_DICTATION:  DictationContent,
-  TT_TWO_SENTENCE_DICTATION:    DictationContent,
-  TT_MINI_TEXT_DICTATION:       MiniTextContent,
+  TT_7_1: CopyContent,
+  TT_7_2: VisualMemoryContent,
+  TT_7_3: DictationContent,
+  TT_7_4: DictationContent,
+  TT_7_5: AudioSentenceFillContent,
+  TT_7_6: MiniTextContent,
+  TT_7_7: ListenChoiceContent,
   // S8 — Алдаагаа зөв таних / засах
-  TT_FIND_ERROR:                CorrectionContent,
-  TT_FIX_ERROR:                 CorrectionContent,
-  TT_SELF_CHECK:                SelfCheckContent,
-  TT_OWN_WRITING_CORRECTION:    SelfCheckContent,
-  TT_TAP_FIND_ERROR:            TapFindErrorContent,
-  TT_EXPLAINED_CORRECTION:      CorrectionContent,
+  TT_8_1: TapFindErrorContent,
+  TT_8_2: CorrectionContent,
+  TT_8_3: ChoiceContent,
+  TT_8_4: SelfCheckContent,
 };
 
 // ─── Main export ─────────────────────────────────────────────────────────────
