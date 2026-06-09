@@ -237,7 +237,7 @@ export function TaskPreview({
       )}
 
       {/* ── Match pairs ────────────────────────────────────────────────────── */}
-      {task.task_type === "TT_MATCH_PAIRS" && (opts.pairs?.length ?? 0) > 0 && (
+      {["TT_1_3","TT_3_3","TT_5_3"].includes(task.task_type) && (opts.pairs?.length ?? 0) > 0 && (
         <MatchPairsSection
           pairs={currentOpts.pairs ?? opts.pairs ?? []}
           isEditMode={isEditMode}
@@ -247,7 +247,7 @@ export function TaskPreview({
       )}
 
       {/* ── Assemble word ──────────────────────────────────────────────────── */}
-      {task.task_type === "TT_ASSEMBLE_WORD" && (opts.correct_order?.length ?? 0) > 0 && (
+      {["TT_1_4","TT_2_2"].includes(task.task_type) && (opts.correct_order?.length ?? 0) > 0 && (
         <AssembleWordSection
           tiles={opts.tiles ?? []}
           correctOrder={currentOpts.correct_order ?? opts.correct_order ?? []}
@@ -258,7 +258,7 @@ export function TaskPreview({
       )}
 
       {/* ── Tap find error ─────────────────────────────────────────────────── */}
-      {task.task_type === "TT_TAP_FIND_ERROR" && opts.sentence && (
+      {task.task_type === "TT_8_1" && opts.sentence && (
         <TapFindErrorSection
           opts={currentOpts}
           isEditMode={isEditMode}
