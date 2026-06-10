@@ -215,237 +215,200 @@ export function TaskPreview({
       <div className="border-t border-border" />
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Дасгалын заавар</p>
 
-      {/* ── Prompt ─────────────────────────────────────────────────────────── */}
-      <Field label="Асуулт">
-        {isEditMode ? (
-          <textarea
-            className={textareaClass}
-            rows={2}
-            value={promptText}
-            onChange={(e) => onDraftChange({ prompt_text: e.target.value })}
-          />
-        ) : (
-          <p className="text-sm">{promptText}</p>
-        )}
-      </Field>
-
-      {/* ── Correction layout ─────────────────────────────────────────────── */}
-      {isCorrection && (
-        <CorrectionSection
-          initialText={initialText}
-          opts={currentOpts}
-          isEditMode={isEditMode}
-          onDraftChange={onDraftChange}
-        />
-      )}
-
-      {/* ── Match pairs ────────────────────────────────────────────────────── */}
-      {["TT_1_3","TT_3_3","TT_5_3"].includes(task.task_type) && (opts.pairs?.length ?? 0) > 0 && (
-        <MatchPairsSection
-          pairs={currentOpts.pairs ?? opts.pairs ?? []}
-          isEditMode={isEditMode}
-          onDraftChange={onDraftChange}
-          allOpts={currentOpts}
-        />
-      )}
-
-      {/* ── Assemble word ──────────────────────────────────────────────────── */}
-      {["TT_1_4","TT_2_2"].includes(task.task_type) && (opts.correct_order?.length ?? 0) > 0 && (
-        <AssembleWordSection
-          tiles={opts.tiles ?? []}
-          correctOrder={currentOpts.correct_order ?? opts.correct_order ?? []}
-          isEditMode={isEditMode}
-          onDraftChange={onDraftChange}
-          allOpts={currentOpts}
-        />
-      )}
-
-      {/* ── Tap find error ─────────────────────────────────────────────────── */}
-      {task.task_type === "TT_8_1" && opts.sentence && (
-        <TapFindErrorSection
-          opts={currentOpts}
-          isEditMode={isEditMode}
-          onDraftChange={onDraftChange}
-          allOpts={currentOpts}
-        />
-      )}
-
-      {/* ── Choice options ─────────────────────────────────────────────────── */}
-      {isChoiceTask && (opts.choices?.length ?? 0) > 0 && (
-        <Field label="Сонголтууд">
-          <div className="flex flex-wrap gap-1.5">
-            {opts.choices!.map((c, i) => (
-              <span
-                key={i}
-                className={cn(
-                  "rounded-md border px-2.5 py-1 text-sm font-medium",
-                  c.is_correct
-                    ? "border-green-400 bg-green-50 text-green-800"
-                    : "border-red-300 bg-red-50 text-red-800",
-                )}
-              >
-                {c.text}
-              </span>
-            ))}
-          </div>
-          {opts.audio_trigger && (
-            <p className="mt-1 text-xs text-muted-foreground">Аудио trigger идэвхтэй</p>
+      {/* ── Card 1: Агуулга ─────────────────────────────────────────────────── */}
+      <SectionCard title="Агуулга">
+        <Field label="Асуулт">
+          {isEditMode ? (
+            <textarea
+              className={textareaClass}
+              rows={2}
+              value={promptText}
+              onChange={(e) => onDraftChange({ prompt_text: e.target.value })}
+            />
+          ) : (
+            <p className="text-sm">{promptText}</p>
           )}
         </Field>
-      )}
 
-      {/* ── Fill (word-level) ──────────────────────────────────────────────── */}
-      {isFillTask && (
-        <FillSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
-      )}
+        {isCorrection && (
+          <CorrectionSection
+            initialText={initialText}
+            opts={currentOpts}
+            isEditMode={isEditMode}
+            onDraftChange={onDraftChange}
+          />
+        )}
 
-      {/* ── Sentence fill ──────────────────────────────────────────────────── */}
-      {isSentenceFillTask && (
-        <SentenceFillSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
-      )}
+        {["TT_1_3","TT_3_3","TT_5_3"].includes(task.task_type) && (opts.pairs?.length ?? 0) > 0 && (
+          <MatchPairsSection
+            pairs={currentOpts.pairs ?? opts.pairs ?? []}
+            isEditMode={isEditMode}
+            onDraftChange={onDraftChange}
+            allOpts={currentOpts}
+          />
+        )}
 
-      {/* ── Dictation answers ──────────────────────────────────────────────── */}
-      {isDictationTask && (
-        <DictationSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
-      )}
+        {["TT_1_4","TT_2_2"].includes(task.task_type) && (opts.correct_order?.length ?? 0) > 0 && (
+          <AssembleWordSection
+            tiles={opts.tiles ?? []}
+            correctOrder={currentOpts.correct_order ?? opts.correct_order ?? []}
+            isEditMode={isEditMode}
+            onDraftChange={onDraftChange}
+            allOpts={currentOpts}
+          />
+        )}
 
-      {/* ── Mini text ──────────────────────────────────────────────────────── */}
-      {isMiniTextTask && (
-        <MiniTextSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
-      )}
+        {task.task_type === "TT_8_1" && opts.sentence && (
+          <TapFindErrorSection
+            opts={currentOpts}
+            isEditMode={isEditMode}
+            onDraftChange={onDraftChange}
+            allOpts={currentOpts}
+          />
+        )}
 
-      {/* ── Self check ─────────────────────────────────────────────────────── */}
-      {isSelfCheckTask && (
-        <SelfCheckSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
-      )}
+        {isChoiceTask && (opts.choices?.length ?? 0) > 0 && (
+          <Field label="Сонголтууд">
+            <div className="flex flex-wrap gap-1.5">
+              {opts.choices!.map((c, i) => (
+                <span
+                  key={i}
+                  className={cn(
+                    "rounded-md border px-2.5 py-1 text-sm font-medium",
+                    c.is_correct
+                      ? "border-green-400 bg-green-50 text-green-800"
+                      : "border-red-300 bg-red-50 text-red-800",
+                  )}
+                >
+                  {c.text}
+                </span>
+              ))}
+            </div>
+            {opts.audio_trigger && (
+              <p className="mt-1 text-xs text-muted-foreground">Аудио trigger идэвхтэй</p>
+            )}
+          </Field>
+        )}
 
-      {/* ── Correct answer (hidden for correction tasks — shown as "Target correct text") */}
+        {isFillTask && (
+          <FillSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+        )}
+
+        {isSentenceFillTask && (
+          <SentenceFillSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+        )}
+
+        {isDictationTask && (
+          <DictationSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+        )}
+
+        {isMiniTextTask && (
+          <MiniTextSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+        )}
+
+        {isSelfCheckTask && (
+          <SelfCheckSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
+        )}
+      </SectionCard>
+
+      {/* ── Card 2: Хариулт ─────────────────────────────────────────────────── */}
       {!isCorrection && (
-        <Field label="Зөв хариулт">
-          {isEditMode ? (
-            <input
-              className={cn(
-                inputClass,
-                "border-green-400 bg-green-50 text-green-900",
-              )}
-              value={correctAnswer}
-              onChange={(e) =>
-                onDraftChange({ correct_answer: e.target.value })
-              }
-            />
-          ) : (
-            <span className="inline-block rounded-md border border-green-400 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-800">
-              {correctAnswer}
-            </span>
-          )}
-        </Field>
+        <SectionCard title="Хариулт">
+          <Field label="Зөв хариулт">
+            {isEditMode ? (
+              <input
+                className={cn(inputClass, "border-green-400 bg-green-50 text-green-900")}
+                value={correctAnswer}
+                onChange={(e) => onDraftChange({ correct_answer: e.target.value })}
+              />
+            ) : (
+              <span className="inline-block rounded-md border border-green-400 bg-green-50 px-3 py-1.5 text-sm font-medium text-green-800">
+                {correctAnswer}
+              </span>
+            )}
+          </Field>
+        </SectionCard>
       )}
 
-      {/* ── Feedback ───────────────────────────────────────────────────────── */}
-      <Field label="Дүрмийн тайлбар">
-        {isEditMode ? (
-          <textarea
-            className={textareaClass}
-            rows={2}
-            value={feedbackText}
-            onChange={(e) => onDraftChange({ feedback_text: e.target.value })}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">{feedbackText}</p>
+      {/* ── Card 3: Санал хүсэлт ────────────────────────────────────────────── */}
+      <SectionCard title="Санал хүсэлт">
+        <Field label="Дүрмийн тайлбар">
+          {isEditMode ? (
+            <textarea
+              className={textareaClass}
+              rows={2}
+              value={feedbackText}
+              onChange={(e) => onDraftChange({ feedback_text: e.target.value })}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">{feedbackText}</p>
+          )}
+        </Field>
+
+        <div className="grid grid-cols-2 gap-3">
+          <Field label={<span className="text-green-700">Зөв хариулсан үед</span>}>
+            {isEditMode ? (
+              <textarea
+                className={cn(textareaClass, "border-green-300 bg-green-50 text-green-900")}
+                rows={2}
+                value={feedbackCorrect}
+                placeholder="Зөв хариулсан үед харуулах текст…"
+                onChange={(e) => onDraftChange({ feedback_correct: e.target.value })}
+              />
+            ) : feedbackCorrect ? (
+              <p className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
+                {feedbackCorrect}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">—</p>
+            )}
+          </Field>
+          <Field label={<span className="text-red-700">Буруу хариулсан үед</span>}>
+            {isEditMode ? (
+              <textarea
+                className={cn(textareaClass, "border-red-300 bg-red-50 text-red-900")}
+                rows={2}
+                value={feedbackWrong}
+                placeholder="Буруу хариулсан үед харуулах текст…"
+                onChange={(e) => onDraftChange({ feedback_wrong: e.target.value })}
+              />
+            ) : feedbackWrong ? (
+              <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
+                {feedbackWrong}
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">—</p>
+            )}
+          </Field>
+        </div>
+      </SectionCard>
+
+      {/* ── Card 4: Медиа ───────────────────────────────────────────────────── */}
+      <SectionCard title="Медиа">
+        {task.audio_url && (
+          <Field label="Аудио">
+            <div className="flex flex-col gap-1">
+              <audio controls src={resolveAssetUrl(task.audio_url)} className="w-full h-8" />
+              <span className="font-mono text-xs text-muted-foreground truncate">{task.audio_url}</span>
+            </div>
+          </Field>
         )}
-      </Field>
-
-      {/* ── Correct / Wrong feedback ───────────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-3">
-        <Field
-          label={<span className="text-green-700">Зөв хариулсан үед</span>}
-        >
-          {isEditMode ? (
-            <textarea
-              className={cn(
-                textareaClass,
-                "border-green-300 bg-green-50 text-green-900",
-              )}
-              rows={2}
-              value={feedbackCorrect}
-              placeholder="Зөв хариулсан үед харуулах текст…"
-              onChange={(e) =>
-                onDraftChange({ feedback_correct: e.target.value })
-              }
+        {task.image_url && (
+          <Field label="Зураг">
+            <img
+              src={resolveAssetUrl(task.image_url)}
+              alt="Даалгаврын зураг"
+              className="rounded-md border border-border max-h-40 object-contain"
             />
-          ) : feedbackCorrect ? (
-            <p className="rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-900">
-              {feedbackCorrect}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">—</p>
-          )}
-        </Field>
-        <Field
-          label={<span className="text-red-700">Буруу хариулсан үед</span>}
-        >
-          {isEditMode ? (
-            <textarea
-              className={cn(
-                textareaClass,
-                "border-red-300 bg-red-50 text-red-900",
-              )}
-              rows={2}
-              value={feedbackWrong}
-              placeholder="Буруу хариулсан үед харуулах текст…"
-              onChange={(e) =>
-                onDraftChange({ feedback_wrong: e.target.value })
-              }
-            />
-          ) : feedbackWrong ? (
-            <p className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-              {feedbackWrong}
-            </p>
-          ) : (
-            <p className="text-sm text-muted-foreground italic">—</p>
-          )}
-        </Field>
-      </div>
-
-      {/* ── Media ──────────────────────────────────────────────────────────── */}
-      {(task.audio_url || task.image_url) && (
-        <Field label="Медиа">
-          <div className="space-y-2">
-            {task.audio_url && (
-              <div className="flex flex-col gap-1">
-                <audio
-                  controls
-                  src={resolveAssetUrl(task.audio_url)}
-                  className="w-full h-8"
-                />
-                <span className="font-mono text-xs text-muted-foreground truncate">
-                  {task.audio_url}
-                </span>
-              </div>
-            )}
-            {task.image_url && (
-              <div className="flex items-start gap-2">
-                <span className="text-xs text-muted-foreground w-12 pt-0.5">
-                  Зураг
-                </span>
-                <img
-                  src={resolveAssetUrl(task.image_url)}
-                  alt="Даалгаврын зураг"
-                  className="rounded-md border border-border max-h-40 object-contain"
-                />
-              </div>
-            )}
-          </div>
-        </Field>
-      )}
-
-      {/* ── Generate media ─────────────────────────────────────────────────── */}
-      <MediaGenerator
-        task={task}
-        variantId={variantId}
-        stage={mediaStage}
-        onMediaAccepted={onMediaAccepted}
-      />
+          </Field>
+        )}
+        <MediaGenerator
+          task={task}
+          variantId={variantId}
+          stage={mediaStage}
+          onMediaAccepted={onMediaAccepted}
+        />
+      </SectionCard>
 
     </div>
   );
@@ -901,6 +864,19 @@ function MetaItem({ label, value }: { label: string; value: React.ReactNode }) {
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
       <div className="mt-0.5 text-sm font-medium">{value}</div>
+    </div>
+  );
+}
+
+function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="rounded-md border border-border">
+      <p className="border-b border-border bg-muted/40 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+        {title}
+      </p>
+      <div className="space-y-4 px-4 py-4">
+        {children}
+      </div>
     </div>
   );
 }
