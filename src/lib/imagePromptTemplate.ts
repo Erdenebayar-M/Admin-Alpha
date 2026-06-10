@@ -1,5 +1,5 @@
-// Backend sends this to Gemini 2.5 Flash which rewrites it into a full image prompt.
-// The hint steers Gemini toward isolated icons rather than scene compositions.
+// The backend IMAGE_STYLE_SYSTEM (content.ts) owns all style/composition rules.
+// Here we only pass the clean subject (usually a Mongolian word) for Gemini to depict.
 export function buildImagePrompt(subject: string): string {
-  return `${subject.trim()} — isolated object, educational flashcard icon for children`;
+  return subject.trim();
 }
