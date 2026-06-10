@@ -16,7 +16,13 @@ import {
 } from "@/components/ui/dialog";
 import type { TaskContent } from "@/lib/types";
 
-function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void }) {
+function TaskDetailContent({
+  id,
+  onClose,
+}: {
+  id: string;
+  onClose: () => void;
+}) {
   const queryClient = useQueryClient();
   const { showPageToast } = useModalStore();
 
@@ -33,7 +39,11 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
     setTimeout(() => setToast((t) => ({ ...t, visible: false })), duration);
   }, []);
 
-  const { data: task, isLoading, isError } = useQuery({
+  const {
+    data: task,
+    isLoading,
+    isError,
+  } = useQuery({
     queryKey: ["live-task", id],
     queryFn: () => getLiveTask(id),
     staleTime: 30_000,
@@ -58,7 +68,11 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
       showPageToast({ message: "Даалгавар устгагдлаа.", type: "success" });
       onClose();
     },
-    onError: (err) => showPageToast({ message: (err as Error).message ?? "Устгаж чадсангүй.", type: "error" }),
+    onError: (err) =>
+      showPageToast({
+        message: (err as Error).message ?? "Устгаж чадсангүй.",
+        type: "error",
+      }),
   });
 
   const handleEnterEdit = useCallback(() => {
@@ -67,8 +81,8 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
       prompt_text: task.prompt_text,
       correct_answer: task.correct_answer,
       feedback_text: task.feedback_text,
-      feedback_correct: task.feedback_correct ?? '',
-      feedback_wrong: task.feedback_wrong ?? '',
+      feedback_correct: task.feedback_correct ?? "",
+      feedback_wrong: task.feedback_wrong ?? "",
     });
     setIsEditMode(true);
   }, [task]);
@@ -98,8 +112,18 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
           <DialogTitle className="sr-only">Даалгаврын дэлгэрэнгүй</DialogTitle>
           <div className="h-4 w-48 rounded bg-muted animate-pulse" />
           <DialogClose className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </DialogClose>
         </DialogHeader>
@@ -125,8 +149,18 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
           <DialogTitle className="sr-only">Даалгаврын дэлгэрэнгүй</DialogTitle>
           <span className="text-sm text-muted-foreground">Даалгавар</span>
           <DialogClose className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth={2}
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </DialogClose>
         </DialogHeader>
@@ -142,22 +176,39 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="sr-only">{task.task_type} — {task.task_id}</DialogTitle>
+        <DialogTitle className="sr-only">
+          {task.task_type} — {task.task_id}
+        </DialogTitle>
         <div className="flex items-center gap-2 min-w-0">
-          <span className="font-mono text-sm text-muted-foreground truncate">{task.task_id}</span>
+          <span className="font-mono text-sm text-muted-foreground truncate">
+            {task.task_id}
+          </span>
           <span className="text-muted-foreground">·</span>
           <span className="text-sm font-medium">{task.task_type}</span>
           <div className="flex gap-1 ml-1">
             {task.grade_band.map((g) => (
-              <span key={g} className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground">
+              <span
+                key={g}
+                className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-medium text-muted-foreground"
+              >
                 {g}
               </span>
             ))}
           </div>
         </div>
         <DialogClose className="rounded-md p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shrink-0">
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </DialogClose>
       </DialogHeader>
@@ -172,17 +223,23 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
             isSaving={saveMutation.isPending}
             editDraft={editDraft}
             onEnterEdit={handleEnterEdit}
-            onDraftChange={(patch) => setEditDraft((prev) => ({ ...prev, ...patch }))}
+            onDraftChange={(patch) =>
+              setEditDraft((prev) => ({ ...prev, ...patch }))
+            }
             onSaveEdit={handleSave}
             onCancelEdit={handleCancelEdit}
-            onMediaAccepted={() => queryClient.invalidateQueries({ queryKey: ["live-task", id] })}
+            onMediaAccepted={() =>
+              queryClient.invalidateQueries({ queryKey: ["live-task", id] })
+            }
           />
 
           {/* Sidebar */}
           <div className="space-y-3">
             {/* Edit / Save / Cancel */}
             <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Засах</p>
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                Засах
+              </p>
               {isEditMode ? (
                 <div className="flex flex-col gap-2">
                   <button
@@ -216,15 +273,22 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
             <div className="rounded-lg border border-border bg-card p-4 space-y-2 text-xs">
               <div className="flex justify-between text-muted-foreground">
                 <span>Чадвар</span>
-                <span className="text-foreground font-medium">{task.primary_skill}</span>
+                <span className="text-foreground font-medium">
+                  {task.primary_skill}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>Хүндрэл</span>
-                <span className="text-yellow-500">{"★".repeat(task.difficulty)}{"☆".repeat(5 - task.difficulty)}</span>
+                <span>Хүндийн түвшин</span>
+                <span className="text-yellow-500">
+                  {"★".repeat(task.difficulty)}
+                  {"☆".repeat(5 - task.difficulty)}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Цаг</span>
-                <span className="text-foreground font-medium">{task.estimated_time_seconds}с</span>
+                <span className="text-foreground font-medium">
+                  {task.estimated_time_seconds}с
+                </span>
               </div>
               {task.is_diagnostic && (
                 <div className="flex justify-between text-muted-foreground">
@@ -237,7 +301,9 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
             {/* Delete */}
             {!isEditMode && (
               <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Устгах</p>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                  Устгах
+                </p>
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -250,7 +316,11 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
                         : "border border-border text-[#DC2B33] hover:border-[#DC2B33]/50 hover:bg-[#DC2B33]/5",
                     )}
                   >
-                    {deleteMutation.isPending ? "Устгаж байна…" : confirmDelete ? "Баталгаажуулах" : "Устгах"}
+                    {deleteMutation.isPending
+                      ? "Устгаж байна…"
+                      : confirmDelete
+                        ? "Баталгаажуулах"
+                        : "Устгах"}
                   </button>
                   {confirmDelete && (
                     <button
@@ -263,7 +333,9 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
                   )}
                 </div>
                 {confirmDelete && (
-                  <p className="text-xs text-[#DC2B33]">Энэ үйлдлийг буцаах боломжгүй.</p>
+                  <p className="text-xs text-[#DC2B33]">
+                    Энэ үйлдлийг буцаах боломжгүй.
+                  </p>
                 )}
               </div>
             )}
@@ -275,7 +347,9 @@ function TaskDetailContent({ id, onClose }: { id: string; onClose: () => void })
       <div
         className={cn(
           "fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-lg bg-primary text-primary-foreground px-5 py-3 text-sm font-medium shadow-lg transition-all duration-300",
-          toast.visible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2 pointer-events-none",
+          toast.visible
+            ? "opacity-100 translate-y-0"
+            : "opacity-0 translate-y-2 pointer-events-none",
         )}
       >
         {toast.message}
@@ -289,7 +363,12 @@ export function TaskDetailModal() {
   const isOpen = taskDetailId !== null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => { if (!open) closeTaskDetail(); }}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        if (!open) closeTaskDetail();
+      }}
+    >
       <DialogContent size="fullscreen">
         {isOpen && taskDetailId && (
           <TaskDetailContent id={taskDetailId} onClose={closeTaskDetail} />
