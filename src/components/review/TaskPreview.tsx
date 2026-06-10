@@ -189,28 +189,31 @@ export function TaskPreview({
             task.lesson_slot_fit ? <Chip>{task.lesson_slot_fit}</Chip> : "—"
           }
         />
+        {task.error_targets.length > 0 && (
+          <div className="col-span-2 sm:col-span-3">
+            <MetaItem
+              label="Алдааны оношилгоо"
+              value={
+                <div className="flex flex-wrap gap-1.5">
+                  {task.error_targets.map((code) => (
+                    <span
+                      key={code}
+                      className="rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800"
+                    >
+                      {code}
+                      {ERROR_LABELS[code] ? ` — ${ERROR_LABELS[code]}` : ""}
+                    </span>
+                  ))}
+                </div>
+              }
+            />
+          </div>
+        )}
       </div>
 
       {/* ── Content section ────────────────────────────────────────────────── */}
       <div className="border-t border-border" />
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Дасгалын заавар</p>
-
-      {/* ── Error targets ──────────────────────────────────────────────────── */}
-      {task.error_targets.length > 0 && (
-        <Field label="Алдааны зорилт">
-          <div className="flex flex-wrap gap-1.5">
-            {task.error_targets.map((code) => (
-              <span
-                key={code}
-                className="rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800"
-              >
-                {code}
-                {ERROR_LABELS[code] ? ` — ${ERROR_LABELS[code]}` : ""}
-              </span>
-            ))}
-          </div>
-        </Field>
-      )}
 
       {/* ── Prompt ─────────────────────────────────────────────────────────── */}
       <Field label="Асуулт">

@@ -10,6 +10,7 @@ import {
   saveImageAndUpdateTask,
   saveAudioAndUpdateTask,
 } from '@/lib/api';
+import { buildImagePrompt } from '@/lib/imagePromptTemplate';
 
 interface Props {
   task: TaskContent;
@@ -58,7 +59,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
   const [tab, setTab] = useState<Tab>(() => (showAudio ? 'audio' : 'image'));
 
   // Image state
-  const [imgPrompt, setImgPrompt] = useState(task.prompt_text);
+  const [imgPrompt, setImgPrompt] = useState('');
   const [imgStatus, setImgStatus] = useState<GenStatus>('idle');
   const [imgTempId, setImgTempId] = useState('');
   const [imgBase64, setImgBase64] = useState('');
@@ -67,7 +68,6 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
   // Audio state
   const [audioText, setAudioText] = useState(task.options.audio_text || task.prompt_text);
   const [audioSlot, setAudioSlot] = useState<'dictation' | 'prompt'>('dictation');
-  const [audioVoice, setAudioVoice] = useState('');
   const [audioStatus, setAudioStatus] = useState<GenStatus>('idle');
   const [audioBase64, setAudioBase64] = useState('');
   const [audioBlobUrl, setAudioBlobUrl] = useState('');
@@ -79,7 +79,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
     setImgError('');
     setImgStatus('generating');
     try {
-      const res = await generateImage(imgPrompt, task.grade_band);
+      const res = await generateImage(buildImagePrompt(imgPrompt), task.grade_band);
       setImgTempId(res.temp_id);
       setImgBase64(res.base64);
       setImgStatus('preview');
@@ -115,7 +115,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
     setAudioError('');
     setAudioStatus('generating');
     try {
-      const res = await generateAudio(audioText, audioSlot, audioVoice || undefined);
+      const res = await generateAudio(audioText, audioSlot);
       const bytes = Uint8Array.from(atob(res.base64), (c) => c.charCodeAt(0));
       const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
       if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
@@ -190,7 +190,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
           {showImage && tab === 'image' && (
             <div className="space-y-2.5">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Prompt</label>
+                <label className="mb-1 block text-xs text-muted-foreground">Дүрслэх зүйл</label>
                 <textarea
                   className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
                   rows={3}
@@ -289,17 +289,6 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
                   </div>
                 </div>
 
-                <div>
-                  <label className="mb-1 block text-xs text-muted-foreground">Voice (optional)</label>
-                  <input
-                    type="text"
-                    className="rounded-md border border-border bg-background px-2 py-1 text-xs w-28 focus:outline-none focus:ring-2 focus:ring-ring"
-                    placeholder="Kore"
-                    value={audioVoice}
-                    onChange={(e) => setAudioVoice(e.target.value)}
-                    disabled={audioStatus !== 'idle' && audioStatus !== 'accepted'}
-                  />
-                </div>
               </div>
 
               {(audioStatus === 'idle' || audioStatus === 'accepted') && (

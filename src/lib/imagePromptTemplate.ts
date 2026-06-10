@@ -1,10 +1,13 @@
-const STYLE_SUFFIX =
-  "Flat vector illustration style. Bright, saturated primary colors. " +
-  "Solid white background. Simple bold outlines. No text, no letters, no numbers. " +
-  "Child-friendly and clean. Educational material for Mongolian elementary school (grades 1-4). " +
-  "Single centered subject, nothing else in frame. " +
-  "Can include Mongolian cultural elements, traditional clothing, and daily life imagery.";
-
 export function buildImagePrompt(subject: string): string {
-  return `${subject.trim()}. ${STYLE_SUFFIX}`;
+  const s = subject.trim();
+  return (
+    `A single ${s}, isolated flat vector illustration. ` +
+    `Pure white background only. ` +
+    `Absolutely no sky, no ground, no grass, no nature, no scenery, no environment — nothing except the object. ` +
+    `Bright saturated primary colors. Bold simple outlines. ` +
+    `No text, no letters, no numbers. ` +
+    `Child-friendly, centered composition. ` +
+    `Educational icon for Mongolian elementary school (grades 1–4). ` +
+    `May reflect Mongolian cultural context where relevant (traditional objects, clothing, daily life).`
+  );
 }
