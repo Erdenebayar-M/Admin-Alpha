@@ -311,7 +311,7 @@ export function ReviewTab() {
                       onClick={() => { markVisited(item.id); router.push(`/admin/review/${item.id}`); }}
                       className={cn(
                         tableStyles.row,
-                        isUnvisited && "border-l-2 border-l-primary/40",
+                        isUnvisited && tableStyles.rowUnvisited,
                         selectedIds.has(item.id) && "bg-accent/30 outline outline-1 outline-primary/30",
                       )}
                     >

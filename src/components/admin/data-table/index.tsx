@@ -13,7 +13,7 @@ export const tableStyles = {
   tbody: "divide-y divide-border",
   row: "cursor-pointer transition-colors duration-100 hover:bg-accent/50",
   rowSelected: "bg-accent/30 outline outline-1 outline-primary/30",
-  rowUnvisited: "border-l-2 border-l-primary/40",
+  rowUnvisited: "bg-blue-500/[0.07] hover:bg-blue-500/[0.12]",
   cell: "px-3 py-2.5",
   cellMono: "px-3 py-2.5 font-mono text-xs tabular-nums",
   cellMuted: "px-3 py-2.5 text-xs text-muted-foreground tabular-nums whitespace-nowrap",
