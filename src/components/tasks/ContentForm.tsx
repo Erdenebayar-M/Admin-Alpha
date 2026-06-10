@@ -299,6 +299,7 @@ function ImageChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
         imageDescription={form.image_description}
         onDescriptionChange={(desc) => set("image_description", desc)}
         onGenerated={onImageGenerated}
+        gradeBand={form.grade_band}
       />
       <FeedbackFields form={form} set={set} />
     </>
@@ -1206,6 +1207,7 @@ function ImageFillContent({ form, set, errors, onImageGenerated }: SubProps) {
         imageDescription={form.image_description}
         onDescriptionChange={(desc) => set("image_description", desc)}
         onGenerated={onImageGenerated}
+        gradeBand={form.grade_band}
       />
       <FeedbackFields form={form} set={set} />
     </>

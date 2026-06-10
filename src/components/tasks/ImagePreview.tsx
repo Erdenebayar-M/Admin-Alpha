@@ -18,9 +18,10 @@ interface ImagePreviewProps {
   imageDescription: string;
   onDescriptionChange: (desc: string) => void;
   onGenerated: (state: ImagePreviewState) => void;
+  gradeBand?: string[];
 }
 
-export function ImagePreview({ correctAnswer, imageDescription, onDescriptionChange, onGenerated }: ImagePreviewProps) {
+export function ImagePreview({ correctAnswer, imageDescription, onDescriptionChange, onGenerated, gradeBand }: ImagePreviewProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [base64, setBase64] = useState("");
   const [error, setError] = useState("");
@@ -31,7 +32,7 @@ export function ImagePreview({ correctAnswer, imageDescription, onDescriptionCha
     setError("");
     setStatus("generating");
     try {
-      const res = await generateImage(buildImagePrompt(text));
+      const res = await generateImage(buildImagePrompt(text), gradeBand);
       setBase64(res.base64);
       setStatus("ready");
       onGenerated({ tempId: res.temp_id, base64: res.base64 });
