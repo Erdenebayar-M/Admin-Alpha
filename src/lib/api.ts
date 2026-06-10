@@ -61,15 +61,10 @@ export async function getTaskVariant(taskId: string): Promise<TaskVariant[]> {
 }
 
 export async function approveVariant(
-  taskId: string,
   variantId: string,
   notes?: string,
 ): Promise<void> {
-  await client.post("/approve", {
-    task_id: taskId,
-    variant_id: variantId,
-    notes,
-  });
+  await client.post("/approve", { variant_id: variantId, notes });
 }
 
 export async function bulkDeleteDrafts(variantIds: string[]): Promise<void> {
@@ -77,53 +72,32 @@ export async function bulkDeleteDrafts(variantIds: string[]): Promise<void> {
 }
 
 export async function rejectVariant(
-  taskId: string,
   variantId: string,
   reason: string,
 ): Promise<void> {
-  await client.post("/reject", {
-    task_id: taskId,
-    variant_id: variantId,
-    reason,
-  });
+  await client.post("/reject", { variant_id: variantId, reason });
 }
 
 export async function flagVariant(
-  taskId: string,
   variantId: string,
   reason: string,
 ): Promise<void> {
-  await client.post("/flag", {
-    task_id: taskId,
-    variant_id: variantId,
-    reason,
-  });
+  await client.post("/flag", { variant_id: variantId, reason });
 }
 
 export async function reviseVariant(
-  taskId: string,
   variantId: string,
   reason: string,
 ): Promise<void> {
-  await client.post("/revise", {
-    task_id: taskId,
-    variant_id: variantId,
-    reason,
-  });
+  await client.post("/revise", { variant_id: variantId, reason });
 }
 
 export async function editVariant(
-  taskId: string,
   variantId: string,
   updates: Partial<TaskContent>,
   stage = 'stage2',
 ): Promise<void> {
-  await client.post('/edit', {
-    task_id: taskId,
-    variant_id: variantId,
-    stage,
-    updates,
-  });
+  await client.post('/edit', { variant_id: variantId, stage, updates });
 }
 
 export interface GenerateImageResult {
@@ -158,13 +132,11 @@ export async function generateAudio(
 
 export async function acceptImage(
   tempId: string,
-  taskId: string,
   variantId: string,
   stage?: string,
 ): Promise<void> {
   await client.post('/accept-image', {
     temp_id: tempId,
-    task_id: taskId,
     variant_id: variantId,
     ...(stage ? { stage } : {}),
   });
@@ -172,14 +144,12 @@ export async function acceptImage(
 
 export async function acceptAudio(
   tempId: string,
-  taskId: string,
   variantId: string,
   slot: 'dictation' | 'prompt',
   stage?: string,
 ): Promise<void> {
   await client.post('/accept-audio', {
     temp_id: tempId,
-    task_id: taskId,
     variant_id: variantId,
     slot,
     ...(stage ? { stage } : {}),
@@ -192,18 +162,14 @@ import { uploadImageToR2, uploadAudioToR2, base64ToBlob, type R2UploadResult } f
 
 export async function saveImageAndUpdateTask(
   base64: string,
-  taskId: string,
   variantId: string,
   stage: string = 'validated',
 ): Promise<R2UploadResult> {
   try {
-    // Convert base64 to blob and upload to R2
     const blob = await base64ToBlob(base64, 'image/jpeg');
     const result = await uploadImageToR2(blob);
 
-    // Update the task variant with the new image URL
     await client.post('/update-image', {
-      task_id: taskId,
       variant_id: variantId,
       image_url: result.url,
       stage,
@@ -217,19 +183,15 @@ export async function saveImageAndUpdateTask(
 
 export async function saveAudioAndUpdateTask(
   base64: string,
-  taskId: string,
   variantId: string,
   slot: 'dictation' | 'prompt',
   stage: string = 'validated',
 ): Promise<R2UploadResult> {
   try {
-    // Convert base64 to blob and upload to R2
     const blob = await base64ToBlob(base64, 'audio/mp4');
     const result = await uploadAudioToR2(blob);
 
-    // Update the task variant with the new audio URL
     await client.post('/update-audio', {
-      task_id: taskId,
       variant_id: variantId,
       audio_url: result.url,
       slot,

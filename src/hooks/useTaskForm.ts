@@ -629,13 +629,13 @@ export function useTaskForm() {
       const saves: Promise<unknown>[] = [];
       if (audioPreview?.base64) {
         saves.push(
-          saveAudioAndUpdateTask(audioPreview.base64, result.task_id, result.variant_id, audioPreview.slot)
+          saveAudioAndUpdateTask(audioPreview.base64, result.variant_id, audioPreview.slot)
             .catch((err) => console.error('Failed to save audio:', err)),
         );
       }
       if (imagePreview?.base64) {
         saves.push(
-          saveImageAndUpdateTask(imagePreview.base64, result.task_id, result.variant_id)
+          saveImageAndUpdateTask(imagePreview.base64, result.variant_id)
             .catch((err) => console.error('Failed to save image:', err)),
         );
       }

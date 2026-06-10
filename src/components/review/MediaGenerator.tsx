@@ -75,8 +75,6 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
 
   if (!showAudio && !showImage) return null;
 
-  const taskId = task.task_id;
-
   async function handleGenerateImage() {
     setImgError('');
     setImgStatus('generating');
@@ -94,7 +92,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
   async function handleAcceptImage() {
     setImgStatus('accepting');
     try {
-      await saveImageAndUpdateTask(imgBase64, taskId, variantId, stage);
+      await saveImageAndUpdateTask(imgBase64, variantId, stage);
       setImgBase64('');
       setImgTempId('');
       setImgError('');
@@ -133,7 +131,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
   async function handleAcceptAudio() {
     setAudioStatus('accepting');
     try {
-      await saveAudioAndUpdateTask(audioBase64, taskId, variantId, audioSlot, stage);
+      await saveAudioAndUpdateTask(audioBase64, variantId, audioSlot, stage);
       URL.revokeObjectURL(audioBlobUrl);
       setAudioBlobUrl('');
       setAudioBase64('');

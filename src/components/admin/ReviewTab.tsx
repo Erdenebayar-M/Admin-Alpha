@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useReviewQueue } from "@/hooks/useReviewQueue";
@@ -9,7 +9,6 @@ import { approveVariant, bulkDeleteDrafts } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import { REVIEW_STATUS_META } from "@/lib/status";
-import { Lozenge } from "@/components/ui/lozenge";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableToolbar, TableFooter, SkeletonRows } from "@/components/admin/data-table";
 import type { ReviewItem } from "@/lib/types";
@@ -69,6 +68,54 @@ function difficultyStars(n: number) {
 function fmtDate(iso: string) {
   const d = new Date(iso);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
+const DOT_COLOR: Record<string, string> = {
+  neutral: "bg-zinc-400",
+  info:    "bg-blue-500",
+  success: "bg-green-500",
+  warning: "bg-amber-500",
+  danger:  "bg-red-500",
+};
+
+function StatusDot({ item }: { item: ReviewItem }) {
+  const meta = REVIEW_STATUS_META[item.status];
+  const dotColor = DOT_COLOR[meta.tone] ?? "bg-zinc-400";
+
+  let tooltipContent: React.ReactNode;
+  if (item.status === "ai_passed") {
+    tooltipContent = <span className="font-medium text-green-400">AI давсан</span>;
+  } else if (item.status === "ai_flagged") {
+    tooltipContent = (
+      <div className="space-y-1.5">
+        <span className="font-medium text-red-400">AI даваагүй</span>
+        {item.flag_reason && (
+          <p className="text-muted-foreground">{item.flag_reason}</p>
+        )}
+        {item.ai_review_issues.length > 0 && (
+          <ul className="list-disc space-y-0.5 pl-3.5 text-muted-foreground">
+            {item.ai_review_issues.map((issue, i) => (
+              <li key={i}>{issue}</li>
+            ))}
+          </ul>
+        )}
+        {item.ai_fix_suggestion && (
+          <p className="border-t border-border pt-1.5 text-blue-400/80">{item.ai_fix_suggestion}</p>
+        )}
+      </div>
+    );
+  } else {
+    tooltipContent = <span>{meta.label}</span>;
+  }
+
+  return (
+    <div className="group relative flex items-center justify-center">
+      <span className={`block h-2.5 w-2.5 rounded-full ${dotColor} ring-1 ring-white/10`} />
+      <div className="pointer-events-none absolute bottom-full left-1/2 z-50 mb-2 hidden w-64 -translate-x-1/2 rounded-lg border border-border bg-popover p-3 text-xs leading-relaxed text-foreground shadow-lg group-hover:block">
+        {tooltipContent}
+      </div>
+    </div>
+  );
 }
 
 function PromptCell({ text }: { text: string }) {
@@ -131,7 +178,7 @@ export function ReviewTab() {
   const bulkMutation = useMutation({
     mutationFn: async (ids: string[]): Promise<void> => {
       const items = allItems.filter((i) => ids.includes(i.id));
-      await Promise.all(items.map((i) => approveVariant(i.task.task_id, i.variant_id)));
+      await Promise.all(items.map((i) => approveVariant(i.variant_id)));
     },
     onMutate: (ids) => showToast(`${ids.length} зүйл батлаж байна…`, 2000),
     onSuccess: (_, ids) => {
@@ -257,7 +304,6 @@ export function ReviewTab() {
                 </tr>
               ) : (
                 visibleItems.map((item) => {
-                  const meta = REVIEW_STATUS_META[item.status];
                   const isUnvisited = !visited.has(item.id);
                   return (
                     <tr
@@ -314,7 +360,7 @@ export function ReviewTab() {
                         <MediaCell audioUrl={item.task.audio_url} imageUrl={item.task.image_url} />
                       </td>
                       <td className={tableStyles.cell}>
-                        <Lozenge tone={meta.tone}>{meta.label}</Lozenge>
+                        <StatusDot item={item} />
                       </td>
                       <td className={tableStyles.cellMuted}>
                         {fmtDate(item.created_at)}

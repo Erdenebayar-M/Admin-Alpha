@@ -36,18 +36,16 @@ export function useSubmitReview(taskId: string) {
         taskId,
       ]);
       const variantId = item?.variant_id ?? taskId;
-      // Use logical task_id from the loaded item (e.g. "G12-TT_LETTER_FILL"), not the URL UUID
-      const baseTaskId = item?.task.task_id ?? taskId;
       const note = action.note ?? "";
 
       if (action.action === "approve") {
-        await approveVariant(baseTaskId, variantId, note || undefined);
+        await approveVariant(variantId, note || undefined);
       } else if (action.action === "reject") {
-        await rejectVariant(baseTaskId, variantId, note ?? "");
+        await rejectVariant(variantId, note ?? "");
       } else if (action.action === "request_revision") {
-        await reviseVariant(baseTaskId, variantId, note ?? "");
+        await reviseVariant(variantId, note ?? "");
       } else {
-        await flagVariant(baseTaskId, variantId, note ?? "");
+        await flagVariant(variantId, note ?? "");
       }
     },
     onMutate: async (action) => {

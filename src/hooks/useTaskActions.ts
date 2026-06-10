@@ -11,8 +11,7 @@ export function useUpdateTaskContent(itemId: string) {
     mutationFn: async (patch: Partial<TaskContent>): Promise<void> => {
       const item = queryClient.getQueryData<ReviewItem>(['review-item', itemId]);
       const variantId = item?.variant_id ?? itemId;
-      const baseTaskId = item?.task.task_id ?? itemId;
-      await editVariant(baseTaskId, variantId, patch);
+      await editVariant(variantId, patch);
     },
     onSuccess: (_data, patch) => {
       queryClient.setQueryData<ReviewItem>(['review-item', itemId], (old) => {
