@@ -1,13 +1,5 @@
+// Backend sends this to Gemini 2.5 Flash which rewrites it into a full image prompt.
+// The hint steers Gemini toward isolated icons rather than scene compositions.
 export function buildImagePrompt(subject: string): string {
-  const s = subject.trim();
-  return (
-    `A single ${s}, isolated flat vector illustration. ` +
-    `Pure white background only. ` +
-    `Absolutely no sky, no ground, no grass, no nature, no scenery, no environment — nothing except the object. ` +
-    `Bright saturated primary colors. Bold simple outlines. ` +
-    `No text, no letters, no numbers. ` +
-    `Child-friendly, centered composition. ` +
-    `Educational icon for Mongolian elementary school (grades 1–4). ` +
-    `May reflect Mongolian cultural context where relevant (traditional objects, clothing, daily life).`
-  );
+  return `${subject.trim()} — isolated object, educational flashcard icon for children`;
 }

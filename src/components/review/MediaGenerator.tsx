@@ -152,6 +152,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
     setAudioError('');
   }
 
+
   return (
     <div className="rounded-md border border-dashed border-border">
       <button
@@ -313,11 +314,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
 
               {(audioStatus === 'preview' || audioStatus === 'accepting') && audioBlobUrl && (
                 <div className="space-y-2">
-                  <audio
-                    controls
-                    src={audioBlobUrl}
-                    className="w-full h-8"
-                  />
+                  <audio controls src={audioBlobUrl} className="w-full h-8" />
                   <div className="flex gap-2">
                     <button
                       type="button"

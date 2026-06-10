@@ -121,11 +121,10 @@ export async function generateImage(prompt: string, gradeBand?: string[]): Promi
 export async function generateAudio(
   text: string,
   slot: 'dictation' | 'prompt',
-  voice?: string,
 ): Promise<GenerateAudioResult> {
   const { data } = await client.post<{ success: boolean; data: { temp_id: string; base64: string } }>(
     '/generate-audio',
-    { text, slot, ...(voice ? { voice } : {}) },
+    { text, slot },
   );
   return { temp_id: data.data.temp_id, base64: data.data.base64 };
 }
@@ -202,6 +201,12 @@ export async function saveAudioAndUpdateTask(
   } catch (error) {
     throw new Error(`Failed to save audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
+}
+
+export async function uploadImageToUrl(base64: string): Promise<string> {
+  const blob = await base64ToBlob(base64, 'image/jpeg');
+  const result = await uploadImageToR2(blob);
+  return result.url;
 }
 
 export interface CreateTaskPayload {

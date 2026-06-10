@@ -5,7 +5,7 @@ import { useMutation } from "@tanstack/react-query";
 import { createTask } from "@/lib/api";
 import type { CreateTaskPayload, CreateTaskResult } from "@/lib/api";
 import type { TaskOptions } from "@/lib/types";
-import { acceptAudio, acceptImage, saveImageAndUpdateTask, saveAudioAndUpdateTask } from "@/lib/api";
+import { acceptAudio, acceptImage, saveImageAndUpdateTask, saveAudioAndUpdateTask, uploadImageToUrl, editVariant } from "@/lib/api";
 import {
   TASK_TYPE_INFO,
   TASK_TYPE_BLUEPRINT,
@@ -60,6 +60,8 @@ export type FormState = {
   audio_trigger: boolean;
   // TT_MATCH_PAIRS: one "left | right" per line
   pairs_text: string;
+  // per-pair generated images: index → base64
+  pairImages: Record<number, string>;
   // TT_ASSEMBLE_WORD: space-separated segments in correct order
   tiles_text: string;
   // TT_TAP_FIND_ERROR
@@ -112,6 +114,7 @@ export const INITIAL_FORM: FormState = {
   audio_trigger: false,
   // v3
   pairs_text: "",
+  pairImages: {},
   tiles_text: "",
   sentence: "",
   error_word_index: -1,
@@ -255,14 +258,19 @@ function buildOptions(form: FormState, group: OptionGroup): TaskOptions {
       };
     }
     case "match_pairs": {
-      const pairs = parseLines(form.pairs_text)
+      const rawPairs = parseLines(form.pairs_text)
         .map((line) => {
           const sep = line.includes("|") ? "|" : "—";
           const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
           return { left, right };
         })
         .filter((p) => p.left && p.right);
-      return { pairs, image_side: deriveImageSide(form.task_type) };
+      const side = deriveImageSide(form.task_type);
+      // UI always uses "text | imageword"; for TT_3_3 the DB expects left=imageword
+      const pairs = side === "left"
+        ? rawPairs.map((p) => ({ left: p.right, right: p.left }))
+        : rawPairs;
+      return { pairs, image_side: side };
     }
     case "assemble_word": {
       const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
@@ -640,6 +648,26 @@ export function useTaskForm() {
         );
       }
       await Promise.all(saves);
+
+      // Upload per-pair images and patch options
+      const pairEntries = Object.entries(form.pairImages);
+      if (pairEntries.length > 0) {
+        const builtPairs = (buildOptions(form, currentGroup) as { pairs?: Array<{ left: string; right: string; left_image_url?: string; right_image_url?: string }> }).pairs ?? [];
+        const side = deriveImageSide(form.task_type);
+        const field = side === 'right' ? 'right_image_url' : 'left_image_url';
+        const updatedPairs = [...builtPairs];
+        await Promise.all(
+          pairEntries.map(async ([idx, base64]) => {
+            try {
+              const url = await uploadImageToUrl(base64);
+              updatedPairs[Number(idx)] = { ...updatedPairs[Number(idx)], [field]: url };
+            } catch (err) {
+              console.error(`Failed to save pair image ${idx}:`, err);
+            }
+          }),
+        );
+        await editVariant(result.variant_id, { options: { ...buildOptions(form, currentGroup), pairs: updatedPairs } }).catch((err) => console.error('Failed to update pair images:', err));
+      }
 
       return result;
     },

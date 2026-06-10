@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -12,6 +13,8 @@ import type { ImagePreviewState } from "./ImagePreview";
 import type { FormState, ValidationErrors } from "@/hooks/useTaskForm";
 import { deriveImageSide } from "@/lib/task-defaults";
 import type { OptionGroup } from "@/lib/task-defaults";
+import { generateImage } from "@/lib/api";
+import { buildImagePrompt } from "@/lib/imagePromptTemplate";
 
 interface ContentFormProps {
   form: FormState;
@@ -666,14 +669,44 @@ function SelfCheckContent({ form, set, errors }: SubProps) {
 
 // ─── v3: match_pairs ──────────────────────────────────────────────────────────
 
+type PairGenStatus = "idle" | "generating" | "ready" | "error";
+
 function MatchPairsContent({ form, set, errors }: SubProps) {
   const imageSide = deriveImageSide(form.task_type);
   const isImageTask = imageSide !== "none";
 
-  const bannerText = imageSide === "left"
-    ? "Зүүн талд зургийн үг, баруун талд тааруулах текст бичнэ үү. Зургийг хоолойн дараа автоматаар нэмнэ."
-    : imageSide === "right"
-    ? "Зүүн талд текст, баруун талд зургийн үг бичнэ үү. Зургийг хоолойн дараа автоматаар нэмнэ."
+  // per-pair generation status (UI only; base64 stored in form.pairImages)
+  const [genStatus, setGenStatus] = useState<Record<number, PairGenStatus>>({});
+
+  const parsedPairs = form.pairs_text
+    .split("\n")
+    .map((line) => {
+      const sep = line.includes("|") ? "|" : "—";
+      const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
+      return left && right ? { left, right } : null;
+    })
+    .filter(Boolean) as Array<{ left: string; right: string }>;
+
+  async function handleGenerate(i: number, subject: string) {
+    setGenStatus((s) => ({ ...s, [i]: "generating" }));
+    try {
+      const res = await generateImage(buildImagePrompt(subject), form.grade_band);
+      set("pairImages", { ...form.pairImages, [i]: res.base64 });
+      setGenStatus((s) => ({ ...s, [i]: "ready" }));
+    } catch {
+      setGenStatus((s) => ({ ...s, [i]: "error" }));
+    }
+  }
+
+  function handleDiscard(i: number) {
+    const next = { ...form.pairImages };
+    delete next[i];
+    set("pairImages", next);
+    setGenStatus((s) => ({ ...s, [i]: "idle" }));
+  }
+
+  const bannerText = isImageTask
+    ? "Зүүн талд текст, баруун талд зургийн үг бичнэ үү."
     : null;
 
   return (
@@ -700,49 +733,97 @@ function MatchPairsContent({ form, set, errors }: SubProps) {
           rows={6}
           className="w-full resize-y rounded-md border border-border bg-background px-3 py-2 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           value={form.pairs_text}
-          onChange={(e) => set("pairs_text", e.target.value)}
+          onChange={(e) => {
+            set("pairs_text", e.target.value);
+            // reset pair images when pairs change
+            set("pairImages", {});
+            setGenStatus({});
+          }}
           placeholder={"м | нар\nн | мод\nг | гэр"}
         />
       </Field>
-      {form.pairs_text && (
-        <div className="rounded-md bg-muted/40 p-3">
-          <p className="mb-2 text-xs font-medium text-muted-foreground">Урьдчилан харагдац</p>
-          <div className="space-y-1.5">
-            {form.pairs_text
-              .split("\n")
-              .map((line) => {
-                const sep = line.includes("|") ? "|" : "—";
-                const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
-                return left && right ? { left, right } : null;
-              })
-              .filter(Boolean)
-              .map((pair, i) => (
-                <div key={i} className="flex items-center gap-2 text-sm">
-                  {imageSide === "left" ? (
-                    <span className="rounded border border-dashed border-violet-400 bg-violet-50 px-2 py-0.5 text-xs text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
-                      🖼 {pair!.left}
+
+      {/* Per-pair image generation panel */}
+      {isImageTask && parsedPairs.length > 0 && (
+        <div className="rounded-md border border-border">
+          <p className="border-b border-border bg-muted/40 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Зургийн хосууд
+          </p>
+          <div className="divide-y divide-border">
+            {parsedPairs.map((pair, i) => {
+              const subject = pair.right;
+              const textSide = pair.left;
+              const status = genStatus[i] ?? (form.pairImages[i] ? "ready" : "idle");
+              const base64 = form.pairImages[i];
+
+              return (
+                <div key={i} className="flex items-start gap-3 px-3 py-2.5">
+                  {/* text chip */}
+                  <span className="mt-0.5 rounded border px-2 py-0.5 text-xs font-medium shrink-0">
+                    {textSide}
+                  </span>
+                  <span className="mt-1 text-xs text-muted-foreground shrink-0">→</span>
+
+                  {/* image side */}
+                  <div className="flex flex-1 items-start gap-2 flex-wrap">
+                    <span className="mt-0.5 rounded border border-dashed border-violet-400 bg-violet-50 px-2 py-0.5 text-xs text-violet-700 dark:bg-violet-950/40 dark:text-violet-300 shrink-0">
+                      {subject}
                     </span>
-                  ) : (
-                    <span className="rounded border px-2 py-0.5 font-medium">{pair!.left}</span>
-                  )}
-                  <span className="text-muted-foreground">→</span>
-                  {imageSide === "right" ? (
-                    <span className="rounded border border-dashed border-violet-400 bg-violet-50 px-2 py-0.5 text-xs text-violet-700 dark:bg-violet-950/40 dark:text-violet-300">
-                      🖼 {pair!.right}
-                    </span>
-                  ) : (
-                    <span className="rounded border px-2 py-0.5 font-medium">{pair!.right}</span>
-                  )}
+
+                    {status === "idle" && (
+                      <button
+                        type="button"
+                        onClick={() => handleGenerate(i, subject)}
+                        className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        Зураг үүсгэх
+                      </button>
+                    )}
+                    {status === "generating" && (
+                      <span className="text-xs text-muted-foreground animate-pulse">Үүсгэж байна…</span>
+                    )}
+                    {status === "error" && (
+                      <button
+                        type="button"
+                        onClick={() => handleGenerate(i, subject)}
+                        className="rounded border border-destructive/40 px-2 py-0.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                      >
+                        Дахин оролдох
+                      </button>
+                    )}
+                    {status === "ready" && base64 && (
+                      <div className="flex items-start gap-2">
+                        <img
+                          src={`data:image/png;base64,${base64}`}
+                          alt={subject}
+                          className="h-12 w-12 rounded border border-border object-contain"
+                        />
+                        <div className="flex flex-col gap-1">
+                          <button
+                            type="button"
+                            onClick={() => handleGenerate(i, subject)}
+                            className="rounded border border-border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                          >
+                            Дахин үүсгэх
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDiscard(i)}
+                            className="rounded border border-destructive/40 px-2 py-0.5 text-xs text-destructive hover:bg-destructive/10 transition-colors"
+                          >
+                            Устгах
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              ))}
+              );
+            })}
           </div>
-          {isImageTask && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              🖼 тэмдэгтэй нүдэнд зурагны хоолой ажилласны дараа зураг автоматаар орно.
-            </p>
-          )}
         </div>
       )}
+
       <FeedbackFields form={form} set={set} />
     </>
   );
