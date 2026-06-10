@@ -570,7 +570,7 @@ function SelfCheckSection({
   );
 }
 
-type PairImgStatus = "idle" | "generating" | "preview" | "uploading" | "error";
+type PairImgStatus = "idle" | "generating" | "preview" | "uploading" | "saved" | "error";
 
 function MatchPairsSection({
   pairs,
@@ -621,8 +621,9 @@ function MatchPairsSection({
       );
       await editVariant(variantId, { options: { ...allOpts, pairs: updatedPairs } });
       onDraftChange({ options: { ...allOpts, pairs: updatedPairs } });
-      setPairStatus((s) => ({ ...s, [i]: "idle" }));
       setPairBase64((b) => { const n = { ...b }; delete n[i]; return n; });
+      setPairStatus((s) => ({ ...s, [i]: "saved" }));
+      setTimeout(() => setPairStatus((s) => ({ ...s, [i]: "idle" })), 1500);
     } catch (err) {
       setPairErrors((e) => ({ ...e, [i]: err instanceof Error ? err.message : "Upload алдаа" }));
       setPairStatus((s) => ({ ...s, [i]: "error" }));
@@ -681,7 +682,7 @@ function MatchPairsSection({
             const imageSideNode = (
               <div className="flex flex-col items-center gap-1">
                 {/* idle / error: chip + always-visible generate button below */}
-                {(status === "idle" || status === "error") && (
+                {(status === "idle" || status === "error" || status === "saved") && (
                   <div className="flex flex-col items-center gap-1">
                     {existingUrl ? (
                       <>
@@ -712,13 +713,17 @@ function MatchPairsSection({
                         {subject}
                       </span>
                     )}
-                    <button
-                      type="button"
-                      onClick={() => handleGenerate(i, subject)}
-                      className="mt-0.5 text-[10px] text-muted-foreground underline underline-offset-2 hover:text-primary transition-colors"
-                    >
-                      {existingUrl ? "Дахин үүсгэх" : "Зураг үүсгэх"}
-                    </button>
+                    {status === "saved" ? (
+                      <span className="mt-0.5 text-[10px] font-medium text-green-600">Хадгаллаа ✓</span>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleGenerate(i, subject)}
+                        className="mt-0.5 text-[10px] text-muted-foreground underline underline-offset-2 hover:text-primary transition-colors"
+                      >
+                        {existingUrl ? "Дахин үүсгэх" : "Зураг үүсгэх"}
+                      </button>
+                    )}
                     {errMsg && <p className="text-[10px] text-destructive text-center max-w-[80px]">{errMsg}</p>}
                   </div>
                 )}
