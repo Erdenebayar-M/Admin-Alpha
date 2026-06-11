@@ -5,6 +5,7 @@ import {
   LESSON_SLOT_LABELS,
   LESSON_SLOTS,
   SKILL_LABELS,
+  SKILLS,
   LEVELS,
   LEVEL_LABELS,
   TASK_TYPE_INFO,
@@ -16,9 +17,9 @@ import {
 import { TaskTypeSelector } from "@/components/tasks/TaskTypeSelector";
 import type { TaskContent } from "@/lib/types";
 import { DifficultyDots } from "@/components/ui/difficulty-dots";
-import { ComboSelect } from "@/components/tasks/shared";
+import { ComboSelect, Field } from "@/components/tasks/shared";
 import { Input } from "@/components/ui/input";
-import { SectionCard } from "@/components/ui/section-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 
 interface Props {
@@ -41,9 +42,7 @@ interface Props {
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-sm font-bold text-muted-foreground mb-0.5">
-        {label}
-      </p>
+      <p className="text-sm font-bold text-muted-foreground mb-0.5">{label}</p>
       <div className="text-sm font-medium">{children}</div>
     </div>
   );
@@ -51,8 +50,8 @@ function MetaRow({ label, children }: { label: string; children: React.ReactNode
 
 export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Props) {
   const [errorsOpen, setErrorsOpen] = useState(false);
+  const [typeOpen, setTypeOpen] = useState(false);
 
-  // helpers to read current value (draft overrides task when editing)
   const v = <K extends keyof typeof task>(key: K) =>
     (isEditing && draft && key in draft ? draft[key] : task[key]) as (typeof task)[K];
 
@@ -60,6 +59,7 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
 
   const currentGrades = v("grade_band") as string[];
   const currentErrors = v("error_targets") as string[];
+  const currentType = v("task_type") as string;
 
   const skillLabel = SKILL_LABELS[task.primary_skill];
   const slotLabel = LESSON_SLOT_LABELS[task.lesson_slot_fit] ?? task.lesson_slot_fit;
@@ -81,19 +81,15 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
     patch({ error_targets: next });
   };
 
-  return (
-    <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-      <div className="space-y-3">
-        {/* Task type — list selector in edit, inline summary in read */}
-        <div>
-          <p className="text-sm font-bold text-muted-foreground mb-1">Дасгалын төрөл</p>
-          {isEditing ? (
-            <TaskTypeSelector
-              value={v("task_type") as string}
-              onChange={(val) => patch({ task_type: val })}
-              selectedGrades={currentGrades}
-            />
-          ) : (
+  // ── Read mode ─────────────────────────────────────────────────────────────
+  if (!isEditing) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-4 space-y-3">
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Дасгалын тайлбар
+        </p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+          <MetaRow label="Дасгалын төрөл">
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
               <span className="text-sm font-medium">{typeInfo?.label ?? task.task_type}</span>
               {interactionFormLabel && (
@@ -103,96 +99,33 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
               )}
               <DifficultyDots n={task.difficulty} />
             </div>
-          )}
-        </div>
-
-        {/* Difficulty — only shown in edit mode (read mode merges it above) */}
-        {isEditing && (
-          <MetaRow label="Хүндийн түвшин">
-            <Input
-              type="number"
-              min={1}
-              max={5}
-              value={v("difficulty") as number}
-              onChange={(e) => patch({ difficulty: Number(e.target.value) })}
-              className="h-8 w-20"
-            />
           </MetaRow>
-        )}
 
-        <MetaRow label="Түвшин">
-          {isEditing ? (
-            <ComboSelect
-              value={v("level_target") as string}
-              onChange={(val) => patch({ level_target: val })}
-              placeholder="Сонгох…"
-              options={LEVELS.map((l) => ({ value: l, label: `${l} — ${LEVEL_LABELS[l]}` }))}
-            />
-          ) : (
+          <MetaRow label="Түвшин">
             <span className="font-mono">{task.level_target}</span>
-          )}
-        </MetaRow>
+          </MetaRow>
 
-        <MetaRow label="Ур чадвар">
-          {isEditing ? (
-            <ComboSelect
-              value={v("primary_skill") as string}
-              onChange={(val) => patch({ primary_skill: val })}
-              placeholder="Сонгох…"
-              options={SKILLS.map((s) => ({ value: s, label: `${s} — ${SKILL_LABELS[s]}` }))}
-            />
-          ) : (
+          <MetaRow label="Ур чадвар">
             <>
               <span className="font-mono text-primary">{task.primary_skill}</span>
               {skillLabel && (
                 <span className="ml-1.5 text-xs font-normal text-muted-foreground">{skillLabel}</span>
               )}
             </>
-          )}
-        </MetaRow>
+          </MetaRow>
 
-        <MetaRow label="Анги">
-          {isEditing ? (
-            <div className="flex flex-wrap gap-1">
-              {GRADE_CODES.map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => toggleGrade(g)}
-                  className={cn(
-                    "rounded border px-2 py-0.5 text-xs font-medium transition-colors",
-                    currentGrades.includes(g)
-                      ? "border-primary bg-primary text-primary-foreground"
-                      : "border-border text-muted-foreground hover:border-primary/50",
-                  )}
-                >
-                  {GRADE_LABELS[g]}
-                </button>
-              ))}
-            </div>
-          ) : (
+          <MetaRow label="Хүндийн түвшин">
+            <DifficultyDots n={task.difficulty} />
+          </MetaRow>
+
+          <MetaRow label="Анги">
             <span>{task.grade_band.length > 0 ? task.grade_band.join(", ") : "—"}</span>
-          )}
-        </MetaRow>
+          </MetaRow>
 
-        <MetaRow label="Хугацаа">
-          {isEditing ? (
-            <div className="flex items-center gap-1">
-              <Input
-                type="number"
-                min={0}
-                value={v("estimated_time_seconds") as number}
-                onChange={(e) => patch({ estimated_time_seconds: Number(e.target.value) })}
-                className="h-8 w-20"
-              />
-              <span className="text-xs text-muted-foreground">с</span>
-            </div>
-          ) : (
+          <MetaRow label="Хугацаа">
             <span>{task.estimated_time_seconds ? `${task.estimated_time_seconds}с` : "—"}</span>
-          )}
-        </MetaRow>
+          </MetaRow>
 
-        {!isEditing && (
           <MetaRow label="Алдааны оношилгоо">
             {task.error_targets.length > 0 ? (
               <div className="flex flex-wrap gap-1">
@@ -209,81 +142,188 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
               <span className="text-muted-foreground">—</span>
             )}
           </MetaRow>
+
+          <MetaRow label="Хичээлийн үе">
+            <span>{slotLabel || "—"}</span>
+          </MetaRow>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Edit mode — matches ClassificationForm style ───────────────────────────
+  return (
+    <div className="space-y-4">
+      {/* Collapsible task type card */}
+      <Card>
+        <button
+          type="button"
+          onClick={() => setTypeOpen((o) => !o)}
+          className="flex w-full items-center justify-between px-6 py-4 text-left"
+        >
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-semibold">Дасгалын төрөл</span>
+            {currentType && (
+              <span className="truncate text-xs text-muted-foreground">
+                — {TASK_TYPE_INFO[currentType]?.label ?? currentType}
+              </span>
+            )}
+          </div>
+          <span className="ml-2 shrink-0 text-xs text-muted-foreground">{typeOpen ? "▲" : "▼"}</span>
+        </button>
+        {typeOpen && (
+          <CardContent className="animate-in fade-in-0 slide-in-from-top-2 duration-200 border-t border-border pt-4">
+            <TaskTypeSelector
+              value={currentType}
+              onChange={(val) => patch({ task_type: val })}
+              selectedGrades={currentGrades}
+            />
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Metadata fields card — matches ClassificationForm layout */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Мета өгөгдөл</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="space-y-4">
+            <Field label="Үндсэн чадвар">
+              <ComboSelect
+                value={v("primary_skill") as string}
+                onChange={(val) => patch({ primary_skill: val })}
+                placeholder="Сонгох…"
+                options={SKILLS.map((s) => ({ value: s, label: `${s} — ${SKILL_LABELS[s]}` }))}
+              />
+            </Field>
+            <Field label="Түвшин">
+              <ComboSelect
+                value={v("level_target") as string}
+                onChange={(val) => patch({ level_target: val })}
+                placeholder="Сонгох…"
+                options={LEVELS.map((l) => ({ value: l, label: `${l} — ${LEVEL_LABELS[l]}` }))}
+              />
+            </Field>
+          </div>
+
+          <div className="space-y-4">
+            <Field label="Хүндийн түвшин (1–5)">
+              <Input
+                type="number"
+                min={1}
+                max={5}
+                value={v("difficulty") as number}
+                onChange={(e) => patch({ difficulty: Number(e.target.value) })}
+              />
+            </Field>
+            <Field label="Хичээлийн үе">
+              <ComboSelect
+                value={v("lesson_slot_fit") as string}
+                onChange={(val) => patch({ lesson_slot_fit: val })}
+                placeholder="Сонгох…"
+                options={LESSON_SLOTS.map((s) => ({ value: s, label: LESSON_SLOT_LABELS[s] }))}
+              />
+            </Field>
+            <Field label="Хугацаа (секунд)">
+              <Input
+                type="number"
+                min={0}
+                value={v("estimated_time_seconds") as number}
+                onChange={(e) => patch({ estimated_time_seconds: Number(e.target.value) })}
+              />
+            </Field>
+          </div>
+
+          <Field label="Анги">
+            <div className="flex flex-wrap gap-2">
+              {GRADE_CODES.map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => toggleGrade(g)}
+                  className={cn(
+                    "rounded-lg border px-5 py-3 text-sm font-semibold transition-all",
+                    currentGrades.includes(g)
+                      ? "border-primary bg-primary/5 ring-2 ring-primary text-foreground"
+                      : "border-border hover:border-foreground/20 hover:bg-muted/50 text-muted-foreground",
+                  )}
+                >
+                  {GRADE_LABELS[g]}
+                </button>
+              ))}
+            </div>
+          </Field>
+        </CardContent>
+      </Card>
+
+      {/* Collapsible error types card — matches ClassificationForm style */}
+      <Card>
+        <button
+          type="button"
+          onClick={() => setErrorsOpen((o) => !o)}
+          className="flex w-full items-center justify-between px-6 py-4 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">Алдааны оношилгоо</span>
+            {currentErrors.length > 0 && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+                {currentErrors.length}
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">{errorsOpen ? "▲" : "▼"}</span>
+        </button>
+
+        {!errorsOpen && (
+          <p className="px-6 pb-4 text-[11px] text-muted-foreground">
+            {currentErrors.length === 0
+              ? "Алдааны төрөл сонгоогүй."
+              : currentErrors.join(", ")}
+          </p>
         )}
 
-        <MetaRow label="Хичээлийн үе">
-          {isEditing ? (
-            <ComboSelect
-              value={v("lesson_slot_fit") as string}
-              onChange={(val) => patch({ lesson_slot_fit: val })}
-              placeholder="Сонгох…"
-              options={LESSON_SLOTS.map((s) => ({ value: s, label: LESSON_SLOT_LABELS[s] }))}
-            />
-          ) : (
-            <span>{slotLabel || "—"}</span>
-          )}
-        </MetaRow>
-      </div>
-
-      {/* Error targets — collapsible, shown in edit mode as full-width section */}
-      {isEditing && (
-        <div className="animate-in fade-in-0 duration-200 rounded-lg border border-border">
-          <button
-            type="button"
-            onClick={() => setErrorsOpen((o) => !o)}
-            className="flex w-full items-center justify-between px-4 py-3 text-left"
-          >
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium">Алдааны оношилгоо</span>
-              {currentErrors.length > 0 && (
-                <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
-                  {currentErrors.length}
-                </span>
-              )}
+        {errorsOpen && (
+          <CardContent className="animate-in fade-in-0 slide-in-from-top-2 duration-200 border-t border-border pt-4">
+            <div className="divide-y divide-border">
+              {ERROR_GROUPS.map((group) => (
+                <div key={group.key} className="py-3 first:pt-0 last:pb-0">
+                  <p className="mb-1 px-2 text-sm font-bold text-foreground">
+                    {group.label} — {group.description}
+                  </p>
+                  <div>
+                    {group.codes.map((code) => {
+                      const active = currentErrors.includes(code);
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => toggleError(code)}
+                          className={cn(
+                            "flex w-full items-center gap-2 rounded px-2 py-2 text-left transition-colors",
+                            active ? "bg-green-50 dark:bg-green-950/30" : "hover:bg-muted/50",
+                          )}
+                        >
+                          <span className={cn(
+                            "w-3 shrink-0 text-xs font-bold",
+                            active ? "text-green-600" : "text-transparent select-none",
+                          )}>✓</span>
+                          <span className={cn(
+                            "text-sm",
+                            active ? "font-semibold text-green-900 dark:text-green-100" : "text-foreground",
+                          )}>
+                            {code} — {ERROR_LABELS[code]}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))}
             </div>
-            <span className="text-xs text-muted-foreground">{errorsOpen ? "▲" : "▼"}</span>
-          </button>
-
-          {!errorsOpen && (
-            <p className="px-4 pb-3 text-[11px] text-muted-foreground">
-              {currentErrors.length === 0
-                ? "Алдааны төрөл сонгоогүй."
-                : currentErrors.join(", ")}
-            </p>
-          )}
-
-          {errorsOpen && (
-            <div className="animate-in fade-in-0 slide-in-from-top-2 duration-200 border-t border-border px-4 pb-4 pt-3">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                {ERROR_GROUPS.map((group) => (
-                  <SectionCard key={group.key} title={`${group.label} — ${group.description}`}>
-                    <div className="flex flex-wrap gap-1.5">
-                      {group.codes.map((code) => {
-                        const active = currentErrors.includes(code);
-                        return (
-                          <button
-                            key={code}
-                            type="button"
-                            onClick={() => toggleError(code)}
-                            className={cn(
-                              "rounded border px-2.5 py-1 text-xs font-medium transition-colors",
-                              active
-                                ? "border-primary bg-primary text-primary-foreground"
-                                : "border-border text-foreground hover:border-primary/40 hover:bg-muted/50",
-                            )}
-                          >
-                            {ERROR_LABELS[code]}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </SectionCard>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 }

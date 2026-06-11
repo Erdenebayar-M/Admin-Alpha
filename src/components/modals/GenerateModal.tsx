@@ -16,8 +16,7 @@ import {
   INTERACTION_FORM_LABELS,
 } from "@/lib/task-defaults";
 import { DifficultyDots } from "@/components/ui/difficulty-dots";
-
-type GradeFilter = "G1" | "G2" | "G3" | "G4" | "all";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const GRADE_LABELS: Record<string, string> = {
   G1: "1-р анги",
@@ -26,11 +25,8 @@ const GRADE_LABELS: Record<string, string> = {
   G4: "4-р анги",
 };
 
+const GRADE_CODES = ["G1", "G2", "G3", "G4"] as const;
 const SKILL_ORDER = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"];
-
-function gradeLabel(grades: string[]): string {
-  return grades.map((g) => GRADE_LABELS[g] ?? g).join(", ");
-}
 
 function ToggleChip<T extends string | number>({
   value,
@@ -105,9 +101,9 @@ export function GeneratePanel() {
   const queryClient = useQueryClient();
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
   const [maxItems, setMaxItems] = useState<1 | 2 | 3>(3);
   const [maxCost, setMaxCost] = useState<1 | 5 | 10 | 20>(5);
-  const [gradeFilter, setGradeFilter] = useState<GradeFilter>("all");
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
   const { data: specs = [], isLoading } = useQuery({
@@ -117,11 +113,17 @@ export function GeneratePanel() {
 
   const filteredSpecs = useMemo(
     () =>
-      gradeFilter === "all"
-        ? specs
-        : specs.filter((s) => s.grade_band.includes(gradeFilter)),
-    [specs, gradeFilter],
+      selectedGrades.length === 0
+        ? []
+        : specs.filter((s) => s.grade_band.some((g) => selectedGrades.includes(g))),
+    [specs, selectedGrades],
   );
+
+  function toggleGrade(g: string) {
+    setSelectedGrades((prev) =>
+      prev.includes(g) ? prev.filter((x) => x !== g) : [...prev, g],
+    );
+  }
 
   function toggleSpec(id: string) {
     setSelectedIds((prev) => {
@@ -131,12 +133,8 @@ export function GeneratePanel() {
     });
   }
 
-  function selectByGrade(grade: GradeFilter) {
-    const ids =
-      grade === "all"
-        ? specs.map((s) => s.id)
-        : specs.filter((s) => s.grade_band.includes(grade)).map((s) => s.id);
-    setSelectedIds((prev) => new Set([...prev, ...ids]));
+  function selectAllVisible() {
+    setSelectedIds((prev) => new Set([...prev, ...filteredSpecs.map((s) => s.id)]));
   }
 
   const mutation = useMutation({
@@ -166,7 +164,7 @@ export function GeneratePanel() {
           <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
         </svg>
         <p className="mt-5 text-base font-medium text-foreground">Даалгавар үүсгэж байна…</p>
-        <p className="mt-1.5 text-sm text-muted-foreground">Нэг минут орчим болж болно</p>
+        <p className="mt-1.5 text-sm text-muted-foreground">Нэг минут орчим болно</p>
       </div>
     );
   }
@@ -194,124 +192,152 @@ export function GeneratePanel() {
 
   return (
     <div className="relative">
-      {/* Controls */}
-      <div className="mb-6 flex flex-wrap items-center gap-6">
-        <div>
-          <p className="mb-1.5 text-xs text-muted-foreground">Даалгавар бүрт хувилбарын тоо</p>
-          <div className="flex gap-1">
-            {([1, 2, 3] as const).map((n) => (
-              <ToggleChip key={n} value={n} active={maxItems === n} onClick={setMaxItems}>
-                {n}
-              </ToggleChip>
-            ))}
-          </div>
-        </div>
-        <div>
-          <p className="mb-1.5 text-xs text-muted-foreground">Хамгийн их зардлын хязгаар</p>
-          <div className="flex gap-1">
-            {([1, 5, 10, 20] as const).map((n) => (
-              <ToggleChip key={n} value={n} active={maxCost === n} onClick={setMaxCost}>
-                ${n}
-              </ToggleChip>
-            ))}
-          </div>
-        </div>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+        {/* Left column */}
+        <div className="space-y-4">
+          {/* Grade band card */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Ангийн бүлэг <span className="text-destructive">*</span></CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {GRADE_CODES.map((g) => {
+                  const active = selectedGrades.includes(g);
+                  return (
+                    <button
+                      key={g}
+                      type="button"
+                      onClick={() => toggleGrade(g)}
+                      className={cn(
+                        "rounded-lg border px-5 py-3 text-sm font-semibold transition-all",
+                        active
+                          ? "border-primary bg-primary/5 ring-2 ring-primary text-foreground"
+                          : "border-border hover:border-foreground/20 hover:bg-muted/50 text-muted-foreground",
+                      )}
+                    >
+                      {GRADE_LABELS[g]}
+                    </button>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Grade filter */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <ToggleChip value={"all" as GradeFilter} active={gradeFilter === "all"} onClick={setGradeFilter}>
-          Бүгд
-        </ToggleChip>
-        {(["G1", "G2", "G3", "G4"] as const).map((g) => (
-          <ToggleChip key={g} value={g} active={gradeFilter === g} onClick={setGradeFilter}>
-            {GRADE_LABELS[g]}
-          </ToggleChip>
-        ))}
-      </div>
-
-      {/* Select shortcuts */}
-      <div className="mb-6 flex flex-wrap items-center gap-2">
-        {(["G1", "G2", "G3", "G4"] as const).map((g) => (
-          <button
-            key={g}
-            type="button"
-            onClick={() => selectByGrade(g)}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground"
-          >
-            {GRADE_LABELS[g]} бүгд
-          </button>
-        ))}
-        <button
-          type="button"
-          onClick={() => selectByGrade("all")}
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-foreground/50 hover:text-foreground"
-        >
-          Бүгдийг сонгох
-        </button>
-        {hasSelection && (
-          <button
-            type="button"
-            onClick={() => setSelectedIds(new Set())}
-            className="rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-red-400 hover:text-red-500"
-          >
-            Цэвэрлэх
-          </button>
-        )}
-      </div>
-
-      {/* Spec grid */}
-      {isLoading ? (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <div key={i} className="h-20 animate-pulse rounded-lg border border-border bg-muted" />
-          ))}
+          {/* Spec list — shown after grade selection */}
+          {selectedGrades.length > 0 && (
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm">Даалгаврын төрөл</CardTitle>
+                  {filteredSpecs.length > 0 && (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={selectAllVisible}
+                        className="text-xs text-primary hover:underline"
+                      >
+                        Бүгдийг сонгох
+                      </button>
+                      {hasSelection && (
+                        <button
+                          type="button"
+                          onClick={() => setSelectedIds(new Set())}
+                          className="text-xs text-muted-foreground hover:text-destructive hover:underline"
+                        >
+                          Цэвэрлэх
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="space-y-2">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <div key={i} className="h-9 animate-pulse rounded border border-border bg-muted" />
+                    ))}
+                  </div>
+                ) : filteredSpecs.length === 0 ? (
+                  <p className="py-4 text-center text-sm text-muted-foreground">
+                    Тохирох даалгавар олдсонгүй
+                  </p>
+                ) : (
+                  <div className="divide-y divide-border">
+                    {SKILL_ORDER
+                      .map((skill) => ({
+                        skill,
+                        specs: filteredSpecs.filter((s) => s.primary_skill === skill),
+                      }))
+                      .filter((g) => g.specs.length > 0)
+                      .map(({ skill, specs }) => (
+                        <div key={skill} className="py-3 first:pt-0 last:pb-0">
+                          <p className="mb-1 px-2 text-sm font-bold text-foreground">{SKILL_LABELS[skill]}</p>
+                          <div>
+                            {specs.map((s) => (
+                              <SpecRow key={s.id} spec={s} selected={selectedIds.has(s.id)} onToggle={toggleSpec} />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
         </div>
-      ) : filteredSpecs.length === 0 ? (
-        <p className="py-8 text-center text-sm text-muted-foreground">
-          Тохирох даалгавар олдсонгүй
-        </p>
-      ) : (
-        <div className="divide-y divide-border">
-          {SKILL_ORDER
-            .map((skill) => ({
-              skill,
-              specs: filteredSpecs.filter((s) => s.primary_skill === skill),
-            }))
-            .filter((g) => g.specs.length > 0)
-            .map(({ skill, specs }) => (
-              <div key={skill} className="py-3 first:pt-0 last:pb-0">
-                <p className="mb-1 px-2 text-sm font-bold text-foreground">{SKILL_LABELS[skill]}</p>
-                <div>
-                  {specs.map((s) => (
-                    <SpecRow key={s.id} spec={s} selected={selectedIds.has(s.id)} onToggle={toggleSpec} />
+
+        {/* Right column — settings */}
+        <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm">Тохиргоо</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <p className="mb-2 text-sm font-bold text-muted-foreground">Даалгавар бүрт хувилбарын тоо</p>
+                <div className="flex gap-1">
+                  {([1, 2, 3] as const).map((n) => (
+                    <ToggleChip key={n} value={n} active={maxItems === n} onClick={setMaxItems}>
+                      {n}
+                    </ToggleChip>
                   ))}
                 </div>
               </div>
-            ))
-          }
-        </div>
-      )}
+              <div>
+                <p className="mb-2 text-sm font-bold text-muted-foreground">Хамгийн их зардлын хязгаар</p>
+                <div className="flex gap-1">
+                  {([1, 5, 10, 20] as const).map((n) => (
+                    <ToggleChip key={n} value={n} active={maxCost === n} onClick={setMaxCost}>
+                      ${n}
+                    </ToggleChip>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-      {/* Action bar */}
-      {hasSelection && (
-        <div className="sticky bottom-0 mt-6 border-t border-border bg-background px-0 py-4">
-          <div className="flex items-center justify-between gap-4">
-            <span className="text-sm font-medium">
-              {selectedIds.size} даалгавар · хамгийн ихдээ {estimatedVariants} хувилбар · хамгийн их зардал ${maxCost}
-            </span>
-            <button
-              type="button"
-              onClick={() => mutation.mutate()}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
-            >
-              Үүсгэх
-            </button>
-          </div>
+          {hasSelection && (
+            <Card>
+              <CardContent className="pt-4">
+                <p className="text-sm text-muted-foreground mb-3">
+                  <span className="font-semibold text-foreground">{selectedIds.size}</span> даалгавар сонгогдсон
+                  · хамгийн ихдээ <span className="font-semibold text-foreground">{estimatedVariants}</span> хувилбар
+                </p>
+                <button
+                  type="button"
+                  onClick={() => mutation.mutate()}
+                  className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+                >
+                  Үүсгэх
+                </button>
+              </CardContent>
+            </Card>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Toast */}
       {toast && (
         <div
           className={cn(
