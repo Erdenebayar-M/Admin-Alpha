@@ -238,6 +238,8 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                   groups={tf.groups}
                   taskType={tf.form.task_type}
                   onGoToStep={goToStep}
+                  audioPreview={tf.audioPreview}
+                  imagePreview={tf.imagePreview}
                 />
               </CardContent>
             </Card>
