@@ -13,12 +13,9 @@ import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-
 import type { LiveTask } from "@/lib/types";
 import { MediaCell } from "./MediaCell";
 import { useVisited } from "@/hooks/useVisited";
+import { DifficultyDots } from "@/components/ui/difficulty-dots";
 
 const SKILL_NAMES = SKILL_LABELS;
-
-function difficultyStars(n: number) {
-  return "★".repeat(n) + "☆".repeat(5 - n);
-}
 
 function fmtDate(iso: string) {
   const d = new Date(iso);
@@ -51,10 +48,10 @@ export function TasksTab() {
 
   useEffect(() => {
     if (!pageToast) return;
-    setToastVisible(true);
+    const show = setTimeout(() => setToastVisible(true), 0);
     const hide = setTimeout(() => setToastVisible(false), 2800);
     const clear = setTimeout(() => clearPageToast(), 3200);
-    return () => { clearTimeout(hide); clearTimeout(clear); };
+    return () => { clearTimeout(show); clearTimeout(hide); clearTimeout(clear); };
   }, [pageToast, clearPageToast]);
 
   const filters: LiveTaskFilters = grade !== "all" ? { grade } : {};
@@ -75,54 +72,62 @@ export function TasksTab() {
 
   return (
     <div className="relative px-4 py-6 sm:px-6">
-      {/* Filters toolbar */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        {/* Grade band chips */}
-        <div className="flex gap-1.5">
-          {(["all", "G1", "G2", "G3", "G4"] as const).map((g) => (
-            <button
-              key={g}
-              type="button"
-              onClick={() => { setGrade(g); setTypeFilter("all"); }}
-              className={cn(
-                "rounded-md border px-3 py-1.5 text-xs font-medium transition-colors",
-                grade === g
-                  ? "border-primary bg-primary text-primary-foreground shadow-sm"
-                  : "border-border bg-card text-muted-foreground hover:border-primary/50 hover:text-foreground",
-              )}
-            >
-              {g === "all" ? "Бүгд" : GRADE_LABELS[g]}
-            </button>
-          ))}
-        </div>
+      {/* Filter card */}
+      <div className="mb-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-6">
+          {/* Grade group */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Анги</span>
+            <div className="flex gap-1.5">
+              {(["all", "G1", "G2", "G3", "G4"] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => { setGrade(g); setTypeFilter("all"); }}
+                  className={cn(
+                    "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                    grade === g
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                  )}
+                >
+                  {g === "all" ? "Бүгд" : GRADE_LABELS[g]}
+                </button>
+              ))}
+            </div>
+          </div>
 
-        {availableTypes.length > 0 && (
-          <select
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value)}
-            className="rounded-md border border-border bg-card px-3 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-ring/50"
-          >
-            <option value="all">Бүх төрөл</option>
-            {availableTypes.map((t) => (
-              <option key={t} value={t}>
-                {TASK_TYPE_INFO[t]?.label ?? t}
-              </option>
-            ))}
-          </select>
-        )}
+          {availableTypes.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Дасгалын төрөл</span>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+              >
+                <option value="all">Бүх төрөл</option>
+                {availableTypes.map((t) => (
+                  <option key={t} value={t}>
+                    {TASK_TYPE_INFO[t]?.label ?? t}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-        <div className="ml-auto flex items-center gap-3 shrink-0">
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value as SortOrder)}
-            className="rounded-md border border-border bg-card px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-ring/50"
-          >
-            <option value="newest">Шинийг эхэнд</option>
-            <option value="oldest">Хуучнийг эхэнд</option>
-          </select>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {isLoading ? "…" : `${filtered.length} даалгавар`}
-          </span>
+          <div className="ml-auto flex items-end gap-4 shrink-0">
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Эрэмбэлэх</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOrder)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+              >
+                <option value="newest">Шинийг эхэнд</option>
+                <option value="oldest">Хуучнийг эхэнд</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -132,21 +137,22 @@ export function TasksTab() {
           <table className={tableStyles.table}>
             <thead className={tableStyles.thead}>
               <tr>
-                <th className={tableStyles.th}>Төрөл</th>
-                <th className={tableStyles.th}>Анги</th>
-                <th className={tableStyles.th}>Заавар</th>
-                <th className={tableStyles.th}>Чадвар</th>
-                <th className={tableStyles.th}>Хүндрэл</th>
+                <th className={tableStyles.th}>Дасгалын төрөл</th>
+                <th className={tableStyles.th}>Дасгалын асуулт</th>
+                <th className={tableStyles.th}>Дасгалын хариулт</th>
+                <th className={tableStyles.th}>Ур чадвар</th>
+                <th className={tableStyles.th}>Хүндийн түвшин</th>
                 <th className={tableStyles.th}>Медиа</th>
+                <th className={tableStyles.th}>Эх үүсвэр</th>
                 <th className={tableStyles.th}>Огноо</th>
               </tr>
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={8} cols={7} />
+                <SkeletonRows count={8} cols={8} />
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={7}>
+                  <td colSpan={8}>
                     <EmptyState
                       message="Батлагдсан даалгавар олдсонгүй"
                       subMessage="Шүүлтүүрийг өөрчилж дахин оролдоно уу"
@@ -170,17 +176,11 @@ export function TasksTab() {
                           {TASK_TYPE_INFO[task.task_type]?.label ?? task.task_type}
                         </span>
                       </td>
-                      <td className={tableStyles.cell}>
-                        <div className="flex flex-wrap gap-1">
-                          {task.grade_band.map((g) => (
-                            <span key={g} className="rounded border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                              {GRADE_LABELS[g] ?? g}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
                       <td className={cn(tableStyles.cell, "max-w-[200px]")}>
                         <span className="line-clamp-1 font-medium text-sm">{task.prompt_text}</span>
+                      </td>
+                      <td className={cn(tableStyles.cell, "max-w-[120px]")}>
+                        <span className="line-clamp-1 text-xs">{task.correct_answer || "—"}</span>
                       </td>
                       <td className={tableStyles.cell}>
                         <div className="text-xs font-medium text-foreground leading-tight">
@@ -188,11 +188,16 @@ export function TasksTab() {
                         </div>
                         <div className="text-[10px] text-muted-foreground">{task.primary_skill}</div>
                       </td>
-                      <td className={cn(tableStyles.cell, "whitespace-nowrap text-xs text-amber-500")}>
-                        {difficultyStars(task.difficulty)}
+                      <td className={tableStyles.cell}>
+                        <DifficultyDots n={task.difficulty} />
                       </td>
                       <td className={tableStyles.cell}>
                         <MediaCell audioUrl={task.audio_url} imageUrl={task.image_url} />
+                      </td>
+                      <td className={tableStyles.cell}>
+                        <span className="text-base" title={task.source === "AI" ? "AI" : "Хүн"}>
+                          {task.source === "AI" ? "🤖" : "👤"}
+                        </span>
                       </td>
                       <td className={tableStyles.cellMuted}>
                         {fmtDate(task.created_at)}

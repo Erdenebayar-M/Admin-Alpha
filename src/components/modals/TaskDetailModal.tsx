@@ -14,6 +14,7 @@ import {
   DialogBody,
   DialogClose,
 } from "@/components/ui/dialog";
+import { DifficultyDots } from "@/components/ui/difficulty-dots";
 
 function TaskDetailContent({
   id,
@@ -191,10 +192,7 @@ function TaskDetailContent({
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Хүндийн түвшин</span>
-                <span className="text-yellow-500">
-                  {"★".repeat(task.difficulty)}
-                  {"☆".repeat(5 - task.difficulty)}
-                </span>
+                <DifficultyDots n={task.difficulty} />
               </div>
               <div className="flex justify-between text-muted-foreground">
                 <span>Цаг</span>

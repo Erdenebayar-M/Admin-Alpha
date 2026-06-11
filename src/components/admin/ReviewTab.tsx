@@ -8,17 +8,19 @@ import { useVisited } from "@/hooks/useVisited";
 import { approveVariant, bulkDeleteDrafts } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
-import { TASK_TYPE_INFO, SKILL_LABELS } from "@/lib/task-defaults";
+import { TASK_TYPE_INFO, GRADE_LABELS, SKILL_LABELS } from "@/lib/task-defaults";
 import { REVIEW_STATUS_META } from "@/lib/status";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableToolbar, TableFooter, SkeletonRows } from "@/components/admin/data-table";
 import type { ReviewItem } from "@/lib/types";
 import { MediaCell } from "./MediaCell";
+import { DifficultyDots } from "@/components/ui/difficulty-dots";
 
 const SKILL_NAMES = SKILL_LABELS;
 
 type Tab = "all" | "needs-review" | "ai-passed" | "done";
 type SortOrder = "flagged-first" | "newest" | "oldest";
+type GradeFilter = "all" | "G1" | "G2" | "G3" | "G4";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "all", label: "Бүгд" },
@@ -60,10 +62,6 @@ function sortItems(items: ReviewItem[], order: SortOrder): ReviewItem[] {
     case "oldest":
       return arr.sort((a, b) => toMs(a.created_at) - toMs(b.created_at));
   }
-}
-
-function difficultyStars(n: number) {
-  return "★".repeat(n) + "☆".repeat(5 - n);
 }
 
 function fmtDate(iso: string) {
@@ -137,6 +135,8 @@ export function ReviewTab() {
 
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [sort, setSort] = useState<SortOrder>("flagged-first");
+  const [grade, setGrade] = useState<GradeFilter>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [toast, setToast] = useState<{ message: string; visible: boolean; type?: "success" | "error" }>({ message: "", visible: false });
   const { visited, markVisited } = useVisited("visited_review");
@@ -151,11 +151,26 @@ export function ReviewTab() {
 
   useEffect(() => {
     if (!pageToast) return;
-    showToast(pageToast.message, 2500, pageToast.type);
-    clearPageToast();
+    const id = setTimeout(() => {
+      showToast(pageToast.message, 2500, pageToast.type);
+      clearPageToast();
+    }, 0);
+    return () => clearTimeout(id);
   }, [pageToast, showToast, clearPageToast]);
 
-  const tabItems = useMemo(() => filterByTab(allItems, activeTab), [allItems, activeTab]);
+  const gradeFilteredItems = useMemo(
+    () => grade === "all" ? allItems : allItems.filter((i) => i.task.grade_band.includes(grade)),
+    [allItems, grade],
+  );
+  const availableTypes = useMemo(
+    () => Array.from(new Set(gradeFilteredItems.map((i) => i.task.task_type))).sort(),
+    [gradeFilteredItems],
+  );
+  const typeFilteredItems = useMemo(
+    () => typeFilter === "all" ? gradeFilteredItems : gradeFilteredItems.filter((i) => i.task.task_type === typeFilter),
+    [gradeFilteredItems, typeFilter],
+  );
+  const tabItems = useMemo(() => filterByTab(typeFilteredItems, activeTab), [typeFilteredItems, activeTab]);
   const visibleItems = useMemo(() => sortItems(tabItems, sort), [tabItems, sort]);
   const aiPassedInView = useMemo(() => visibleItems.filter((i) => i.status === "ai_passed").length, [visibleItems]);
   const allVisibleSelected = visibleItems.length > 0 && visibleItems.every((i) => selectedIds.has(i.id));
@@ -217,61 +232,113 @@ export function ReviewTab() {
 
   return (
     <div className={cn("px-4 py-6 sm:px-6", hasSelection && "pb-24")}>
-      {/* Table card */}
-      <div className={tableStyles.wrapper}>
-        {/* Filter tabs */}
-        <div className="flex items-end justify-between border-b border-border px-4">
-          <div className="flex gap-0">
-            {TABS.map((tab) => {
-              const count = isLoading ? null : filterByTab(allItems, tab.id).length;
-              return (
+      {/* Filter card */}
+      <div className="mb-4 rounded-xl border border-border bg-card p-4 shadow-sm">
+        <div className="flex flex-wrap items-end gap-6">
+          {/* Grade chips */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Анги</span>
+            <div className="flex gap-1.5">
+              {(["all", "G1", "G2", "G3", "G4"] as const).map((g) => (
                 <button
-                  key={tab.id}
+                  key={g}
                   type="button"
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => { setGrade(g); setTypeFilter("all"); }}
                   className={cn(
-                    "-mb-px border-b-2 px-3 py-2.5 text-sm font-medium transition-colors duration-150",
-                    activeTab === tab.id
-                      ? "border-primary text-foreground"
-                      : "border-transparent text-muted-foreground hover:text-foreground",
+                    "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                    grade === g
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
                   )}
                 >
-                  {tab.label}
-                  {count !== null && (
-                    <span className={cn(
-                      "ml-1.5 rounded-full px-1.5 py-0.5 text-[11px] tabular-nums",
-                      activeTab === tab.id ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground",
-                    )}>
-                      {count}
-                    </span>
-                  )}
+                  {g === "all" ? "Бүгд" : GRADE_LABELS[g]}
                 </button>
-              );
-            })}
+              ))}
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 pb-2 shrink-0">
-            {!isLoading && aiPassedInView > 0 && (
-              <button
-                type="button"
-                onClick={handleSelectAllAiPassed}
-                className="text-xs text-muted-foreground underline-offset-2 hover:text-foreground hover:underline transition-colors"
+          {/* Task type */}
+          {availableTypes.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Дасгалын төрөл</span>
+              <select
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
               >
-                AI дамжсан бүгдийг сонгох ({aiPassedInView})
-              </button>
+                <option value="all">Бүх төрөл</option>
+                {availableTypes.map((t) => (
+                  <option key={t} value={t}>{TASK_TYPE_INFO[t]?.label ?? t}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Status chips */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Төлөв</span>
+            <div className="flex gap-1.5">
+              {TABS.map((tab) => {
+                const count = isLoading ? null : filterByTab(typeFilteredItems, tab.id).length;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setActiveTab(tab.id)}
+                    className={cn(
+                      "flex items-center gap-1.5 rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
+                      activeTab === tab.id
+                        ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                        : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                    )}
+                  >
+                    {tab.label}
+                    {count !== null && (
+                      <span className={cn(
+                        "rounded-full px-1.5 py-0.5 text-[11px] tabular-nums",
+                        activeTab === tab.id ? "bg-white/20 text-white" : "bg-muted text-muted-foreground",
+                      )}>
+                        {count}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Sort + AI select */}
+          <div className="ml-auto flex items-end gap-4 shrink-0">
+            {!isLoading && aiPassedInView > 0 && (
+              <div className="flex flex-col gap-2">
+                <span className="select-none text-[11px] uppercase tracking-wider opacity-0">—</span>
+                <button
+                  type="button"
+                  onClick={handleSelectAllAiPassed}
+                  className="rounded-lg border border-border bg-background px-3 py-2 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+                >
+                  AI дамжсан бүгдийг сонгох ({aiPassedInView})
+                </button>
+              </div>
             )}
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value as SortOrder)}
-              className="rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-ring/50"
-            >
-              <option value="flagged-first">AI тэмдэглэснийг эхэнд</option>
-              <option value="newest">Шинийг эхэнд</option>
-              <option value="oldest">Хуучнийг эхэнд</option>
-            </select>
+            <div className="flex flex-col gap-2">
+              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Эрэмбэлэх</span>
+              <select
+                value={sort}
+                onChange={(e) => setSort(e.target.value as SortOrder)}
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring/30"
+              >
+                <option value="flagged-first">AI тэмдэглэснийг эхэнд</option>
+                <option value="newest">Шинийг эхэнд</option>
+                <option value="oldest">Хуучнийг эхэнд</option>
+              </select>
+            </div>
           </div>
         </div>
+      </div>
 
+      {/* Table card */}
+      <div className={tableStyles.wrapper}>
         {/* Table */}
         <div className="overflow-x-auto">
           <table className={tableStyles.table}>
@@ -287,12 +354,11 @@ export function ReviewTab() {
                     aria-label="Select all"
                   />
                 </th>
-                <th className={tableStyles.th}>Төрөл</th>
-                <th className={tableStyles.th}>Асуулт</th>
-                <th className={tableStyles.th}>Хариулт</th>
-                <th className={tableStyles.th}>Анги</th>
-                <th className={tableStyles.th}>Чадвар</th>
-                <th className={tableStyles.th}>Хүндрэл</th>
+                <th className={tableStyles.th}>Дасгалын төрөл</th>
+                <th className={tableStyles.th}>Дасгалын асуулт</th>
+                <th className={tableStyles.th}>Дасгалын хариулт</th>
+                <th className={tableStyles.th}>Ур чадвар</th>
+                <th className={tableStyles.th}>Хүндийн түвшин</th>
                 <th className={tableStyles.th}>Медиа</th>
                 <th className={tableStyles.th}>Эх үүсвэр</th>
                 <th className={tableStyles.th}>Төлөв</th>
@@ -301,10 +367,10 @@ export function ReviewTab() {
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={7} cols={11} />
+                <SkeletonRows count={7} cols={10} />
               ) : visibleItems.length === 0 ? (
                 <tr>
-                  <td colSpan={11}>
+                  <td colSpan={10}>
                     <EmptyState
                       message="Энэ ангилалд зүйл байхгүй"
                       subMessage="Шүүлтүүрийг өөрчилж дахин оролдоно уу"
@@ -348,22 +414,13 @@ export function ReviewTab() {
                         <span className="line-clamp-1 text-xs">{item.task.correct_answer || "—"}</span>
                       </td>
                       <td className={tableStyles.cell}>
-                        <div className="flex flex-wrap gap-1">
-                          {item.task.grade_band.map((g) => (
-                            <span key={g} className="rounded border border-border px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
-                              {g}
-                            </span>
-                          ))}
-                        </div>
-                      </td>
-                      <td className={tableStyles.cell}>
                         <div className="text-xs font-medium text-foreground leading-tight">
                           {SKILL_NAMES[item.task.primary_skill] ?? item.task.primary_skill}
                         </div>
                         <div className="text-[10px] text-muted-foreground">{item.task.primary_skill}</div>
                       </td>
-                      <td className={cn(tableStyles.cell, "whitespace-nowrap text-xs text-amber-500")}>
-                        {difficultyStars(item.task.difficulty)}
+                      <td className={tableStyles.cell}>
+                        <DifficultyDots n={item.task.difficulty} />
                       </td>
                       <td className={tableStyles.cell}>
                         <MediaCell audioUrl={item.task.audio_url} imageUrl={item.task.image_url} />

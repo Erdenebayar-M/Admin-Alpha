@@ -24,6 +24,7 @@ import {
   DialogBody,
 } from "@/components/ui/dialog";
 import { SectionCard } from "@/components/ui/section-card";
+import { DifficultyDots } from "@/components/ui/difficulty-dots";
 
 type GradeFilter = "G1" | "G2" | "G3" | "G4" | "all";
 
@@ -40,9 +41,6 @@ function gradeLabel(grades: string[]): string {
   return grades.map((g) => GRADE_LABELS[g] ?? g).join(", ");
 }
 
-function difficultyStars(n: number) {
-  return "★".repeat(n) + "☆".repeat(5 - n);
-}
 
 function ToggleChip<T extends string | number>({
   value,
@@ -95,9 +93,10 @@ function SpecCard({
       />
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium leading-snug">{spec.mongolian_name}</p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
-          {difficultyStars(spec.difficulty)} · {gradeLabel(spec.grade_band)}
-        </p>
+        <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
+          <DifficultyDots n={spec.difficulty} />
+          <span>· {gradeLabel(spec.grade_band)}</span>
+        </div>
         <span className="mt-1 inline-block rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
           {CATEGORY_LABELS[TASK_TYPE_INFO[spec.task_type]?.category] ?? ""}
         </span>

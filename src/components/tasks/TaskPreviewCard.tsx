@@ -15,6 +15,7 @@ import {
   ERROR_LABELS,
   parseLines,
 } from "@/lib/task-defaults";
+import { DifficultyDots } from "@/components/ui/difficulty-dots";
 
 interface TaskPreviewCardProps {
   form: FormState;
@@ -261,7 +262,10 @@ export function TaskPreviewCard({
                 : "—"
             }
           />
-          <MetaItem label="Хүндийн түвшин" value={`${form.difficulty} / 5`} />
+          <div>
+            <p className="text-[11px] text-muted-foreground">Хүндийн түвшин</p>
+            <div className="mt-0.5"><DifficultyDots n={form.difficulty} /></div>
+          </div>
           <MetaItem
             label="Хичээлийн үе"
             value={LESSON_SLOT_LABELS[form.lesson_slot_fit] || "—"}
