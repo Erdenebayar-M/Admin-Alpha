@@ -8,7 +8,7 @@ export default function CreateTaskPage() {
   const router = useRouter();
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <div className="mx-auto max-w-7xl">
       <PageHeader
         breadcrumbs={[
           { label: "Даалгаврууд", href: "/admin/tasks" },

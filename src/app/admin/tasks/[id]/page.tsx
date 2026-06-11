@@ -71,9 +71,9 @@ export default function LiveTaskDetailPage() {
         title={task.task_id}
       />
 
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       {/* 2-col layout */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6 items-start">
         {/* Task preview (reused component) */}
         <TaskPreview
           task={task}
@@ -144,9 +144,9 @@ export default function LiveTaskDetailPage() {
 
 function DetailSkeleton() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 animate-pulse">
+    <div className="mx-auto max-w-7xl px-4 py-8 animate-pulse">
       <div className="mb-6 h-4 w-48 rounded bg-muted" />
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_320px] gap-6">
         <div className="rounded-lg border border-border bg-card p-5 space-y-4">
           <div className="h-4 w-32 rounded bg-muted" />
           <div className="h-16 rounded bg-muted" />

@@ -127,63 +127,76 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
       {/* Step content */}
       <form onSubmit={(e) => e.preventDefault()}>
         {step === 0 && (
-          <Card>
-            <CardContent className="space-y-6">
-              <div>
-                <p className="mb-2 text-sm font-medium">
-                  Ангийн бүлэг <span className="text-destructive">*</span>
-                </p>
-                {tf.errors.grade_band && (
-                  <p className="mb-2 text-xs text-destructive">{tf.errors.grade_band}</p>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {GRADE_CODES.map((g) => {
-                    const selected = tf.form.grade_band.includes(g);
-                    return (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => tf.toggleGradeBand(g)}
-                        className={cn(
-                          "rounded-lg border px-5 py-3 text-sm font-semibold transition-all",
-                          selected
-                            ? "border-primary bg-primary/5 ring-2 ring-primary text-foreground"
-                            : "border-border hover:border-foreground/20 hover:bg-muted/50 text-muted-foreground",
-                        )}
-                      >
-                        {GRADE_LABELS[g]}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {tf.form.grade_band.length > 0 && (
-                <div>
-                  <p className="mb-2 text-sm font-medium">
-                    Даалгаврын төрөл <span className="text-destructive">*</span>
-                  </p>
-                  {tf.errors.task_type && (
-                    <p className="mb-2 text-xs text-destructive">{tf.errors.task_type}</p>
+          <div className={cn(
+            "grid gap-6",
+            tf.form.task_type ? "grid-cols-1 lg:grid-cols-2 items-start" : "grid-cols-1",
+          )}>
+            {/* Left column */}
+            <div className="space-y-4">
+              {/* Grade band card */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-sm">Ангийн бүлэг <span className="text-destructive">*</span></CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {tf.errors.grade_band && (
+                    <p className="mb-2 text-xs text-destructive">{tf.errors.grade_band}</p>
                   )}
-                  <TaskTypeSelector
-                    value={tf.form.task_type}
-                    onChange={tf.setTaskType}
-                    selectedGrades={tf.form.grade_band}
-                  />
-                </div>
-              )}
+                  <div className="flex flex-wrap gap-2">
+                    {GRADE_CODES.map((g) => {
+                      const selected = tf.form.grade_band.includes(g);
+                      return (
+                        <button
+                          key={g}
+                          type="button"
+                          onClick={() => tf.toggleGradeBand(g)}
+                          className={cn(
+                            "rounded-lg border px-5 py-3 text-sm font-semibold transition-all",
+                            selected
+                              ? "border-primary bg-primary/5 ring-2 ring-primary text-foreground"
+                              : "border-border hover:border-foreground/20 hover:bg-muted/50 text-muted-foreground",
+                          )}
+                        >
+                          {GRADE_LABELS[g]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </CardContent>
+              </Card>
 
-              {tf.form.task_type && (
+              {/* Task type card */}
+              {tf.form.grade_band.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-sm">Даалгаврын төрөл <span className="text-destructive">*</span></CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {tf.errors.task_type && (
+                      <p className="mb-2 text-xs text-destructive">{tf.errors.task_type}</p>
+                    )}
+                    <TaskTypeSelector
+                      value={tf.form.task_type}
+                      onChange={tf.setTaskType}
+                      selectedGrades={tf.form.grade_band}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Right column: classification metadata */}
+            {tf.form.task_type && (
+              <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300">
                 <ClassificationForm
                   form={tf.form}
                   set={tf.set}
                   toggleList={tf.toggleList}
                   errors={tf.errors}
                 />
-              )}
-            </CardContent>
-          </Card>
+              </div>
+            )}
+          </div>
         )}
 
         {step === 1 && (

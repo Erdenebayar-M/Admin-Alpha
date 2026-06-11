@@ -60,6 +60,16 @@ export default function ReviewDetailPage() {
       prompt_text: item.task.prompt_text,
       correct_answer: item.task.correct_answer,
       feedback_text: item.task.feedback_text,
+      feedback_correct: item.task.feedback_correct ?? '',
+      feedback_wrong: item.task.feedback_wrong ?? '',
+      task_type: item.task.task_type,
+      primary_skill: item.task.primary_skill,
+      level_target: item.task.level_target,
+      grade_band: item.task.grade_band,
+      difficulty: item.task.difficulty,
+      estimated_time_seconds: item.task.estimated_time_seconds,
+      lesson_slot_fit: item.task.lesson_slot_fit,
+      error_targets: item.task.error_targets,
     });
     setIsEditMode(true);
   }, [item]);
@@ -75,6 +85,9 @@ export default function ReviewDetailPage() {
         setSavedEdits(editDraft);
         setIsEditMode(false);
         showToast('Даалгавар шинэчлэгдлаа — батлахад бэлэн');
+      },
+      onError: (err) => {
+        showToast((err as Error).message ?? 'Хадгалахад алдаа гарлаа. Дахин оролдоно уу.', 3500);
       },
     });
   }, [editDraft, updateMutation, showToast]);
@@ -103,11 +116,12 @@ export default function ReviewDetailPage() {
         r: () => reviewPanelRef.current?.focusNote(),
         x: () => reviewPanelRef.current?.triggerAction('reject'),
         e: () => (isEditMode ? handleCancelEdit() : handleEnterEdit()),
+        s: () => { if (isEditMode && !updateMutation.isPending) handleSaveEdit(); },
         escape: () => router.push('/admin/review'),
         '?': () => setIsHelpOpen(true),
       }),
       // eslint-disable-next-line react-hooks/exhaustive-deps
-      [isEditMode, submitMutation.isPending],
+      [isEditMode, submitMutation.isPending, updateMutation.isPending, handleSaveEdit],
     ),
     !isHelpOpen,
   );
@@ -143,9 +157,9 @@ export default function ReviewDetailPage() {
         actions={<ShortcutsHelpButton onClick={() => setIsHelpOpen(true)} />}
       />
 
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       {/* 2-col layout on md+, stacked on mobile */}
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-6 items-start">
         <TaskPreview
           task={displayTask}
           variantId={item.variant_id}
@@ -162,7 +176,12 @@ export default function ReviewDetailPage() {
         />
 
         <div className="space-y-5">
-          <ExerciseInfoCard task={displayTask} />
+          <ExerciseInfoCard
+            task={displayTask}
+            isEditing={isEditMode}
+            draft={editDraft}
+            onDraftChange={(patch) => setEditDraft((prev) => ({ ...prev, ...patch }))}
+          />
           <ReviewPanel
             ref={reviewPanelRef}
           item={item}
@@ -199,12 +218,12 @@ export default function ReviewDetailPage() {
 
 function ReviewDetailSkeleton() {
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 animate-pulse">
+    <div className="mx-auto max-w-7xl px-4 py-8 animate-pulse">
       <div className="flex items-center justify-between mb-6">
         <div className="h-4 w-48 rounded bg-muted" />
         <div className="h-7 w-7 rounded bg-muted" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-[1fr_360px] gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-6">
         <div className="rounded-lg border border-border bg-card p-5 space-y-4">
           <div className="h-4 w-32 rounded bg-muted" />
           <div className="h-16 rounded bg-muted" />

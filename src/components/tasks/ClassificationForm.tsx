@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { SectionCard } from "@/components/ui/section-card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { Field, ComboSelect } from "./shared";
 import type { FormState, ValidationErrors } from "@/hooks/useTaskForm";
@@ -30,106 +31,137 @@ export function ClassificationForm({
   toggleList,
   errors,
 }: ClassificationFormProps) {
+  const [errorsOpen, setErrorsOpen] = useState(false);
+
   return (
     <div className="space-y-4">
-      <Separator />
+      {/* Metadata fields card */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-sm">Мета өгөгдөл</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            <Field label="Үндсэн чадвар" required error={errors.primary_skill}>
+              <ComboSelect
+                value={form.primary_skill}
+                onChange={(v) => set("primary_skill", v)}
+                placeholder="Сонгох…"
+                options={SKILLS.map((s) => ({
+                  value: s,
+                  label: `${s} — ${SKILL_LABELS[s]}`,
+                }))}
+              />
+            </Field>
+            <Field label="Дэд чадвар">
+              <ComboSelect
+                value={form.secondary_skill}
+                onChange={(v) => set("secondary_skill", v)}
+                placeholder="—"
+                options={[
+                  { value: "", label: "Байхгүй" },
+                  ...SKILLS.map((s) => ({
+                    value: s,
+                    label: `${s} — ${SKILL_LABELS[s]}`,
+                  })),
+                ]}
+              />
+            </Field>
+            <Field label="Түвшин" required error={errors.level_target}>
+              <ComboSelect
+                value={form.level_target}
+                onChange={(v) => set("level_target", v)}
+                placeholder="Сонгох…"
+                options={LEVELS.map((l) => ({
+                  value: l,
+                  label: `${l} — ${LEVEL_LABELS[l]}`,
+                }))}
+              />
+            </Field>
+          </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Field label="Үндсэн чадвар" required error={errors.primary_skill}>
-          <ComboSelect
-            value={form.primary_skill}
-            onChange={(v) => set("primary_skill", v)}
-            placeholder="Сонгох…"
-            options={SKILLS.map((s) => ({
-              value: s,
-              label: `${s} — ${SKILL_LABELS[s]}`,
-            }))}
-          />
-        </Field>
-        <Field label="Дэд чадвар">
-          <ComboSelect
-            value={form.secondary_skill}
-            onChange={(v) => set("secondary_skill", v)}
-            placeholder="—"
-            options={[
-              { value: "", label: "Байхгүй" },
-              ...SKILLS.map((s) => ({
-                value: s,
-                label: `${s} — ${SKILL_LABELS[s]}`,
-              })),
-            ]}
-          />
-        </Field>
-        <Field label="Түвшин" required error={errors.level_target}>
-          <ComboSelect
-            value={form.level_target}
-            onChange={(v) => set("level_target", v)}
-            placeholder="Сонгох…"
-            options={LEVELS.map((l) => ({
-              value: l,
-              label: `${l} — ${LEVEL_LABELS[l]}`,
-            }))}
-          />
-        </Field>
-      </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Хүндийн түвшин (1–5)" required error={errors.difficulty}>
+              <Input
+                type="number"
+                min={1}
+                max={5}
+                value={form.difficulty}
+                onChange={(e) => set("difficulty", e.target.value)}
+              />
+            </Field>
+            <Field label="Хичээлийн үе" required error={errors.lesson_slot_fit}>
+              <ComboSelect
+                value={form.lesson_slot_fit}
+                onChange={(v) => set("lesson_slot_fit", v)}
+                placeholder="Сонгох…"
+                options={LESSON_SLOTS.map((s) => ({
+                  value: s,
+                  label: LESSON_SLOT_LABELS[s],
+                }))}
+              />
+            </Field>
+          </div>
+        </CardContent>
+      </Card>
 
-      <div className="grid grid-cols-2 gap-4">
-        <Field label="Хүндийн түвшин (1–5)" required error={errors.difficulty}>
-          <Input
-            type="number"
-            min={1}
-            max={5}
-            value={form.difficulty}
-            onChange={(e) => set("difficulty", e.target.value)}
-          />
-        </Field>
-        <Field label="Хичээлийн үе" required error={errors.lesson_slot_fit}>
-          <ComboSelect
-            value={form.lesson_slot_fit}
-            onChange={(v) => set("lesson_slot_fit", v)}
-            placeholder="Сонгох…"
-            options={LESSON_SLOTS.map((s) => ({
-              value: s,
-              label: LESSON_SLOT_LABELS[s],
-            }))}
-          />
-        </Field>
-      </div>
+      {/* Collapsible error types card */}
+      <Card>
+        <button
+          type="button"
+          onClick={() => setErrorsOpen((o) => !o)}
+          className="flex w-full items-center justify-between px-6 py-4 text-left"
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-semibold">Алдааны төрөл</span>
+            {form.error_targets.length > 0 && (
+              <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+                {form.error_targets.length}
+              </span>
+            )}
+          </div>
+          <span className="text-xs text-muted-foreground">{errorsOpen ? "▲" : "▼"}</span>
+        </button>
 
-      <div>
-        <p className="mb-2 text-sm font-medium">Алдааны төрөл</p>
-        {form.error_targets.length === 0 && (
-          <p className="mb-2 text-[11px] text-muted-foreground">
-            Даалгаврын төрлөөс автоматаар тогтооно. Гараар өөрчлөх боломжтой.
+        {!errorsOpen && (
+          <p className="px-6 pb-4 text-[11px] text-muted-foreground">
+            {form.error_targets.length === 0
+              ? "Даалгаврын төрлөөс автоматаар тогтооно. Гараар өөрчлөх боломжтой."
+              : form.error_targets.join(", ")}
           </p>
         )}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {ERROR_GROUPS.map((group) => (
-            <SectionCard key={group.key} title={`${group.label} — ${group.description}`}>
-              <div className="flex flex-wrap gap-1.5">
-                {group.codes.map((code) => {
-                  const active = form.error_targets.includes(code);
-                  return (
-                    <button
-                      key={code}
-                      type="button"
-                      onClick={() => toggleList("error_targets", code)}
-                      className={cn(
-                        "rounded border px-2.5 py-1 text-xs font-medium transition-colors",
-                        active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-border text-foreground hover:border-primary/40 hover:bg-muted/50",
-                      )}
-                    >
-                      {ERROR_LABELS[code]}
-                    </button>
-                  );
-                })}
-              </div>
-            </SectionCard>
-          ))}
-        </div>
-      </div>
+
+        {errorsOpen && (
+          <CardContent className="animate-in fade-in-0 slide-in-from-top-2 duration-200 border-t border-border pt-4">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {ERROR_GROUPS.map((group) => (
+                <SectionCard key={group.key} title={`${group.label} — ${group.description}`}>
+                  <div className="flex flex-wrap gap-1.5">
+                    {group.codes.map((code) => {
+                      const active = form.error_targets.includes(code);
+                      return (
+                        <button
+                          key={code}
+                          type="button"
+                          onClick={() => toggleList("error_targets", code)}
+                          className={cn(
+                            "rounded border px-2.5 py-1 text-xs font-medium transition-colors",
+                            active
+                              ? "border-primary bg-primary text-primary-foreground"
+                              : "border-border text-foreground hover:border-primary/40 hover:bg-muted/50",
+                          )}
+                        >
+                          {ERROR_LABELS[code]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </SectionCard>
+              ))}
+            </div>
+          </CardContent>
+        )}
+      </Card>
     </div>
   );
 }
