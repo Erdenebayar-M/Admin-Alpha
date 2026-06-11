@@ -27,13 +27,13 @@ interface Props {
   showSaveInHeader?: boolean;
   mediaStage?: string;
   readOnly?: boolean;
-  isEditMode: boolean;
-  isSaving: boolean;
-  editDraft: Partial<TaskContent>;
-  onEnterEdit: () => void;
-  onDraftChange: (patch: Partial<TaskContent>) => void;
-  onSaveEdit: () => void;
-  onCancelEdit: () => void;
+  isEditMode?: boolean;
+  isSaving?: boolean;
+  editDraft?: Partial<TaskContent>;
+  onEnterEdit?: () => void;
+  onDraftChange?: (patch: Partial<TaskContent>) => void;
+  onSaveEdit?: () => void;
+  onCancelEdit?: () => void;
   onMediaAccepted: () => void;
 }
 
@@ -48,13 +48,13 @@ export function TaskPreview({
   showSaveInHeader = false,
   mediaStage,
   readOnly = false,
-  isEditMode,
-  isSaving,
-  editDraft,
-  onEnterEdit,
-  onDraftChange,
-  onSaveEdit,
-  onCancelEdit,
+  isEditMode = false,
+  isSaving = false,
+  editDraft = {},
+  onEnterEdit = () => {},
+  onDraftChange = () => {},
+  onSaveEdit = () => {},
+  onCancelEdit = () => {},
   onMediaAccepted,
 }: Props) {
   const promptText =
@@ -289,20 +289,18 @@ export function TaskPreview({
         />
       </SectionCard>
 
-      {/* ── Card 4: Санал хүсэлт ────────────────────────────────────────────── */}
-      <SectionCard title="Санал хүсэлт">
-        <Field label="Дүрмийн тайлбар">
-          {isEditMode ? (
-            <textarea
-              className={textareaClass}
-              rows={2}
-              value={feedbackText}
-              onChange={(e) => onDraftChange({ feedback_text: e.target.value })}
-            />
-          ) : (
-            <p className="text-sm text-muted-foreground">{feedbackText}</p>
-          )}
-        </Field>
+      {/* ── Card 4: Тайлбар ────────────────────────────────────────────── */}
+      <SectionCard title="Тайлбар">
+        {isEditMode ? (
+          <textarea
+            className={textareaClass}
+            rows={2}
+            value={feedbackText}
+            onChange={(e) => onDraftChange({ feedback_text: e.target.value })}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">{feedbackText}</p>
+        )}
 
         <div className="grid grid-cols-2 gap-3">
           <Field label={<span className="text-green-700">Зөв хариулсан үед</span>}>

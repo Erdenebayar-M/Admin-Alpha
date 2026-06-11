@@ -36,6 +36,7 @@ export function variantToReviewItem(v: TaskVariant): ReviewItem {
       lesson_slot_fit: v.lesson_slot_fit ?? "",
       feedback_text: v.feedback_text ?? "",
       initial_text: v.initial_text ?? undefined,
+      source: v.source,
     },
     ai_review_severity:  v.ai_review_severity,
     ai_review_issues:    v.ai_review_issues ?? [],

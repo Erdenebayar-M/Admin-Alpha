@@ -145,7 +145,6 @@ export function TasksTab() {
                 <th className={tableStyles.th}>Анги</th>
                 <th className={tableStyles.th}>Заавар</th>
                 <th className={tableStyles.th}>Чадвар</th>
-                <th className={tableStyles.th}>Эх үүсвэр</th>
                 <th className={tableStyles.th}>Хүндрэл</th>
                 <th className={tableStyles.th}>Медиа</th>
                 <th className={tableStyles.th}>Огноо</th>
@@ -153,7 +152,7 @@ export function TasksTab() {
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={8} cols={8} />
+                <SkeletonRows count={8} cols={7} />
               ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={7}>
@@ -197,11 +196,6 @@ export function TasksTab() {
                           {SKILL_NAMES[task.primary_skill] ?? task.primary_skill}
                         </div>
                         <div className="text-[10px] text-muted-foreground">{task.primary_skill}</div>
-                      </td>
-                      <td className={tableStyles.cell}>
-                        <span className="text-base" title={task.source === "AI" ? "AI" : "Хүн"}>
-                          {task.source === "AI" ? "🤖" : "👤"}
-                        </span>
                       </td>
                       <td className={cn(tableStyles.cell, "whitespace-nowrap text-xs text-amber-500")}>
                         {difficultyStars(task.difficulty)}

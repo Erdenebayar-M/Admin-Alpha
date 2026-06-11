@@ -1,11 +1,12 @@
 "use client";
 
-import React, { useCallback, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useReviewQueue } from "@/hooks/useReviewQueue";
 import { useVisited } from "@/hooks/useVisited";
 import { approveVariant, bulkDeleteDrafts } from "@/lib/api";
+import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 import { REVIEW_STATUS_META } from "@/lib/status";
@@ -49,15 +50,24 @@ function filterByTab(items: ReviewItem[], tab: Tab): ReviewItem[] {
   }
 }
 
+function toMs(iso: string) {
+  const ms = new Date(iso).getTime();
+  return Number.isNaN(ms) ? 0 : ms;
+}
+
 function sortItems(items: ReviewItem[], order: SortOrder): ReviewItem[] {
   const arr = [...items];
   switch (order) {
     case "flagged-first":
-      return arr.sort((a, b) => (STATUS_PRIORITY[a.status] ?? 2) - (STATUS_PRIORITY[b.status] ?? 2));
+      return arr.sort((a, b) => {
+        const priority = (STATUS_PRIORITY[a.status] ?? 2) - (STATUS_PRIORITY[b.status] ?? 2);
+        if (priority !== 0) return priority;
+        return toMs(b.created_at) - toMs(a.created_at);
+      });
     case "newest":
-      return arr.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+      return arr.sort((a, b) => toMs(b.created_at) - toMs(a.created_at));
     case "oldest":
-      return arr.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+      return arr.sort((a, b) => toMs(a.created_at) - toMs(b.created_at));
   }
 }
 
@@ -137,15 +147,22 @@ export function ReviewTab() {
   const [activeTab, setActiveTab] = useState<Tab>("all");
   const [sort, setSort] = useState<SortOrder>("flagged-first");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [toast, setToast] = useState<{ message: string; visible: boolean }>({ message: "", visible: false });
+  const [toast, setToast] = useState<{ message: string; visible: boolean; type?: "success" | "error" }>({ message: "", visible: false });
   const { visited, markVisited } = useVisited("visited_review");
+  const { pageToast, clearPageToast } = useModalStore();
 
   const { data: allItems = [], isLoading } = useReviewQueue();
 
-  const showToast = useCallback((message: string, duration = 2500) => {
-    setToast({ message, visible: true });
+  const showToast = useCallback((message: string, duration = 2500, type?: "success" | "error") => {
+    setToast({ message, visible: true, type });
     setTimeout(() => setToast((t) => ({ ...t, visible: false })), duration);
   }, []);
+
+  useEffect(() => {
+    if (!pageToast) return;
+    showToast(pageToast.message, 2500, pageToast.type);
+    clearPageToast();
+  }, [pageToast, showToast, clearPageToast]);
 
   const tabItems = useMemo(() => filterByTab(allItems, activeTab), [allItems, activeTab]);
   const visibleItems = useMemo(() => sortItems(tabItems, sort), [tabItems, sort]);
@@ -286,6 +303,7 @@ export function ReviewTab() {
                 <th className={tableStyles.th}>Чадвар</th>
                 <th className={tableStyles.th}>Хүндрэл</th>
                 <th className={tableStyles.th}>Медиа</th>
+                <th className={tableStyles.th}>Эх үүсвэр</th>
                 <th className={tableStyles.th}>Төлөв</th>
                 <th className={tableStyles.th}>Огноо</th>
               </tr>
@@ -360,6 +378,11 @@ export function ReviewTab() {
                         <MediaCell audioUrl={item.task.audio_url} imageUrl={item.task.image_url} />
                       </td>
                       <td className={tableStyles.cell}>
+                        <span className="text-base" title={item.task.source === "AI" ? "AI" : "Хүн"}>
+                          {item.task.source === "AI" ? "🤖" : "👤"}
+                        </span>
+                      </td>
+                      <td className={tableStyles.cell}>
                         <StatusDot item={item} />
                       </td>
                       <td className={tableStyles.cellMuted}>
@@ -421,7 +444,8 @@ export function ReviewTab() {
       {/* Toast */}
       <div
         className={cn(
-          "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg bg-primary px-5 py-3 text-sm font-medium text-primary-foreground shadow-lg transition-all duration-300",
+          "fixed bottom-6 left-1/2 z-50 -translate-x-1/2 rounded-lg px-5 py-3 text-sm font-medium shadow-lg transition-all duration-300",
+          toast.type === "error" ? "bg-destructive text-white" : "bg-primary text-primary-foreground",
           hasSelection && "bottom-[72px]",
           toast.visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-2 opacity-0",
         )}
