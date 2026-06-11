@@ -134,7 +134,7 @@ export function ReviewTab() {
   const router = useRouter();
 
   const [activeTab, setActiveTab] = useState<Tab>("all");
-  const [sort, setSort] = useState<SortOrder>("flagged-first");
+  const [sort, setSort] = useState<SortOrder>("newest");
   const [grade, setGrade] = useState<GradeFilter>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());

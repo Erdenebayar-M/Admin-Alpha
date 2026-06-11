@@ -4,12 +4,13 @@ import { cn } from "@/lib/utils";
 import {
   TASK_TYPE_INFO,
   TASK_TYPE_BLUEPRINT,
-  CATEGORY_LABELS,
   SKILL_LABELS,
   SKILLS,
   TASK_TYPES,
+  deriveInteractionForm,
+  INTERACTION_FORM_LABELS,
 } from "@/lib/task-defaults";
-import { SectionCard } from "@/components/ui/section-card";
+import { DifficultyDots } from "@/components/ui/difficulty-dots";
 
 interface TaskTypeSelectorProps {
   value: string;
@@ -33,34 +34,50 @@ export function TaskTypeSelector({ value, onChange, selectedGrades }: TaskTypeSe
     .filter((g) => g.types.length > 0);
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+    <div className="divide-y divide-border">
       {grouped.map(({ skill, label, types }) => (
-        <SectionCard key={skill} title={label}>
-          <div className="flex flex-wrap gap-1.5">
+        <div key={skill} className="py-3 first:pt-0 last:pb-0">
+          <p className="mb-1 px-2 text-sm font-bold text-foreground">{label}</p>
+          <div>
             {types.map((t) => {
               const info = TASK_TYPE_INFO[t];
               const selected = value === t;
+              const form = deriveInteractionForm(t);
+              const formLabel = form ? INTERACTION_FORM_LABELS[form] : null;
+              const difficulty = Number(TASK_TYPE_BLUEPRINT[t]?.difficulty ?? 1);
               return (
                 <button
                   key={t}
                   type="button"
                   onClick={() => onChange(t)}
                   className={cn(
-                    "flex flex-col items-start rounded-md border px-2.5 py-1.5 text-left text-sm font-medium leading-tight transition-all",
-                    selected
-                      ? "border-primary bg-primary/5 ring-1 ring-primary text-foreground"
-                      : "border-border bg-background text-foreground hover:border-foreground/30 hover:bg-muted/50",
+                    "flex w-full items-start gap-2 rounded px-2 py-2 text-left transition-colors",
+                    selected ? "bg-green-50 dark:bg-green-950/30" : "hover:bg-muted/50",
                   )}
                 >
-                  {info.label}
-                  <span className="mt-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-normal text-muted-foreground">
-                    {CATEGORY_LABELS[info.category]}
-                  </span>
+                  <span className={cn(
+                    "mt-0.5 w-3 shrink-0 text-xs font-bold",
+                    selected ? "text-green-600" : "text-transparent select-none",
+                  )}>✓</span>
+                  <div className="flex flex-1 min-w-0 items-center gap-2 flex-wrap">
+                    <p className={cn(
+                      "text-sm leading-tight",
+                      selected ? "font-semibold text-green-900 dark:text-green-100" : "text-foreground",
+                    )}>
+                      {info.label}
+                    </p>
+                    {formLabel && (
+                      <span className="rounded border border-blue-200 bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-700 dark:border-blue-800 dark:bg-blue-950/40 dark:text-blue-300">
+                        {formLabel}
+                      </span>
+                    )}
+                    <DifficultyDots n={difficulty} />
+                  </div>
                 </button>
               );
             })}
           </div>
-        </SectionCard>
+        </div>
       ))}
     </div>
   );

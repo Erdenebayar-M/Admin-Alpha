@@ -20,6 +20,11 @@ Admin: Next.js 14 App Router (runs on localhost:3002)
 - Review statuses: pending | ai_passed | ai_flagged | human_approved | human_rejected | needs_revision
 - Error codes: full 38-code set A1–H4 (Mongolian orthography errors)
 
+## Layout
+
+- All pages fill the full screen width — no `max-w-*` or `mx-auto` on page-level wrappers
+- Use `px-4 sm:px-6` for horizontal padding only
+
 ## Code rules
 
 - All components in src/components/, pages in src/app/

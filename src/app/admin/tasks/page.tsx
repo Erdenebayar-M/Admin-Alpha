@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default function TasksPage() {
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <PageHeader
         title="Даалгаврууд"
         subtitle="Батлагдсан даалгаврын жагсаалт"

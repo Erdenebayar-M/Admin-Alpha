@@ -6,8 +6,6 @@ import { useState } from 'react';
 import { GraduationCap, Search } from 'lucide-react';
 import { LogoutButton } from '@/components/LogoutButton';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { GenerateModal } from '@/components/modals/GenerateModal';
-import { useModalStore } from '@/lib/modal-store';
 import { cn } from '@/lib/utils';
 
 const NAV_LINKS = [
@@ -37,14 +35,13 @@ function UserAvatar() {
 }
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const { setOpenGenerate } = useModalStore();
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
 
   const handleAI = () => {
-    setOpenGenerate(true);
+    router.push('/admin/tasks/generate');
     setMenuOpen(false);
   };
 
@@ -217,7 +214,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {children}
       </main>
 
-      <GenerateModal />
     </div>
   );
 }

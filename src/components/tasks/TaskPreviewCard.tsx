@@ -1,36 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
 import type { FormState } from "@/hooks/useTaskForm";
 import type { OptionGroup } from "@/lib/task-defaults";
 import {
   TASK_TYPE_INFO,
-  SKILL_LABELS,
-  LEVEL_LABELS,
-  GRADE_LABELS,
-  LESSON_SLOT_LABELS,
-  ERROR_LABELS,
   parseLines,
 } from "@/lib/task-defaults";
-import { DifficultyDots } from "@/components/ui/difficulty-dots";
 
 interface TaskPreviewCardProps {
   form: FormState;
   groups: OptionGroup[];
   taskType: string;
   onGoToStep: (step: number) => void;
-}
-
-function MetaItem({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <p className="text-[11px] text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value}</p>
-    </div>
-  );
 }
 
 export function TaskPreviewCard({
@@ -213,84 +196,6 @@ export function TaskPreviewCard({
         </div>
       </div>
 
-      <Separator />
-
-      {/* Metadata summary */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <p className="text-sm font-semibold">Мета өгөгдөл</p>
-          <Button variant="ghost" size="sm" onClick={() => onGoToStep(0)}>
-            Засах →
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
-          <MetaItem
-            label="Төрөл"
-            value={
-              typeInfo ? `${typeInfo.shortLabel} — ${typeInfo.label}` : "—"
-            }
-          />
-          <MetaItem
-            label="Анги"
-            value={
-              form.grade_band
-                .map((g) => GRADE_LABELS[g] ?? g)
-                .join(", ") || "—"
-            }
-          />
-          <MetaItem
-            label="Үндсэн чадвар"
-            value={
-              form.primary_skill
-                ? `${form.primary_skill} — ${SKILL_LABELS[form.primary_skill]}`
-                : "—"
-            }
-          />
-          <MetaItem
-            label="Дэд чадвар"
-            value={
-              form.secondary_skill
-                ? `${form.secondary_skill} — ${SKILL_LABELS[form.secondary_skill]}`
-                : "—"
-            }
-          />
-          <MetaItem
-            label="Түвшин"
-            value={
-              form.level_target
-                ? `${form.level_target} — ${LEVEL_LABELS[form.level_target]}`
-                : "—"
-            }
-          />
-          <div>
-            <p className="text-[11px] text-muted-foreground">Хүндийн түвшин</p>
-            <div className="mt-0.5"><DifficultyDots n={form.difficulty} /></div>
-          </div>
-          <MetaItem
-            label="Хичээлийн үе"
-            value={LESSON_SLOT_LABELS[form.lesson_slot_fit] || "—"}
-          />
-          <MetaItem
-            label="Хугацаа"
-            value={`${form.estimated_time_seconds} секунд`}
-          />
-        </div>
-
-        {form.error_targets.length > 0 && (
-          <div>
-            <p className="text-[11px] text-muted-foreground mb-1">
-              Алдааны зорилтууд
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {form.error_targets.map((code) => (
-                <Badge key={code} variant="secondary" className="text-xs">
-                  {code} — {ERROR_LABELS[code]}
-                </Badge>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

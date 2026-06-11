@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/ui/page-header";
 
 export default function ReviewPage() {
   return (
-    <div className="mx-auto max-w-7xl">
+    <div>
       <PageHeader
         title="Хяналтын дараалал"
         subtitle="AI болон гараар үүсгэсэн даалгаврыг хянаж батлана"

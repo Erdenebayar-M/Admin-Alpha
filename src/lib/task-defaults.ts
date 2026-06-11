@@ -774,6 +774,16 @@ const CATEGORY_TO_INTERACTION_FORM: Record<string, string> = {
   visual_memory: "TRANSCRIBE",
 };
 
+export const INTERACTION_FORM_LABELS: Record<string, string> = {
+  CHOOSE:     "Сонгох",
+  FILL:       "Бөглөх",
+  TRANSCRIBE: "Бичих",
+  CORRECT:    "Засах",
+  MATCH:      "Холбох",
+  ASSEMBLE:   "Угсрах",
+  TAP:        "Товших",
+};
+
 export function deriveInteractionForm(taskType: string): string | null {
   const info = TASK_TYPE_INFO[taskType];
   if (!info) return null;

@@ -157,7 +157,7 @@ export default function ReviewDetailPage() {
         actions={<ShortcutsHelpButton onClick={() => setIsHelpOpen(true)} />}
       />
 
-      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
+      <div className="px-4 py-6 sm:px-6">
       {/* 2-col layout on md+, stacked on mobile */}
       <div className="grid grid-cols-1 md:grid-cols-[1fr_400px] gap-6 items-start">
         <TaskPreview
@@ -218,7 +218,7 @@ export default function ReviewDetailPage() {
 
 function ReviewDetailSkeleton() {
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 animate-pulse">
+    <div className="px-4 py-8 sm:px-6 animate-pulse">
       <div className="flex items-center justify-between mb-6">
         <div className="h-4 w-48 rounded bg-muted" />
         <div className="h-7 w-7 rounded bg-muted" />

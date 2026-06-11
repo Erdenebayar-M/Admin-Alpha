@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { useTaskForm } from "@/hooks/useTaskForm";
-import { GRADE_CODES, GRADE_LABELS } from "@/lib/task-defaults";
+import { GRADE_CODES, GRADE_LABELS, ERROR_GROUPS, ERROR_LABELS } from "@/lib/task-defaults";
 import { TaskTypeSelector } from "@/components/tasks/TaskTypeSelector";
 import { ClassificationForm } from "@/components/tasks/ClassificationForm";
 import { ContentForm } from "@/components/tasks/ContentForm";
@@ -12,6 +12,84 @@ import { TaskPreviewCard } from "@/components/tasks/TaskPreviewCard";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+
+function ErrorTypesList({
+  selected,
+  onToggle,
+}: {
+  selected: string[];
+  onToggle: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Card>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center justify-between px-6 py-4 text-left"
+      >
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">Алдааны төрөл</span>
+          {selected.length > 0 && (
+            <span className="rounded-full bg-primary px-2 py-0.5 text-[11px] font-medium text-primary-foreground">
+              {selected.length}
+            </span>
+          )}
+        </div>
+        <span className="text-xs text-muted-foreground">{open ? "▲" : "▼"}</span>
+      </button>
+
+      {!open && (
+        <p className="px-6 pb-4 text-[11px] text-muted-foreground">
+          {selected.length === 0
+            ? "Даалгаврын төрлөөс автоматаар тогтооно. Гараар өөрчлөх боломжтой."
+            : selected.join(", ")}
+        </p>
+      )}
+
+      {open && (
+        <CardContent className="animate-in fade-in-0 slide-in-from-top-2 duration-200 border-t border-border pt-4">
+          <div className="divide-y divide-border">
+          {ERROR_GROUPS.map((group) => (
+            <div key={group.key} className="py-3 first:pt-0 last:pb-0">
+              <p className="mb-1 px-2 text-sm font-bold text-foreground">
+                {group.label} — {group.description}
+              </p>
+              <div>
+                {group.codes.map((code) => {
+                  const active = selected.includes(code);
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      onClick={() => onToggle(code)}
+                      className={cn(
+                        "flex w-full items-center gap-2 rounded px-2 py-2 text-left transition-colors",
+                        active ? "bg-green-50 dark:bg-green-950/30" : "hover:bg-muted/50",
+                      )}
+                    >
+                      <span className={cn(
+                        "w-3 shrink-0 text-xs font-bold",
+                        active ? "text-green-600" : "text-transparent select-none",
+                      )}>✓</span>
+                      <span className={cn(
+                        "text-sm",
+                        active ? "font-semibold text-green-900 dark:text-green-100" : "text-foreground",
+                      )}>
+                        {code} — {ERROR_LABELS[code]}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+        </CardContent>
+      )}
+    </Card>
+  );
+}
 
 const STEPS = [
   { label: "Төрөл & Ангилал", description: "Даалгаврын төрөл, анги, чадвар" },
@@ -127,10 +205,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
       {/* Step content */}
       <form onSubmit={(e) => e.preventDefault()}>
         {step === 0 && (
-          <div className={cn(
-            "grid gap-6",
-            tf.form.task_type ? "grid-cols-1 lg:grid-cols-2 items-start" : "grid-cols-1",
-          )}>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
             {/* Left column */}
             <div className="space-y-4">
               {/* Grade band card */}
@@ -183,64 +258,75 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                   </CardContent>
                 </Card>
               )}
+
+              {/* Error types card — beneath task type */}
+              {tf.form.task_type && (
+                <ErrorTypesList
+                  selected={tf.form.error_targets}
+                  onToggle={(code) => tf.toggleList("error_targets", code)}
+                />
+              )}
             </div>
 
             {/* Right column: classification metadata */}
             {tf.form.task_type && (
-              <div className="animate-in fade-in-0 slide-in-from-right-4 duration-300">
-                <ClassificationForm
-                  form={tf.form}
-                  set={tf.set}
-                  toggleList={tf.toggleList}
-                  errors={tf.errors}
-                />
-              </div>
+              <ClassificationForm
+                form={tf.form}
+                set={tf.set}
+                errors={tf.errors}
+              />
             )}
           </div>
         )}
 
         {step === 1 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Дасгалын тайлбар</CardTitle>
-              <CardDescription>
-                {tf.typeInfo
-                  ? `${tf.typeInfo.shortLabel} — ${tf.typeInfo.label}: ${tf.typeInfo.description}`
-                  : "Даалгаврын агуулга оруулна уу"}
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ContentForm
-                form={tf.form}
-                set={tf.set}
-                toggleList={tf.toggleList}
-                groups={tf.groups}
-                errors={tf.errors}
-                taskType={tf.form.task_type}
-                audioPreview={tf.audioPreview}
-                onAudioGenerated={tf.setAudioPreview}
-                imagePreview={tf.imagePreview}
-                onImageGenerated={tf.setImagePreview}
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+            <Card>
+              <CardHeader>
+                <CardTitle>Дасгалын тайлбар</CardTitle>
+                <CardDescription>
+                  {tf.typeInfo
+                    ? `${tf.typeInfo.shortLabel} — ${tf.typeInfo.label}: ${tf.typeInfo.description}`
+                    : "Даалгаврын агуулга оруулна уу"}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ContentForm
+                  form={tf.form}
+                  set={tf.set}
+                  toggleList={tf.toggleList}
+                  groups={tf.groups}
+                  errors={tf.errors}
+                  taskType={tf.form.task_type}
+                  audioPreview={tf.audioPreview}
+                  onAudioGenerated={tf.setAudioPreview}
+                  imagePreview={tf.imagePreview}
+                  onImageGenerated={tf.setImagePreview}
+                />
+              </CardContent>
+            </Card>
+            <ClassificationForm form={tf.form} set={tf.set} errors={tf.errors} />
+          </div>
         )}
 
         {step === 2 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Хянах & Илгээх</CardTitle>
-              <CardDescription>Бүх мэдээллийг шалгаж, илгээнэ үү</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <TaskPreviewCard
-                form={tf.form}
-                groups={tf.groups}
-                taskType={tf.form.task_type}
-                onGoToStep={goToStep}
-              />
-            </CardContent>
-          </Card>
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+            <Card>
+              <CardHeader>
+                <CardTitle>Хянах & Илгээх</CardTitle>
+                <CardDescription>Бүх мэдээллийг шалгаж, илгээнэ үү</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <TaskPreviewCard
+                  form={tf.form}
+                  groups={tf.groups}
+                  taskType={tf.form.task_type}
+                  onGoToStep={goToStep}
+                />
+              </CardContent>
+            </Card>
+            <ClassificationForm form={tf.form} set={tf.set} errors={tf.errors} />
+          </div>
         )}
 
         {/* Navigation */}

@@ -5,13 +5,15 @@ import {
   LESSON_SLOT_LABELS,
   LESSON_SLOTS,
   SKILL_LABELS,
-  SKILLS,
   LEVELS,
   LEVEL_LABELS,
   TASK_TYPE_INFO,
   GRADE_CODES,
   GRADE_LABELS,
+  deriveInteractionForm,
+  INTERACTION_FORM_LABELS,
 } from "@/lib/task-defaults";
+import { TaskTypeSelector } from "@/components/tasks/TaskTypeSelector";
 import type { TaskContent } from "@/lib/types";
 import { DifficultyDots } from "@/components/ui/difficulty-dots";
 import { ComboSelect } from "@/components/tasks/shared";
@@ -39,7 +41,7 @@ interface Props {
 function MetaRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground mb-0.5">
+      <p className="text-sm font-bold text-muted-foreground mb-0.5">
         {label}
       </p>
       <div className="text-sm font-medium">{children}</div>
@@ -59,13 +61,11 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
   const currentGrades = v("grade_band") as string[];
   const currentErrors = v("error_targets") as string[];
 
-  const availableTaskTypes = Object.entries(TASK_TYPE_INFO)
-    .filter(([, info]) => info.grades.some((g) => currentGrades.includes(g)))
-    .map(([key, info]) => ({ value: key, label: `${info.shortLabel} — ${info.label}` }));
-
   const skillLabel = SKILL_LABELS[task.primary_skill];
   const slotLabel = LESSON_SLOT_LABELS[task.lesson_slot_fit] ?? task.lesson_slot_fit;
   const typeInfo = TASK_TYPE_INFO[task.task_type];
+  const interactionForm = deriveInteractionForm(task.task_type);
+  const interactionFormLabel = interactionForm ? INTERACTION_FORM_LABELS[interactionForm] : null;
 
   const toggleGrade = (g: string) => {
     const next = currentGrades.includes(g)
@@ -83,31 +83,43 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
 
   return (
     <div className="rounded-lg border border-border bg-card p-4 space-y-3">
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        Дасгалын тайлбар
-      </p>
-
-      <div className="grid grid-cols-2 gap-x-4 gap-y-3">
-        {/* col 1 — Дасгалын төрөл */}
-        <MetaRow label="Дасгалын төрөл">
+      <div className="space-y-3">
+        {/* Task type — list selector in edit, inline summary in read */}
+        <div>
+          <p className="text-sm font-bold text-muted-foreground mb-1">Дасгалын төрөл</p>
           {isEditing ? (
-            <ComboSelect
+            <TaskTypeSelector
               value={v("task_type") as string}
               onChange={(val) => patch({ task_type: val })}
-              placeholder="Сонгох…"
-              options={availableTaskTypes}
+              selectedGrades={currentGrades}
             />
           ) : (
-            <>
-              <span className="font-medium">{typeInfo?.label ?? task.task_type}</span>
-              {typeInfo?.shortLabel && (
-                <span className="ml-1.5 text-xs font-normal text-muted-foreground">({typeInfo.shortLabel})</span>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <span className="text-sm font-medium">{typeInfo?.label ?? task.task_type}</span>
+              {interactionFormLabel && (
+                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                  {interactionFormLabel}
+                </span>
               )}
-            </>
+              <DifficultyDots n={task.difficulty} />
+            </div>
           )}
-        </MetaRow>
+        </div>
 
-        {/* col 2 — Түвшин */}
+        {/* Difficulty — only shown in edit mode (read mode merges it above) */}
+        {isEditing && (
+          <MetaRow label="Хүндийн түвшин">
+            <Input
+              type="number"
+              min={1}
+              max={5}
+              value={v("difficulty") as number}
+              onChange={(e) => patch({ difficulty: Number(e.target.value) })}
+              className="h-8 w-20"
+            />
+          </MetaRow>
+        )}
+
         <MetaRow label="Түвшин">
           {isEditing ? (
             <ComboSelect
@@ -121,7 +133,6 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
           )}
         </MetaRow>
 
-        {/* col 1 — Ур чадвар */}
         <MetaRow label="Ур чадвар">
           {isEditing ? (
             <ComboSelect
@@ -140,23 +151,6 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
           )}
         </MetaRow>
 
-        {/* col 2 — Хүндийн түвшин */}
-        <MetaRow label="Хүндийн түвшин">
-          {isEditing ? (
-            <Input
-              type="number"
-              min={1}
-              max={5}
-              value={v("difficulty") as number}
-              onChange={(e) => patch({ difficulty: Number(e.target.value) })}
-              className="h-8 w-20"
-            />
-          ) : (
-            <DifficultyDots n={task.difficulty} />
-          )}
-        </MetaRow>
-
-        {/* col 1 — Анги */}
         <MetaRow label="Анги">
           {isEditing ? (
             <div className="flex flex-wrap gap-1">
@@ -181,7 +175,6 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
           )}
         </MetaRow>
 
-        {/* col 2 — Хугацаа */}
         <MetaRow label="Хугацаа">
           {isEditing ? (
             <div className="flex items-center gap-1">
@@ -199,7 +192,6 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
           )}
         </MetaRow>
 
-        {/* col 1 — Алдааны оношилгоо (spans both cols when editing) */}
         {!isEditing && (
           <MetaRow label="Алдааны оношилгоо">
             {task.error_targets.length > 0 ? (
@@ -219,7 +211,6 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
           </MetaRow>
         )}
 
-        {/* col 2 — Хичээлийн үе */}
         <MetaRow label="Хичээлийн үе">
           {isEditing ? (
             <ComboSelect
