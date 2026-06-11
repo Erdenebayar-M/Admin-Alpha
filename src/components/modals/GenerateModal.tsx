@@ -11,6 +11,11 @@ import {
   type GenerateSpec,
 } from "@/lib/api";
 import {
+  SKILL_LABELS,
+  CATEGORY_LABELS,
+  TASK_TYPE_INFO,
+} from "@/lib/task-defaults";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -18,6 +23,7 @@ import {
   DialogClose,
   DialogBody,
 } from "@/components/ui/dialog";
+import { SectionCard } from "@/components/ui/section-card";
 
 type GradeFilter = "G1" | "G2" | "G3" | "G4" | "all";
 
@@ -28,16 +34,7 @@ const GRADE_LABELS: Record<string, string> = {
   G4: "4-р анги",
 };
 
-const SKILL_NAMES: Record<string, string> = {
-  S1: "Үсэг-авиа ялгалт",
-  S2: "Үгийн зөв бичлэг",
-  S3: "Урт/богино эгшиг",
-  S4: "Балархай эгшиг",
-  S5: "Залгавар/нөхцөл",
-  S6: "Өгүүлбэрийн тэмдэглэгээ",
-  S7: "Сонсголоор буулгах",
-  S8: "Алдаа засах",
-};
+const SKILL_ORDER = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"];
 
 function gradeLabel(grades: string[]): string {
   return grades.map((g) => GRADE_LABELS[g] ?? g).join(", ");
@@ -99,11 +96,11 @@ function SpecCard({
       <div className="min-w-0 flex-1">
         <p className="truncate text-xs font-medium leading-snug">{spec.mongolian_name}</p>
         <p className="mt-0.5 text-[10px] text-muted-foreground">
-          {SKILL_NAMES[spec.primary_skill] ?? spec.primary_skill} · {difficultyStars(spec.difficulty)}
+          {difficultyStars(spec.difficulty)} · {gradeLabel(spec.grade_band)}
         </p>
-        <p className="mt-0.5 text-[10px] text-muted-foreground">
-          {gradeLabel(spec.grade_band)}
-        </p>
+        <span className="mt-1 inline-block rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">
+          {CATEGORY_LABELS[TASK_TYPE_INFO[spec.task_type]?.category] ?? ""}
+        </span>
       </div>
     </label>
   );
@@ -283,10 +280,23 @@ function GenerateModalContent({ onClose }: { onClose: () => void }) {
               Тохирох даалгавар олдсонгүй
             </p>
           ) : (
-            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-              {filteredSpecs.map((s) => (
-                <SpecCard key={s.id} spec={s} selected={selectedIds.has(s.id)} onToggle={toggleSpec} />
-              ))}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {SKILL_ORDER
+                .map((skill) => ({
+                  skill,
+                  specs: filteredSpecs.filter((s) => s.primary_skill === skill),
+                }))
+                .filter((g) => g.specs.length > 0)
+                .map(({ skill, specs }) => (
+                  <SectionCard key={skill} title={SKILL_LABELS[skill]}>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                      {specs.map((s) => (
+                        <SpecCard key={s.id} spec={s} selected={selectedIds.has(s.id)} onToggle={toggleSpec} />
+                      ))}
+                    </div>
+                  </SectionCard>
+                ))
+              }
             </div>
           )}
         </DialogBody>
