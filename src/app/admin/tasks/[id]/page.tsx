@@ -5,19 +5,16 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { getLiveTask, updateLiveTask, deleteLiveTask } from "@/lib/api";
+import { getLiveTask, deleteLiveTask } from "@/lib/api";
 import { TaskPreview } from "@/components/review/TaskPreview";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExerciseInfoCard } from "@/components/ui/exercise-info-card";
-import type { TaskContent } from "@/lib/types";
 
 export default function LiveTaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editDraft, setEditDraft] = useState<Partial<TaskContent>>({});
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [toast, setToast] = useState<{ message: string; visible: boolean }>({
     message: "",
@@ -35,18 +32,6 @@ export default function LiveTaskDetailPage() {
     staleTime: 30_000,
   });
 
-  const saveMutation = useMutation({
-    mutationFn: (updates: Partial<TaskContent>) => updateLiveTask(id, updates),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["live-task", id] });
-      queryClient.invalidateQueries({ queryKey: ["live-tasks"] });
-      setIsEditMode(false);
-      setEditDraft({});
-      showToast("Хадгалагдлаа.");
-    },
-    onError: (err) => showToast((err as Error).message ?? "Алдаа гарлаа."),
-  });
-
   const deleteMutation = useMutation({
     mutationFn: () => deleteLiveTask(id),
     onSuccess: () => {
@@ -55,27 +40,6 @@ export default function LiveTaskDetailPage() {
     },
     onError: (err) => showToast((err as Error).message ?? "Устгаж чадсангүй."),
   });
-
-  const handleEnterEdit = useCallback(() => {
-    if (!task) return;
-    setEditDraft({
-      prompt_text: task.prompt_text,
-      correct_answer: task.correct_answer,
-      feedback_text: task.feedback_text,
-      feedback_correct: task.feedback_correct ?? '',
-      feedback_wrong: task.feedback_wrong ?? '',
-    });
-    setIsEditMode(true);
-  }, [task]);
-
-  const handleCancelEdit = useCallback(() => {
-    setEditDraft({});
-    setIsEditMode(false);
-  }, []);
-
-  const handleSave = useCallback(() => {
-    saveMutation.mutate(editDraft);
-  }, [editDraft, saveMutation]);
 
   const handleDeleteClick = useCallback(() => {
     if (confirmDelete) {
@@ -97,8 +61,6 @@ export default function LiveTaskDetailPage() {
     );
   }
 
-  const displayTask = isEditMode ? { ...task, ...editDraft } : task;
-
   return (
     <div>
       <PageHeader
@@ -114,28 +76,21 @@ export default function LiveTaskDetailPage() {
       <div className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-6 items-start">
         {/* Task preview (reused component) */}
         <TaskPreview
-          task={displayTask}
+          task={task}
           variantId={id}
           createdAt={task.created_at}
-          showSaveInHeader
           mediaStage="validated"
-          isEditMode={isEditMode}
-          isSaving={saveMutation.isPending}
-          editDraft={editDraft}
-          onEnterEdit={handleEnterEdit}
-          onDraftChange={(patch) => setEditDraft((prev) => ({ ...prev, ...patch }))}
-          onSaveEdit={handleSave}
-          onCancelEdit={handleCancelEdit}
+          readOnly
+          isEditMode={false}
           onMediaAccepted={() => queryClient.invalidateQueries({ queryKey: ["live-task", id] })}
         />
 
         {/* Action sidebar */}
         <div className="space-y-3">
-          <ExerciseInfoCard task={displayTask} />
+          <ExerciseInfoCard task={task} />
 
           {/* Delete */}
-          {!isEditMode && (
-            <div className="rounded-lg border border-border bg-card p-4 space-y-2">
+          <div className="rounded-lg border border-border bg-card p-4 space-y-2">
               <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Устгах</p>
               <div className="flex gap-2">
                 <button
@@ -165,7 +120,6 @@ export default function LiveTaskDetailPage() {
                 <p className="text-xs text-red-500">Энэ үйлдлийг буцаах боломжгүй.</p>
               )}
             </div>
-          )}
 
         </div>
       </div>

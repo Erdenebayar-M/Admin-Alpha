@@ -152,15 +152,13 @@ function CommonFields({ form, set, errors, promptSuggestions = [] }: SubProps & 
 function FeedbackFields({ form, set }: Pick<SubProps, "form" | "set">) {
   return (
     <>
-      <Field label="Дүрмийн тайлбар" hint="Хариултаас үл хамааран харуулах">
-        <Textarea
-          rows={2}
-          value={form.feedback_text}
-          onChange={(e) => set("feedback_text", e.target.value)}
-          placeholder="Жнэ: 'гэрэл' — г+э+р+э+л"
-          className="resize-y"
-        />
-      </Field>
+      <Textarea
+        rows={2}
+        value={form.feedback_text}
+        onChange={(e) => set("feedback_text", e.target.value)}
+        placeholder="Жнэ: 'гэрэл' — г+э+р+э+л"
+        className="resize-y"
+      />
       <div className="grid grid-cols-2 gap-3">
         <Field label="Зөв хариулсан үед">
           <Textarea

@@ -102,7 +102,7 @@ export default function ReviewDetailPage() {
         },
         r: () => reviewPanelRef.current?.focusNote(),
         x: () => reviewPanelRef.current?.triggerAction('reject'),
-        e: () => !isReadOnly && (isEditMode ? handleCancelEdit() : handleEnterEdit()),
+        e: () => (isEditMode ? handleCancelEdit() : handleEnterEdit()),
         escape: () => router.push('/admin/review'),
         '?': () => setIsHelpOpen(true),
       }),
@@ -111,8 +111,6 @@ export default function ReviewDetailPage() {
     ),
     !isHelpOpen,
   );
-
-  const isReadOnly = item?.task.source === 'HUMAN';
 
   // Merge saved edits into displayed task for TaskPreview
   const displayTask = item
@@ -153,7 +151,6 @@ export default function ReviewDetailPage() {
           variantId={item.variant_id}
           createdAt={item.created_at}
           mediaStage="stage2"
-          readOnly={isReadOnly}
           isEditMode={isEditMode}
           isSaving={updateMutation.isPending}
           editDraft={editDraft}
