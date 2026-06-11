@@ -29,14 +29,30 @@ export const TASK_TYPE_BLUEPRINT: Record<string, TaskBlueprint> = {
   // S2 — Үгийг зөв бичих
   TT_2_1: { primary_skill: "S2", level_target: "M1", error_targets: ["B1"] },
   TT_2_2: { primary_skill: "S2", level_target: "M1", error_targets: ["B3"] },
-  TT_2_3: { primary_skill: "S2", level_target: "M1", error_targets: ["B1", "B2"] },
+  TT_2_3: {
+    primary_skill: "S2",
+    level_target: "M1",
+    error_targets: ["B1", "B2"],
+  },
   TT_2_4: { primary_skill: "S2", level_target: "M1", error_targets: ["B1"] },
   TT_2_5: { primary_skill: "S2", level_target: "M2", error_targets: ["F2"] },
-  TT_2_6: { primary_skill: "S2", level_target: "M3", error_targets: ["F1", "F3", "F4"] },
+  TT_2_6: {
+    primary_skill: "S2",
+    level_target: "M3",
+    error_targets: ["F1", "F3", "F4"],
+  },
   // S3 — Урт/богино, балархай эгшиг
-  TT_3_1: { primary_skill: "S3", level_target: "M1", error_targets: ["C1", "C2"] },
+  TT_3_1: {
+    primary_skill: "S3",
+    level_target: "M1",
+    error_targets: ["C1", "C2"],
+  },
   TT_3_2: { primary_skill: "S3", level_target: "M1", error_targets: ["C4"] },
-  TT_3_3: { primary_skill: "S3", level_target: "M1", error_targets: ["C1", "C3"] },
+  TT_3_3: {
+    primary_skill: "S3",
+    level_target: "M1",
+    error_targets: ["C1", "C3"],
+  },
   TT_3_4: { primary_skill: "S3", level_target: "M2", error_targets: ["C6"] },
   TT_3_5: { primary_skill: "S3", level_target: "M2", error_targets: ["C5"] },
   // S4 — Гийгүүлэгчийг зөв ялгах
@@ -46,7 +62,11 @@ export const TASK_TYPE_BLUEPRINT: Record<string, TaskBlueprint> = {
   TT_4_4: { primary_skill: "S4", level_target: "M2", error_targets: ["D1"] },
   TT_4_5: { primary_skill: "S4", level_target: "M2", error_targets: ["D2"] },
   // S5 — Залгаварыг зөв залгах
-  TT_5_1: { primary_skill: "S5", level_target: "M2", error_targets: ["E2", "E4"] },
+  TT_5_1: {
+    primary_skill: "S5",
+    level_target: "M2",
+    error_targets: ["E2", "E4"],
+  },
   TT_5_2: { primary_skill: "S5", level_target: "M2", error_targets: ["E2"] },
   TT_5_3: { primary_skill: "S5", level_target: "M2", error_targets: ["E3"] },
   TT_5_4: { primary_skill: "S5", level_target: "M2", error_targets: ["E6"] },
@@ -55,16 +75,36 @@ export const TASK_TYPE_BLUEPRINT: Record<string, TaskBlueprint> = {
   TT_5_7: { primary_skill: "S5", level_target: "M2", error_targets: ["E7"] },
   // S6 — Өгүүлбэрийн тэмдэглэгээ
   TT_6_1: { primary_skill: "S6", level_target: "M1", error_targets: ["G1"] },
-  TT_6_2: { primary_skill: "S6", level_target: "M2", error_targets: ["G2", "G3"] },
+  TT_6_2: {
+    primary_skill: "S6",
+    level_target: "M2",
+    error_targets: ["G2", "G3"],
+  },
   TT_6_3: { primary_skill: "S6", level_target: "M2", error_targets: ["G5"] },
   TT_6_4: { primary_skill: "S6", level_target: "M2", error_targets: ["G4"] },
   // S7 — Цээж бичиг
   TT_7_1: { primary_skill: "S7", level_target: "M0", error_targets: ["B1"] },
-  TT_7_2: { primary_skill: "S7", level_target: "M1", error_targets: ["B4", "H4"] },
-  TT_7_3: { primary_skill: "S7", level_target: "M1", error_targets: ["H1", "B1"] },
+  TT_7_2: {
+    primary_skill: "S7",
+    level_target: "M1",
+    error_targets: ["B4", "H4"],
+  },
+  TT_7_3: {
+    primary_skill: "S7",
+    level_target: "M1",
+    error_targets: ["H1", "B1"],
+  },
   TT_7_4: { primary_skill: "S7", level_target: "M2", error_targets: ["H1"] },
-  TT_7_5: { primary_skill: "S7", level_target: "M2", error_targets: ["B4", "E1"] },
-  TT_7_6: { primary_skill: "S7", level_target: "M3", error_targets: ["H1", "B4"] },
+  TT_7_5: {
+    primary_skill: "S7",
+    level_target: "M2",
+    error_targets: ["B4", "E1"],
+  },
+  TT_7_6: {
+    primary_skill: "S7",
+    level_target: "M3",
+    error_targets: ["H1", "B4"],
+  },
   TT_7_7: { primary_skill: "S7", level_target: "M2", error_targets: ["H1"] },
   // S8 — Алдаагаа зөв таних / засах
   TT_8_1: { primary_skill: "S8", level_target: "M2", error_targets: ["H4"] },
@@ -468,14 +508,14 @@ export const CATEGORY_ORDER = [
 ] as const;
 
 export const SKILL_LABELS: Record<string, string> = {
-  S1: "Үсэг авиаг таних",
-  S2: "Үг зөв бичих",
-  S3: "Урт/богино эгшиг",
-  S4: "Балархай эгшиг",
-  S5: "Залгавар, нөхцөл",
-  S6: "Өгүүлбэрийн тэмдэглэгээ",
-  S7: "Цээжээр бичих",
-  S8: "Алдаа засах",
+  S1: "Үсэг авиаг зөв таних",
+  S2: "Үгийг зөв бичих",
+  S3: "Урт богино, Балархай эгшгийг зөв ялгах",
+  S4: "Гийгүүлэгчийг зөв ялгах",
+  S5: "Залгаварыг зөв залгах",
+  S6: "Өгүүлбэрийн тэмдэглэгээг зөв хийх",
+  S7: "Сонсоод зөв буулгах",
+  S8: "Алдаагаа зөв таних",
 };
 
 export const LEVEL_LABELS: Record<string, string> = {
@@ -496,25 +536,25 @@ export const GRADE_LABELS: Record<string, string> = {
 
 export const ERROR_LABELS: Record<string, string> = {
   A1: "Авиа андуурах",
-  A2: "Үсэг солих",
+  A2: "Ижил төстэй үсэг андуурах",
   A3: "Үеийн бүтэц алдах",
   B1: "Үсэг орхих",
   B2: "Үсэг илүү бичих",
   B3: "Үсгийн байрлал солих",
   B4: "Үгийн хэсэг орхих",
-  C1: "Урт эгшиг орхих",
-  C2: "Урт эгшиг илүүдэх",
-  C3: "Эгшиг андуурах",
-  C4: "Балархай эгшиг орхих",
+  C1: "Урт эгшиг орхиж бичих",
+  C2: "Урт эгшиг илүү бичих",
+  C3: "Эгшиг андуурч бичих",
+  C4: "Балархай эгшиг орхиж бичих",
   C5: "Балархай эгшиг илүүдэх",
-  C6: "Эгшгийн зохицлын алдаа",
-  D1: "Гийгүүлэгч орхих",
-  D2: "Гийгүүлэгч илүүдэх",
+  C6: "Эгшгийн зохицох ёсны алдаа",
+  D1: "Гийгүүлэгч орхиж бичих",
+  D2: "Гийгүүлэгч илүү бичих",
   D3: "Гийгүүлэгч андуурах",
   D4: "Давхар гийгүүлэгчийн алдаа",
   D5: "Үгийн төгсгөлийн гийгүүлэгчийн алдаа",
-  E1: "Залгавар орхигдол",
-  E2: "Буруу залгавар сонголт",
+  E1: "Залгавар орхиж бичих",
+  E2: "Буруу залгавар сонгож бичих",
   E3: "Эр/эм үгийн залгаврын алдаа",
   E4: "Тийн ялгалын алдаа",
   E5: "Олон тоо харьяаллын алдаа",
@@ -541,14 +581,54 @@ export const ERROR_GROUPS: {
   description: string;
   codes: string[];
 }[] = [
-  { key: "A", label: "A бүлэг", description: "Үсэг авиаг андуурах алдаа", codes: ["A1", "A2", "A3"] },
-  { key: "B", label: "B бүлэг", description: "Үсэг орхих, илүү бичих, үсгийн байрыг солих", codes: ["B1", "B2", "B3", "B4"] },
-  { key: "C", label: "C бүлэг", description: "Эгшгийн алдаа", codes: ["C1", "C2", "C3", "C4", "C5", "C6"] },
-  { key: "D", label: "D бүлэг", description: "Гийгүүлэгчийн алдаа", codes: ["D1", "D2", "D3", "D4", "D5"] },
-  { key: "E", label: "E бүлэг", description: "Залгавар, нөхцөлийн алдаа", codes: ["E1", "E2", "E3", "E4", "E5", "E6", "E7"] },
-  { key: "F", label: "F бүлэг", description: "Үгийн хэлбэр ба бүтцийн алдаа", codes: ["F1", "F2", "F3", "F4"] },
-  { key: "G", label: "G бүлэг", description: "Өгүүлбэрийн цэг, таслал, тэмдэглэгээний алдаа", codes: ["G1", "G2", "G3", "G4", "G5"] },
-  { key: "H", label: "H бүлэг", description: "Сонсголт, анхаарал, төвлөрлийн алдаа", codes: ["H1", "H2", "H3", "H4"] },
+  {
+    key: "A",
+    label: "A бүлэг",
+    description: "Үсэг авиаг андуурах алдаа",
+    codes: ["A1", "A2", "A3"],
+  },
+  {
+    key: "B",
+    label: "B бүлэг",
+    description: "Үсэг орхих, илүү бичих, үсгийн байрыг солих",
+    codes: ["B1", "B2", "B3", "B4"],
+  },
+  {
+    key: "C",
+    label: "C бүлэг",
+    description: "Эгшгийн алдаа",
+    codes: ["C1", "C2", "C3", "C4", "C5", "C6"],
+  },
+  {
+    key: "D",
+    label: "D бүлэг",
+    description: "Гийгүүлэгчийн алдаа",
+    codes: ["D1", "D2", "D3", "D4", "D5"],
+  },
+  {
+    key: "E",
+    label: "E бүлэг",
+    description: "Залгавар, нөхцөлийн алдаа",
+    codes: ["E1", "E2", "E3", "E4", "E5", "E6", "E7"],
+  },
+  {
+    key: "F",
+    label: "F бүлэг",
+    description: "Үгийн хэлбэр ба бүтцийн алдаа",
+    codes: ["F1", "F2", "F3", "F4"],
+  },
+  {
+    key: "G",
+    label: "G бүлэг",
+    description: "Өгүүлбэрийн цэг, таслал, тэмдэглэгээний алдаа",
+    codes: ["G1", "G2", "G3", "G4", "G5"],
+  },
+  {
+    key: "H",
+    label: "H бүлэг",
+    description: "Сонсголт, анхаарал, төвлөрлийн алдаа",
+    codes: ["H1", "H2", "H3", "H4"],
+  },
 ];
 
 export const LESSON_SLOT_LABELS: Record<string, string> = {

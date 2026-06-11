@@ -8,23 +8,14 @@ import { useVisited } from "@/hooks/useVisited";
 import { approveVariant, bulkDeleteDrafts } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
-import { TASK_TYPE_INFO } from "@/lib/task-defaults";
+import { TASK_TYPE_INFO, SKILL_LABELS } from "@/lib/task-defaults";
 import { REVIEW_STATUS_META } from "@/lib/status";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableToolbar, TableFooter, SkeletonRows } from "@/components/admin/data-table";
 import type { ReviewItem } from "@/lib/types";
 import { MediaCell } from "./MediaCell";
 
-const SKILL_NAMES: Record<string, string> = {
-  S1: "Үсэг-авиа ялгалт",
-  S2: "Үгийн зөв бичлэг",
-  S3: "Урт/богино эгшиг",
-  S4: "Балархай эгшиг",
-  S5: "Залгавар/нөхцөл",
-  S6: "Өгүүлбэрийн тэмдэглэгээ",
-  S7: "Сонсголоор буулгах",
-  S8: "Алдаа засах",
-};
+const SKILL_NAMES = SKILL_LABELS;
 
 type Tab = "all" | "needs-review" | "ai-passed" | "done";
 type SortOrder = "flagged-first" | "newest" | "oldest";

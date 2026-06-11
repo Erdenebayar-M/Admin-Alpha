@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getLiveTasks, type LiveTaskFilters } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
-import { TASK_TYPE_INFO, GRADE_LABELS } from "@/lib/task-defaults";
+import { TASK_TYPE_INFO, GRADE_LABELS, SKILL_LABELS } from "@/lib/task-defaults";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Lozenge } from "@/components/ui/lozenge";
 import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-table";
@@ -14,16 +14,7 @@ import type { LiveTask } from "@/lib/types";
 import { MediaCell } from "./MediaCell";
 import { useVisited } from "@/hooks/useVisited";
 
-const SKILL_NAMES: Record<string, string> = {
-  S1: "Үсэг-авиа ялгалт",
-  S2: "Үгийн зөв бичлэг",
-  S3: "Урт/богино эгшиг",
-  S4: "Балархай эгшиг",
-  S5: "Залгавар/нөхцөл",
-  S6: "Өгүүлбэрийн тэмдэглэгээ",
-  S7: "Сонсголоор буулгах",
-  S8: "Алдаа засах",
-};
+const SKILL_NAMES = SKILL_LABELS;
 
 function difficultyStars(n: number) {
   return "★".repeat(n) + "☆".repeat(5 - n);
