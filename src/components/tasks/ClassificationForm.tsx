@@ -2,6 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
+import { SectionCard } from "@/components/ui/section-card";
 import { cn } from "@/lib/utils";
 import { Field, ComboSelect } from "./shared";
 import type { FormState, ValidationErrors } from "@/hooks/useTaskForm";
@@ -95,13 +96,16 @@ export function ClassificationForm({
         </Field>
       </div>
 
-      <Field label="Алдааны төрөл">
-        <div className="space-y-3">
+      <div>
+        <p className="mb-2 text-sm font-medium">Алдааны төрөл</p>
+        {form.error_targets.length === 0 && (
+          <p className="mb-2 text-[11px] text-muted-foreground">
+            Даалгаврын төрлөөс автоматаар тогтооно. Гараар өөрчлөх боломжтой.
+          </p>
+        )}
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {ERROR_GROUPS.map((group) => (
-            <div key={group.key}>
-              <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground">
-                {group.label} — {group.description}
-              </p>
+            <SectionCard key={group.key} title={`${group.label} — ${group.description}`}>
               <div className="flex flex-wrap gap-1.5">
                 {group.codes.map((code) => {
                   const active = form.error_targets.includes(code);
@@ -122,15 +126,10 @@ export function ClassificationForm({
                   );
                 })}
               </div>
-            </div>
+            </SectionCard>
           ))}
         </div>
-        {form.error_targets.length === 0 && (
-          <p className="mt-1 text-[11px] text-muted-foreground">
-            Даалгаврын төрлөөс автоматаар тогтооно. Гараар өөрчлөх боломжтой.
-          </p>
-        )}
-      </Field>
+      </div>
     </div>
   );
 }

@@ -7,6 +7,7 @@ import {
   CATEGORY_ORDER,
   TASK_TYPES,
 } from "@/lib/task-defaults";
+import { SectionCard } from "@/components/ui/section-card";
 
 interface TaskTypeSelectorProps {
   value: string;
@@ -29,12 +30,9 @@ export function TaskTypeSelector({ value, onChange, selectedGrades }: TaskTypeSe
   })).filter((g) => g.types.length > 0);
 
   return (
-    <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
       {grouped.map(({ category, label, types }) => (
-        <div key={category}>
-          <p className="mb-2 text-xs font-bold uppercase tracking-wider text-foreground">
-            {label}
-          </p>
+        <SectionCard key={category} title={label}>
           <div className="flex flex-wrap gap-1.5">
             {types.map((t) => {
               const info = TASK_TYPE_INFO[t];
@@ -56,7 +54,7 @@ export function TaskTypeSelector({ value, onChange, selectedGrades }: TaskTypeSe
               );
             })}
           </div>
-        </div>
+        </SectionCard>
       ))}
     </div>
   );

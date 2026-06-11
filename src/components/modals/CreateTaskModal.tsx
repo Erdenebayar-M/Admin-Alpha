@@ -51,10 +51,9 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
     if (!tf.canSubmit) return;
     tf.submit(undefined, {
       onSuccess: (result) => {
-        setToast({ msg: `Даалгавар үүсгэгдлээ: ${result.task_id}`, ok: true });
+        setToast({ msg: `Хяналтанд илгээгдлээ: ${result.task_id}`, ok: true });
         queryClient.invalidateQueries({ queryKey: ["review-queue"] });
         queryClient.invalidateQueries({ queryKey: ["content-stats"] });
-        queryClient.invalidateQueries({ queryKey: ["live-tasks"] });
         setTimeout(() => onClose(), 1500);
       },
       onError: (err: Error) => {
@@ -129,10 +128,6 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
       <form onSubmit={(e) => e.preventDefault()}>
         {step === 0 && (
           <Card>
-            <CardHeader>
-              <CardTitle>Даалгаврын төрөл</CardTitle>
-              <CardDescription>Анги сонгоод даалгаврын төрлийг тодорхойлно уу</CardDescription>
-            </CardHeader>
             <CardContent className="space-y-6">
               <div>
                 <p className="mb-2 text-sm font-medium">
@@ -162,6 +157,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                   })}
                 </div>
               </div>
+
               {tf.form.grade_band.length > 0 && (
                 <div>
                   <p className="mb-2 text-sm font-medium">
@@ -177,6 +173,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                   />
                 </div>
               )}
+
               {tf.form.task_type && (
                 <ClassificationForm
                   form={tf.form}

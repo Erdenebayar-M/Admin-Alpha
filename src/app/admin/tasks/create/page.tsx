@@ -17,7 +17,7 @@ export default function CreateTaskPage() {
         title="Гараар даалгавар нэмэх"
       />
       <div className="px-4 py-6 sm:px-6">
-        <CreateTaskPanel onClose={() => router.push('/admin/tasks')} />
+        <CreateTaskPanel onClose={() => router.push('/admin/review')} />
       </div>
     </div>
   );

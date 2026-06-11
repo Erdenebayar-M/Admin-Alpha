@@ -2,7 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import type { TaskContent } from "@/lib/types";
-import { TASK_TYPE_INFO, GRADE_LABELS, SKILL_LABELS as SKILL_LABELS_DEFAULTS, ERROR_LABELS as ERROR_LABELS_DEFAULTS, deriveImageSide } from "@/lib/task-defaults";
+import { TASK_TYPE_INFO, deriveImageSide } from "@/lib/task-defaults";
+import { SectionCard } from "@/components/ui/section-card";
 import { generateImage, uploadImageToUrl, editVariant } from "@/lib/api";
 import { buildImagePrompt } from "@/lib/imagePromptTemplate";
 import { useState } from "react";
@@ -11,13 +12,6 @@ import { MediaGenerator } from "./MediaGenerator";
 // Handles both full https:// R2 URLs and legacy /content/... local paths
 function resolveAssetUrl(url: string): string {
   return url.startsWith("http") ? url : url;
-}
-
-const SKILL_LABELS = SKILL_LABELS_DEFAULTS;
-const ERROR_LABELS = ERROR_LABELS_DEFAULTS;
-
-function formatGradeBand(bands: string[]): string {
-  return bands.map((g) => GRADE_LABELS[g] ?? g).join(", ") || "—";
 }
 
 
@@ -32,6 +26,7 @@ interface Props {
   createdAt?: string;
   showSaveInHeader?: boolean;
   mediaStage?: string;
+  readOnly?: boolean;
   isEditMode: boolean;
   isSaving: boolean;
   editDraft: Partial<TaskContent>;
@@ -52,6 +47,7 @@ export function TaskPreview({
   createdAt,
   showSaveInHeader = false,
   mediaStage,
+  readOnly = false,
   isEditMode,
   isSaving,
   editDraft,
@@ -114,7 +110,7 @@ export function TaskPreview({
           )}
         </div>
 
-        {isEditMode ? (
+        {!readOnly && (isEditMode ? (
           <div className="flex shrink-0 gap-2">
             {showSaveInHeader && (
               <button
@@ -143,80 +139,10 @@ export function TaskPreview({
           >
             Засах
           </button>
-        )}
-      </div>
-
-      {/* ── Metadata grid ──────────────────────────────────────────────────── */}
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Дасгалын тайлбар</p>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4 gap-y-3 rounded-md bg-muted/40 p-3 text-sm">
-        <MetaItem
-          label="Чадвар"
-          value={
-            <span className="flex items-center gap-1.5">
-              <Chip>{task.primary_skill}</Chip>
-              <span className="text-sm">
-                {SKILL_LABELS[task.primary_skill] ?? task.primary_skill}
-              </span>
-            </span>
-          }
-        />
-        {task.secondary_skill && (
-          <MetaItem
-            label="Дэд чадвар"
-            value={
-              <span className="flex items-center gap-1.5">
-                <Chip>{task.secondary_skill}</Chip>
-                <span className="text-sm">
-                  {SKILL_LABELS[task.secondary_skill] ?? task.secondary_skill}
-                </span>
-              </span>
-            }
-          />
-        )}
-        <MetaItem label="Түвшин" value={<Chip>{task.level_target}</Chip>} />
-        <MetaItem
-          label="Анги"
-          value={
-            <span className="flex flex-wrap gap-1">
-              {task.grade_band.map((g) => (
-                <Chip key={g}>{g}</Chip>
-              ))}
-            </span>
-          }
-        />
-        <MetaItem label="Хүндийн түвшин" value={<span className="text-yellow-500">{"★".repeat(task.difficulty)}{"☆".repeat(5 - task.difficulty)}</span>} />
-        <MetaItem label="Хугацаа" value={`${task.estimated_time_seconds}с`} />
-        <MetaItem
-          label="Хичээлийн үе"
-          value={
-            task.lesson_slot_fit ? <Chip>{task.lesson_slot_fit}</Chip> : "—"
-          }
-        />
-        {task.error_targets.length > 0 && (
-          <div className="col-span-2 sm:col-span-3">
-            <MetaItem
-              label="Алдааны оношилгоо"
-              value={
-                <div className="flex flex-wrap gap-1.5">
-                  {task.error_targets.map((code) => (
-                    <span
-                      key={code}
-                      className="rounded border border-orange-200 bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-800"
-                    >
-                      {code}
-                      {ERROR_LABELS[code] ? ` — ${ERROR_LABELS[code]}` : ""}
-                    </span>
-                  ))}
-                </div>
-              }
-            />
-          </div>
-        )}
+        ))}
       </div>
 
       {/* ── Content section ────────────────────────────────────────────────── */}
-      <div className="border-t border-border" />
-      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Дасгалын заавар</p>
 
       {/* ── Card 1: Агуулга ─────────────────────────────────────────────────── */}
       <SectionCard title="Агуулга">
@@ -336,7 +262,34 @@ export function TaskPreview({
         </SectionCard>
       )}
 
-      {/* ── Card 3: Санал хүсэлт ────────────────────────────────────────────── */}
+      {/* ── Card 3: Медиа ───────────────────────────────────────────────────── */}
+      <SectionCard title="Медиа">
+        {task.audio_url && (
+          <Field label="Аудио">
+            <div className="flex flex-col gap-1">
+              <audio controls src={resolveAssetUrl(task.audio_url)} className="w-full h-8" />
+              <span className="font-mono text-xs text-muted-foreground truncate">{task.audio_url}</span>
+            </div>
+          </Field>
+        )}
+        {task.image_url && (
+          <Field label="Зураг">
+            <img
+              src={resolveAssetUrl(task.image_url)}
+              alt="Даалгаврын зураг"
+              className="rounded-md border border-border max-h-40 object-contain"
+            />
+          </Field>
+        )}
+        <MediaGenerator
+          task={task}
+          variantId={variantId}
+          stage={mediaStage}
+          onMediaAccepted={onMediaAccepted}
+        />
+      </SectionCard>
+
+      {/* ── Card 4: Санал хүсэлт ────────────────────────────────────────────── */}
       <SectionCard title="Санал хүсэлт">
         <Field label="Дүрмийн тайлбар">
           {isEditMode ? (
@@ -389,32 +342,6 @@ export function TaskPreview({
         </div>
       </SectionCard>
 
-      {/* ── Card 4: Медиа ───────────────────────────────────────────────────── */}
-      <SectionCard title="Медиа">
-        {task.audio_url && (
-          <Field label="Аудио">
-            <div className="flex flex-col gap-1">
-              <audio controls src={resolveAssetUrl(task.audio_url)} className="w-full h-8" />
-              <span className="font-mono text-xs text-muted-foreground truncate">{task.audio_url}</span>
-            </div>
-          </Field>
-        )}
-        {task.image_url && (
-          <Field label="Зураг">
-            <img
-              src={resolveAssetUrl(task.image_url)}
-              alt="Даалгаврын зураг"
-              className="rounded-md border border-border max-h-40 object-contain"
-            />
-          </Field>
-        )}
-        <MediaGenerator
-          task={task}
-          variantId={variantId}
-          stage={mediaStage}
-          onMediaAccepted={onMediaAccepted}
-        />
-      </SectionCard>
 
     </div>
   );
@@ -1069,15 +996,3 @@ function MetaItem({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="rounded-md border border-border">
-      <p className="border-b border-border bg-muted/40 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-        {title}
-      </p>
-      <div className="space-y-4 px-4 py-4">
-        {children}
-      </div>
-    </div>
-  );
-}

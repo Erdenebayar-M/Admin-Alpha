@@ -15,6 +15,7 @@ import {
   KeyboardShortcutsHelp,
   ShortcutsHelpButton,
 } from '@/components/review/KeyboardShortcutsHelp';
+import { ExerciseInfoCard } from '@/components/ui/exercise-info-card';
 import type { ReviewAction, TaskContent } from '@/lib/types';
 
 const TOAST_MESSAGES: Record<ReviewAction['action'], string> = {
@@ -101,7 +102,7 @@ export default function ReviewDetailPage() {
         },
         r: () => reviewPanelRef.current?.focusNote(),
         x: () => reviewPanelRef.current?.triggerAction('reject'),
-        e: () => (isEditMode ? handleCancelEdit() : handleEnterEdit()),
+        e: () => !isReadOnly && (isEditMode ? handleCancelEdit() : handleEnterEdit()),
         escape: () => router.push('/admin/review'),
         '?': () => setIsHelpOpen(true),
       }),
@@ -110,6 +111,8 @@ export default function ReviewDetailPage() {
     ),
     !isHelpOpen,
   );
+
+  const isReadOnly = item?.task.source === 'HUMAN';
 
   // Merge saved edits into displayed task for TaskPreview
   const displayTask = item
@@ -150,6 +153,7 @@ export default function ReviewDetailPage() {
           variantId={item.variant_id}
           createdAt={item.created_at}
           mediaStage="stage2"
+          readOnly={isReadOnly}
           isEditMode={isEditMode}
           isSaving={updateMutation.isPending}
           editDraft={editDraft}
@@ -160,8 +164,10 @@ export default function ReviewDetailPage() {
           onMediaAccepted={() => queryClient.invalidateQueries({ queryKey: ['review-item', id] })}
         />
 
-        <ReviewPanel
-          ref={reviewPanelRef}
+        <div className="space-y-5">
+          <ExerciseInfoCard task={displayTask} />
+          <ReviewPanel
+            ref={reviewPanelRef}
           item={item}
           isEditMode={isEditMode}
           isSaving={updateMutation.isPending}
@@ -170,6 +176,7 @@ export default function ReviewDetailPage() {
           onSaveEdit={handleSaveEdit}
           isPending={submitMutation.isPending}
         />
+      </div>
       </div>
 
       {/* Keyboard shortcuts modal */}

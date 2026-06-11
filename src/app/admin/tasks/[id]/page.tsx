@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { getLiveTask, updateLiveTask, deleteLiveTask } from "@/lib/api";
 import { TaskPreview } from "@/components/review/TaskPreview";
 import { PageHeader } from "@/components/ui/page-header";
+import { ExerciseInfoCard } from "@/components/ui/exercise-info-card";
 import type { TaskContent } from "@/lib/types";
 
 export default function LiveTaskDetailPage() {
@@ -130,6 +131,8 @@ export default function LiveTaskDetailPage() {
 
         {/* Action sidebar */}
         <div className="space-y-3">
+          <ExerciseInfoCard task={displayTask} />
+
           {/* Delete */}
           {!isEditMode && (
             <div className="rounded-lg border border-border bg-card p-4 space-y-2">
