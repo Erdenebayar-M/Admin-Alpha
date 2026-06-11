@@ -7,7 +7,6 @@ export const mockReviewItems: ReviewItem[] = [
     task: {
       task_id: 'G12-001',
       task_type: 'TT_2_3',
-      title: 'Зөв үгийг сонго',
       prompt_text: 'Дараах үгийг зөв бичнэ үү: тогоо',
       correct_answer: 'тогоо',
       options: { expected_answers: ['тогоо', 'тогоо', 'тогоо', 'тогоо'] },
@@ -39,7 +38,6 @@ export const mockReviewItems: ReviewItem[] = [
     task: {
       task_id: 'G12-007',
       task_type: 'TT_2_3',
-      title: 'Зөв бичлэг сонго',
       prompt_text: 'Аль нь зөв бичсэн бэ?',
       correct_answer: 'сүү',
       options: { expected_answers: ['сүү', 'суу', 'сүу', 'суү'] },
@@ -71,7 +69,6 @@ export const mockReviewItems: ReviewItem[] = [
     task: {
       task_id: 'G24-012',
       task_type: 'TT_2_3',
-      title: 'Зөв хариуг сонго',
       prompt_text: 'Зөв хариуг сонгоно уу: шувуу',
       correct_answer: 'шувуу',
       options: { expected_answers: ['шувуу', 'шувуу', 'шувуу', 'шувуу'] },
@@ -103,7 +100,6 @@ export const mockReviewItems: ReviewItem[] = [
     task: {
       task_id: 'G24-019',
       task_type: 'TT_7_3',
-      title: 'Сонсоод бичээрэй',
       prompt_text: 'Сонссон үгс болон өгүүлбэрийг бичээрэй.',
       correct_answer: 'сүү;ном;гал',
       options: {
@@ -140,7 +136,6 @@ export const mockReviewItems: ReviewItem[] = [
     task: {
       task_id: 'G12-003',
       task_type: 'TT_7_3',
-      title: 'Сонсоод бичээрэй',
       prompt_text: 'Сонсоод зөв үгийг бичнэ үү.',
       correct_answer: 'тогоо',
       options: {

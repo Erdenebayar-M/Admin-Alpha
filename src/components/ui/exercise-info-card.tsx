@@ -11,8 +11,6 @@ import {
   TASK_TYPE_INFO,
   GRADE_CODES,
   GRADE_LABELS,
-  deriveInteractionForm,
-  INTERACTION_FORM_LABELS,
 } from "@/lib/task-defaults";
 import { TaskTypeSelector } from "@/components/tasks/TaskTypeSelector";
 import type { TaskContent } from "@/lib/types";
@@ -64,8 +62,6 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
   const skillLabel = SKILL_LABELS[task.primary_skill];
   const slotLabel = LESSON_SLOT_LABELS[task.lesson_slot_fit] ?? task.lesson_slot_fit;
   const typeInfo = TASK_TYPE_INFO[task.task_type];
-  const interactionForm = deriveInteractionForm(task.task_type);
-  const interactionFormLabel = interactionForm ? INTERACTION_FORM_LABELS[interactionForm] : null;
 
   const toggleGrade = (g: string) => {
     const next = currentGrades.includes(g)
@@ -86,19 +82,11 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
     return (
       <div className="rounded-lg border border-border bg-card p-4 space-y-3">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Дасгалын тайлбар
+          Дэлгэрэнгүй
         </p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+        <div className="grid grid-cols-1 gap-y-3">
           <MetaRow label="Дасгалын төрөл">
-            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-              <span className="text-sm font-medium">{typeInfo?.label ?? task.task_type}</span>
-              {interactionFormLabel && (
-                <span className="rounded-full border border-border bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                  {interactionFormLabel}
-                </span>
-              )}
-              <DifficultyDots n={task.difficulty} />
-            </div>
+            <span className="text-sm font-medium">{typeInfo?.label ?? task.task_type}</span>
           </MetaRow>
 
           <MetaRow label="Түвшин">

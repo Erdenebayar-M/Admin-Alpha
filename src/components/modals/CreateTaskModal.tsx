@@ -221,7 +221,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                 />
               </CardContent>
             </Card>
-            <ClassificationForm form={tf.form} set={tf.set} errors={tf.errors} />
+            <ClassificationForm form={tf.form} set={tf.set} toggleList={tf.toggleList} errors={tf.errors} />
           </div>
         )}
 
@@ -243,7 +243,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                 />
               </CardContent>
             </Card>
-            <ClassificationForm form={tf.form} set={tf.set} errors={tf.errors} />
+            <ClassificationForm form={tf.form} set={tf.set} toggleList={tf.toggleList} errors={tf.errors} />
           </div>
         )}
 

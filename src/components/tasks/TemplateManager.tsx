@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,12 @@ import { TASK_TYPE_INFO } from "@/lib/task-defaults";
 const STORAGE_KEY = "task_templates";
 const NONE = "__none__";
 
+// localStorage-backed store consumed via useSyncExternalStore so reads are
+// SSR-safe (stable empty server snapshot) without a setState-in-effect.
+const SERVER_SNAPSHOT: TaskTemplate[] = [];
+let cache: TaskTemplate[] | null = null;
+const listeners = new Set<() => void>();
+
 function loadTemplates(): TaskTemplate[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -26,10 +32,26 @@ function loadTemplates(): TaskTemplate[] {
   }
 }
 
+function subscribeTemplates(callback: () => void): () => void {
+  listeners.add(callback);
+  return () => listeners.delete(callback);
+}
+
+function getTemplatesSnapshot(): TaskTemplate[] {
+  if (cache === null) cache = loadTemplates();
+  return cache;
+}
+
+function getServerSnapshot(): TaskTemplate[] {
+  return SERVER_SNAPSHOT;
+}
+
 function saveTemplates(templates: TaskTemplate[]) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(templates));
   } catch { /* non-critical */ }
+  cache = templates;
+  listeners.forEach((l) => l());
 }
 
 interface TemplateManagerProps {
@@ -45,13 +67,13 @@ export function TemplateManager({
   currentForm,
   showSaveOption,
 }: TemplateManagerProps) {
-  const [templates, setTemplates] = useState<TaskTemplate[]>([]);
+  const templates = useSyncExternalStore(
+    subscribeTemplates,
+    getTemplatesSnapshot,
+    getServerSnapshot,
+  );
   const [saving, setSaving] = useState(false);
   const [templateName, setTemplateName] = useState("");
-
-  useEffect(() => {
-    setTemplates(loadTemplates());
-  }, []);
 
   const handleLoad = useCallback(
     (id: string) => {
@@ -65,7 +87,6 @@ export function TemplateManager({
   const handleDelete = useCallback((id: string) => {
     const next = templates.filter((t) => t.id !== id);
     saveTemplates(next);
-    setTemplates(next);
   }, [templates]);
 
   const handleSave = useCallback(() => {
@@ -86,7 +107,6 @@ export function TemplateManager({
     };
     const next = [tpl, ...templates];
     saveTemplates(next);
-    setTemplates(next);
     setTemplateName("");
     setSaving(false);
   }, [templateName, currentForm, templates]);

@@ -2,6 +2,14 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
+function readStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'system';
+  const stored = localStorage.getItem('theme');
+  return stored === 'light' || stored === 'dark' || stored === 'system'
+    ? stored
+    : 'system';
+}
+
 export type Theme = 'light' | 'dark' | 'system';
 
 const ThemeContext = createContext<{
@@ -10,14 +18,7 @@ const ThemeContext = createContext<{
 } | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('system');
-
-  useEffect(() => {
-    const stored = localStorage.getItem('theme') as Theme | null;
-    if (stored === 'light' || stored === 'dark' || stored === 'system') {
-      setThemeState(stored);
-    }
-  }, []);
+  const [theme, setThemeState] = useState<Theme>(readStoredTheme);
 
   useEffect(() => {
     const root = document.documentElement;

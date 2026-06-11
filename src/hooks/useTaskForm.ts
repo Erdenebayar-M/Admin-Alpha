@@ -2,333 +2,32 @@
 
 import { useState, useMemo, useCallback, useRef } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { createTask } from "@/lib/api";
-import type { CreateTaskPayload, CreateTaskResult } from "@/lib/api";
-import type { TaskOptions } from "@/lib/types";
-import { acceptAudio, acceptImage, saveImageAndUpdateTask, saveAudioAndUpdateTask, uploadImageToUrl, editVariant } from "@/lib/api";
+import type { CreateTaskResult } from "@/lib/api";
 import {
   TASK_TYPE_INFO,
   TASK_TYPE_BLUEPRINT,
   computeDefaults,
-  parseLines,
-  deriveInteractionForm,
-  deriveImageSide,
   type OptionGroup,
   type TaskTypeInfo,
 } from "@/lib/task-defaults";
 import type { AudioPreviewState } from "@/components/tasks/AudioPreview";
 import type { ImagePreviewState } from "@/components/tasks/ImagePreview";
+import {
+  INITIAL_FORM,
+  DEFAULT_TRACKABLE_KEYS,
+  STEP1_KEYS,
+  STEP2_KEYS,
+  validateForm,
+  type FormState,
+  type ValidationErrors,
+  type TaskTemplate,
+} from "./task-form/state";
+import { runTaskSubmission } from "./task-form/mutations";
 
-export type FormState = {
-  task_type: string;
-  prompt_text: string;
-  correct_answer: string;
-  image_description: string;
-  primary_skill: string;
-  secondary_skill: string;
-  level_target: string;
-  grade_band: string[];
-  error_targets: string[];
-  difficulty: string;
-  estimated_time_seconds: string;
-  lesson_slot_fit: string;
-  feedback_text: string;
-  feedback_correct: string;
-  feedback_wrong: string;
-  initial_text: string;
-  incorrect_text: string;
-  correct_text: string;
-  hint: string;
-  audio_text: string;
-  word_count: string;
-  allow_partial: boolean;
-  expected_answers: string;
-  // fill (word-level): fillOptions
-  display_text: string;
-  blank_position: number;
-  context_word: string;
-  // sentence_fill: sentenceFillOptions
-  sentence_template: string;
-  context_sentence: string;
-  // mini_text: miniTextOptions
-  sentence_count: number;
-  // self_check: selfCheckOptions
-  original_attempt: string;
-  model_answer: string;
-  comparison_mode: string;
-  // choice extra
-  audio_trigger: boolean;
-  // TT_MATCH_PAIRS: one "left | right" per line
-  pairs_text: string;
-  // per-pair generated images: index → base64
-  pairImages: Record<number, string>;
-  // TT_ASSEMBLE_WORD: space-separated segments in correct order
-  tiles_text: string;
-  // TT_TAP_FIND_ERROR
-  sentence: string;
-  error_word_index: number;
-  // copy
-  text_to_copy: string;
-  // visual_memory
-  display_seconds: number;
-};
-
-export const INITIAL_FORM: FormState = {
-  task_type: "",
-  prompt_text: "",
-  correct_answer: "",
-  image_description: "",
-  primary_skill: "",
-  secondary_skill: "",
-  level_target: "",
-  grade_band: [],
-  error_targets: [],
-  difficulty: "1",
-  estimated_time_seconds: "30",
-  lesson_slot_fit: "CORE",
-  feedback_text: "",
-  feedback_correct: "",
-  feedback_wrong: "",
-  initial_text: "",
-  incorrect_text: "",
-  correct_text: "",
-  hint: "",
-  audio_text: "",
-  word_count: "",
-  allow_partial: false,
-  expected_answers: "",
-  // fill
-  display_text: "",
-  blank_position: 0,
-  context_word: "",
-  // sentence_fill
-  sentence_template: "",
-  context_sentence: "",
-  // mini_text
-  sentence_count: 3,
-  // self_check
-  original_attempt: "",
-  model_answer: "",
-  comparison_mode: "side_by_side",
-  // choice extra
-  audio_trigger: false,
-  // v3
-  pairs_text: "",
-  pairImages: {},
-  tiles_text: "",
-  sentence: "",
-  error_word_index: -1,
-  // copy
-  text_to_copy: "",
-  // visual_memory
-  display_seconds: 3,
-};
-
-export interface ValidationErrors {
-  task_type?: string;
-  grade_band?: string;
-  primary_skill?: string;
-  level_target?: string;
-  difficulty?: string;
-  lesson_slot_fit?: string;
-  prompt_text?: string;
-  correct_answer?: string;
-  incorrect_text?: string;
-  correct_text?: string;
-  audio_text?: string;
-  expected_answers?: string;
-  initial_text?: string;
-  // fill
-  context_word?: string;
-  display_text?: string;
-  // sentence_fill
-  sentence_template?: string;
-  blank_answer?: string;
-  context_sentence?: string;
-  // mini_text
-  sentence_count?: string;
-  // self_check
-  model_answer?: string;
-  comparison_mode?: string;
-  // v3
-  pairs_text?: string;
-  tiles_text?: string;
-  sentence?: string;
-  error_word_index?: string;
-  // copy
-  text_to_copy?: string;
-  // visual_memory
-  display_seconds?: string;
-}
-
-export interface TaskTemplate {
-  id: string;
-  name: string;
-  created_at: string;
-  task_type: string;
-  grade_band: string[];
-  primary_skill: string;
-  secondary_skill: string;
-  level_target: string;
-  difficulty: string;
-  lesson_slot_fit: string;
-  error_targets: string[];
-  estimated_time_seconds: string;
-}
-
-const DEFAULT_TRACKABLE_KEYS = new Set([
-  "difficulty",
-  "level_target",
-  "estimated_time_seconds",
-  "lesson_slot_fit",
-]);
-
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr];
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-function buildOptions(form: FormState, group: OptionGroup): TaskOptions {
-  switch (group) {
-    case "choice": {
-      const wrong = parseLines(form.expected_answers);
-      return {
-        choices: [
-          { text: form.correct_answer, is_correct: true },
-          ...wrong.slice(0, 3).map((t) => ({ text: t, is_correct: false })),
-        ],
-        audio_trigger: form.audio_trigger,
-      };
-    }
-    case "fill": {
-      const ctx = form.context_word.trim();
-      const pos = form.blank_position;
-      const blankAnswer = ctx[pos] ?? form.correct_answer;
-      const displayText = form.display_text.trim() ||
-        (ctx ? ctx.substring(0, pos) + "_" + ctx.substring(pos + 1) : "");
-      return {
-        display_text: displayText,
-        blank_position: pos,
-        blank_answer: blankAnswer,
-        context_word: ctx,
-      };
-    }
-    case "sentence_fill": {
-      return {
-        sentence_template: form.sentence_template,
-        blank_answer: form.correct_answer,
-        context_sentence: form.sentence_template.replace("___", form.correct_answer),
-        ...(form.hint ? { hint: form.hint } : {}),
-      };
-    }
-    case "correction": {
-      return {
-        incorrect_text: form.incorrect_text,
-        correct_text: form.correct_text,
-      };
-    }
-    case "dictation": {
-      const audioText = form.audio_text || form.correct_answer;
-      const wordCount = audioText.trim().split(/\s+/).filter(Boolean).length;
-      return {
-        audio_text: audioText,
-        word_count: wordCount > 0 ? wordCount : 1,
-        expected_answers: [audioText],
-        allow_partial: form.allow_partial,
-      };
-    }
-    case "mini_text": {
-      const audioText = form.audio_text || form.correct_answer;
-      const autoCount = (audioText.match(/[.!?]/g) || []).length;
-      return {
-        audio_text: audioText,
-        sentence_count: Math.min(5, Math.max(2, autoCount || 2)),
-        expected_answers: [audioText],
-      };
-    }
-    case "self_check": {
-      return {
-        original_attempt: form.original_attempt,
-        model_answer: form.model_answer || form.correct_answer,
-        comparison_mode: (form.comparison_mode as "side_by_side" | "highlight_diff") || "side_by_side",
-      };
-    }
-    case "match_pairs": {
-      const rawPairs = parseLines(form.pairs_text)
-        .map((line) => {
-          const sep = line.includes("|") ? "|" : "—";
-          const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
-          return { left, right };
-        })
-        .filter((p) => p.left && p.right);
-      const side = deriveImageSide(form.task_type);
-      // UI always uses "text | imageword"; for TT_3_3 the DB expects left=imageword
-      const pairs = side === "left"
-        ? rawPairs.map((p) => ({ left: p.right, right: p.left }))
-        : rawPairs;
-      return { pairs, image_side: side };
-    }
-    case "assemble_word": {
-      const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
-      return { correct_order: segments, tiles: shuffleArray(segments) };
-    }
-    case "tap_find_error": {
-      return {
-        sentence: form.sentence,
-        error_word_index: form.error_word_index,
-        correct_text: form.correct_text,
-      };
-    }
-    case "copy": {
-      return { text_to_copy: form.text_to_copy };
-    }
-    case "visual_memory": {
-      return {
-        text_to_memorize: form.correct_answer,
-        display_seconds: Math.min(10, Math.max(2, form.display_seconds)),
-      };
-    }
-    default:
-      return {};
-  }
-}
-
-function deriveCorrectAnswer(form: FormState, group: OptionGroup): string {
-  if (group === "match_pairs") {
-    const pairs = parseLines(form.pairs_text)
-      .map((line) => {
-        const sep = line.includes("|") ? "|" : "—";
-        const [left = "", right = ""] = line.split(sep).map((s) => s.trim());
-        return left && right ? `${left}—${right}` : "";
-      })
-      .filter(Boolean);
-    return pairs.join(", ") || form.correct_answer;
-  }
-  if (group === "assemble_word") {
-    const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
-    return segments.join("") || form.correct_answer;
-  }
-  if (group === "tap_find_error") {
-    return form.correct_text || form.correct_answer;
-  }
-  if (group === "correction") {
-    return form.correct_text || form.correct_answer;
-  }
-  if (group === "fill") {
-    return form.context_word || form.correct_answer;
-  }
-  if (group === "self_check") {
-    return form.model_answer || form.correct_answer;
-  }
-  if (group === "copy") {
-    return form.text_to_copy || form.correct_answer;
-  }
-  return form.correct_answer;
-}
+// Re-exported so existing imports of these symbols from "@/hooks/useTaskForm"
+// keep working after the split.
+export { INITIAL_FORM };
+export type { FormState, ValidationErrors, TaskTemplate };
 
 export function useTaskForm() {
   const [form, setForm] = useState<FormState>(INITIAL_FORM);
@@ -520,77 +219,11 @@ export function useTaskForm() {
   }, []);
 
   // Validation
-  const errors = useMemo((): ValidationErrors => {
-    const e: ValidationErrors = {};
-    if (!form.task_type) e.task_type = "Даалгаврын төрөл сонгоно уу";
-    if (form.grade_band.length === 0) e.grade_band = "Ангийн бүлэг сонгоно уу";
-    if (!form.primary_skill) e.primary_skill = "Үндсэн чадвар сонгоно уу";
-    if (!form.level_target) e.level_target = "Түвшин сонгоно уу";
-
-    const d = parseInt(form.difficulty, 10);
-    if (isNaN(d) || d < 1 || d > 5) e.difficulty = "1-5 хоорондох тоо оруулна уу";
-    if (!form.lesson_slot_fit) e.lesson_slot_fit = "Хичээлийн үе сонгоно уу";
-
-    if (!form.prompt_text.trim()) e.prompt_text = "Даалгаврын текст оруулна уу";
-    else if (form.prompt_text.length > 1000) e.prompt_text = "1000 тэмдэгтээс хэтрэхгүй";
-
-    const tt = form.task_type;
-    const currentGroup = tt ? ((TASK_TYPE_INFO[tt]?.groups[0] ?? "choice") as OptionGroup) : null;
-
-    if (currentGroup === "choice") {
-      if (!form.correct_answer.trim()) e.correct_answer = "Зөв хариулт оруулна уу";
-      const lines = parseLines(form.expected_answers);
-      if (lines.length < 2) e.expected_answers = "Хамгийн багадаа 2 буруу сонголт оруулна уу";
-    } else if (currentGroup === "fill") {
-      if (!form.context_word.trim()) e.context_word = "Бүтэн үгийг оруулна уу";
-    } else if (currentGroup === "sentence_fill") {
-      if (!form.sentence_template.trim()) e.sentence_template = "Өгүүлбэрийн загварыг оруулна уу";
-      else if (!form.sentence_template.includes("___")) e.sentence_template = "Загварт ___ цоорхой байх ёстой";
-      if (!form.correct_answer.trim()) e.correct_answer = "Цоорхойд орох зөв үгийг оруулна уу";
-    } else if (currentGroup === "correction") {
-      if (!form.incorrect_text.trim()) e.incorrect_text = "Буруу текст оруулна уу";
-      if (!form.correct_text.trim()) e.correct_text = "Зөв текст оруулна уу";
-    } else if (currentGroup === "dictation") {
-      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Аудио болгох текстийг оруулна уу";
-    } else if (currentGroup === "mini_text") {
-      if (!form.correct_answer.trim() && !form.audio_text.trim()) e.audio_text = "Аудио болгох текстийг оруулна уу";
-    } else if (currentGroup === "self_check") {
-      if (!form.model_answer.trim() && !form.correct_answer.trim()) e.model_answer = "Жишиг хариултыг оруулна уу";
-    } else if (currentGroup === "match_pairs") {
-      const pairs = parseLines(form.pairs_text).filter((l) => l.includes("|") || l.includes("—"));
-      if (pairs.length < 2) e.pairs_text = "Хамгийн багадаа 2 хос оруулна уу (зүүн | баруун)";
-    } else if (currentGroup === "assemble_word") {
-      const segments = form.tiles_text.trim().split(/\s+/).filter(Boolean);
-      if (segments.length < 2) e.tiles_text = "Хамгийн багадаа 2 хэсэг оруулна уу";
-    } else if (currentGroup === "tap_find_error") {
-      if (!form.sentence.trim()) e.sentence = "Өгүүлбэр оруулна уу";
-      if (form.error_word_index < 0) e.error_word_index = "Алдаатай үгийг сонгоно уу";
-      if (!form.correct_text.trim()) e.correct_text = "Засварласан өгүүлбэр оруулна уу";
-    } else if (currentGroup === "copy") {
-      if (!form.text_to_copy.trim()) e.text_to_copy = "Хуулах текстийг оруулна уу";
-    } else if (currentGroup === "visual_memory") {
-      if (!form.correct_answer.trim()) e.correct_answer = "Тогтоох текстийг оруулна уу";
-      if (form.display_seconds < 2 || form.display_seconds > 10) e.display_seconds = "Харуулах хугацаа 2–10 секунд байх ёстой";
-    } else if (!form.correct_answer.trim()) {
-      e.correct_answer = "Зөв хариулт оруулна уу";
-    }
-
-    return e;
-  }, [form]);
-
-  const step1Keys: (keyof ValidationErrors)[] = ["task_type", "grade_band", "primary_skill", "level_target", "difficulty", "lesson_slot_fit"];
-  const step2Keys: (keyof ValidationErrors)[] = [
-    "prompt_text", "correct_answer", "incorrect_text", "correct_text",
-    "audio_text", "expected_answers", "initial_text",
-    "context_word", "display_text", "sentence_template", "blank_answer",
-    "sentence_count", "model_answer", "comparison_mode",
-    "pairs_text", "tiles_text", "sentence", "error_word_index",
-    "text_to_copy", "display_seconds",
-  ];
+  const errors = useMemo((): ValidationErrors => validateForm(form), [form]);
 
   const stepErrors: [boolean, boolean, boolean] = useMemo(() => [
-    step1Keys.some((k) => errors[k]),
-    step2Keys.some((k) => errors[k]),
+    STEP1_KEYS.some((k) => errors[k]),
+    STEP2_KEYS.some((k) => errors[k]),
     false,
   ], [errors]);
 
@@ -603,74 +236,7 @@ export function useTaskForm() {
 
   // Submission
   const mutation = useMutation({
-    mutationFn: async () => {
-      const currentGroup = (TASK_TYPE_INFO[form.task_type]?.groups[0] ?? "choice") as OptionGroup;
-      const canonicalGradeBand = [...new Set(form.grade_band)];
-      const payload: CreateTaskPayload = {
-        task_type: form.task_type,
-        prompt_text: form.prompt_text,
-        correct_answer: deriveCorrectAnswer(form, currentGroup),
-        options: buildOptions(form, currentGroup),
-        primary_skill: form.primary_skill,
-        secondary_skill: form.secondary_skill || null,
-        level_target: form.level_target,
-        error_targets: form.error_targets,
-        grade_band: canonicalGradeBand,
-        difficulty: parseInt(form.difficulty, 10) || 1,
-        estimated_time_seconds: parseInt(form.estimated_time_seconds, 10) || 30,
-        lesson_slot_fit: form.lesson_slot_fit,
-        feedback_text: form.feedback_text,
-        feedback_correct: form.feedback_correct || undefined,
-        feedback_wrong: form.feedback_wrong || undefined,
-        initial_text: form.initial_text || undefined,
-        audio_url: null,
-        image_url: null,
-        interaction_form: deriveInteractionForm(form.task_type),
-      };
-      const result = await createTask(payload);
-
-      try {
-        localStorage.setItem("last_created_task", JSON.stringify(form));
-      } catch { /* localStorage full — non-critical */ }
-
-      // Upload media and update DB before resolving — keeps isPending true until done
-      const saves: Promise<unknown>[] = [];
-      if (audioPreview?.base64) {
-        saves.push(
-          saveAudioAndUpdateTask(audioPreview.base64, result.variant_id, audioPreview.slot)
-            .catch((err) => console.error('Failed to save audio:', err)),
-        );
-      }
-      if (imagePreview?.base64) {
-        saves.push(
-          saveImageAndUpdateTask(imagePreview.base64, result.variant_id)
-            .catch((err) => console.error('Failed to save image:', err)),
-        );
-      }
-      await Promise.all(saves);
-
-      // Upload per-pair images and patch options
-      const pairEntries = Object.entries(form.pairImages);
-      if (pairEntries.length > 0) {
-        const builtPairs = (buildOptions(form, currentGroup) as { pairs?: Array<{ left: string; right: string; left_image_url?: string; right_image_url?: string }> }).pairs ?? [];
-        const side = deriveImageSide(form.task_type);
-        const field = side === 'right' ? 'right_image_url' : 'left_image_url';
-        const updatedPairs = [...builtPairs];
-        await Promise.all(
-          pairEntries.map(async ([idx, base64]) => {
-            try {
-              const url = await uploadImageToUrl(base64);
-              updatedPairs[Number(idx)] = { ...updatedPairs[Number(idx)], [field]: url };
-            } catch (err) {
-              console.error(`Failed to save pair image ${idx}:`, err);
-            }
-          }),
-        );
-        await editVariant(result.variant_id, { options: { ...buildOptions(form, currentGroup), pairs: updatedPairs } }).catch((err) => console.error('Failed to update pair images:', err));
-      }
-
-      return result;
-    },
+    mutationFn: async () => runTaskSubmission({ form, audioPreview, imagePreview }),
   });
 
   return {

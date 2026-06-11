@@ -7,6 +7,7 @@ const SHORTCUTS: { keys: string[]; description: string }[] = [
   { keys: ["R"], description: "Тэмдэглэл рүү шилжих" },
   { keys: ["X"], description: "Даалгавар устгах" },
   { keys: ["E"], description: "Засах горим нэмэх/хасах" },
+  { keys: ["S"], description: "Засварыг хадгалах (засах горимд)" },
   { keys: ["Esc"], description: "Дараалал руу буцах" },
   { keys: ["←"], description: "Өмнөх зүйл" },
   { keys: ["→"], description: "Дараагийн зүйл" },

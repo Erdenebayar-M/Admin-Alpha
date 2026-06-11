@@ -7,6 +7,7 @@ import {
   SKILL_LABELS,
   SKILLS,
   TASK_TYPES,
+  computeDefaults,
   deriveInteractionForm,
   INTERACTION_FORM_LABELS,
 } from "@/lib/task-defaults";
@@ -44,7 +45,7 @@ export function TaskTypeSelector({ value, onChange, selectedGrades }: TaskTypeSe
               const selected = value === t;
               const form = deriveInteractionForm(t);
               const formLabel = form ? INTERACTION_FORM_LABELS[form] : null;
-              const difficulty = Number(TASK_TYPE_BLUEPRINT[t]?.difficulty ?? 1);
+              const difficulty = Number(computeDefaults(t, selectedGrades ?? []).difficulty);
               return (
                 <button
                   key={t}

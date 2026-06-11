@@ -35,6 +35,8 @@ export function variantToReviewItem(v: TaskVariant): ReviewItem {
       estimated_time_seconds: v.estimated_time_seconds ?? 0,
       lesson_slot_fit: v.lesson_slot_fit ?? "",
       feedback_text: v.feedback_text ?? "",
+      feedback_correct: v.feedback_correct ?? undefined,
+      feedback_wrong: v.feedback_wrong ?? undefined,
       initial_text: v.initial_text ?? undefined,
       source: v.source,
     },
