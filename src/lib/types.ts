@@ -159,3 +159,36 @@ export interface ContentStats {
     approved_today: number;
   };
 }
+
+/** User-activity stats from GET /api/admin/stats (learner data, not content). */
+export interface ActivityStats {
+  totals: {
+    parents: number;
+    learners: number;
+    diagnostic_sessions: number;
+    plans: number;
+    lessons: number;
+    attempts: number;
+    error_logs: number;
+    checkpoints: number;
+  };
+  learners_by_variant: Record<string, number>;
+  learners_by_grade: Record<string, number>;
+  diagnostic_by_status: Record<string, number>;
+  plans_by_template: Record<string, number>;
+  lessons_by_status: Record<string, number>;
+  level_distribution: Record<string, number>;
+  score_distribution: Record<string, number>;
+  top_error_codes: Array<{ code: string; count: number }>;
+  averages: {
+    lesson_accuracy: number | null;
+    attempt_score: number | null;
+    attempt_time_seconds: number | null;
+    current_streak: number | null;
+  };
+  longest_streak: number;
+  activity: {
+    attempts_last_hour: number;
+    last_attempt_at: string | null;
+  };
+}

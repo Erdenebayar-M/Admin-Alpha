@@ -18,9 +18,20 @@ const ThemeContext = createContext<{
 } | null>(null);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>(readStoredTheme);
+  // Start with 'system' so the first client render matches the server (which
+  // can't read localStorage). The stored theme is loaded right after mount.
+  const [theme, setThemeState] = useState<Theme>('system');
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setThemeState(readStoredTheme());
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    // Until mounted, the inline theme-init script already set the correct class.
+    // Don't re-apply yet, or we'd briefly fight it with the default 'system'.
+    if (!mounted) return;
     const root = document.documentElement;
 
     const apply = (t: Theme) => {
@@ -41,7 +52,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       mql.addEventListener('change', handler);
       return () => mql.removeEventListener('change', handler);
     }
-  }, [theme]);
+  }, [theme, mounted]);
 
   const setTheme = (t: Theme) => {
     setThemeState(t);

@@ -1,5 +1,6 @@
 import axios from "axios";
 import type {
+  ActivityStats,
   ContentStats,
   ReviewAction,
   TaskContent,
@@ -10,6 +11,20 @@ import type {
 } from "./types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
+
+const errorInterceptor = (err: unknown): Promise<never> => {
+  const e = err as { response?: { data?: unknown }; message?: string };
+  const data = e.response?.data as
+    | { message?: string; error?: string | { message?: string } }
+    | undefined;
+  const msg =
+    data?.message ??
+    (typeof data?.error === "string" ? data.error : data?.error?.message) ??
+    e.message ??
+    "Request failed";
+  return Promise.reject(new Error(msg));
+};
+
 const client = axios.create({
   baseURL: `/api/admin/content`,
   headers: {
@@ -17,22 +32,22 @@ const client = axios.create({
     Authorization: `Bearer ${ADMIN_TOKEN}`,
   },
 });
+client.interceptors.response.use((r) => r, errorInterceptor);
 
-client.interceptors.response.use(
-  (r) => r,
-  (err) => {
-    const data = err.response?.data as
-      | { message?: string; error?: string | { message?: string } }
-      | undefined;
-    const msg =
-      data?.message ??
-      (typeof data?.error === "string"
-        ? data.error
-        : data?.error?.message) ??
-      err.message;
-    return Promise.reject(new Error(msg));
+// User-activity stats live at /api/admin/stats (outside /content).
+const adminClient = axios.create({
+  baseURL: `/api/admin`,
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${ADMIN_TOKEN}`,
   },
-);
+});
+adminClient.interceptors.response.use((r) => r, errorInterceptor);
+
+export async function getActivityStats(): Promise<ActivityStats> {
+  const { data } = await adminClient.get<{ success: boolean; data: ActivityStats }>("/stats");
+  return data.data;
+}
 
 export interface TaskFilters {
   stage?: string;
