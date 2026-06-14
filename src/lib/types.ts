@@ -160,6 +160,123 @@ export interface ContentStats {
   };
 }
 
+/** Summary row from GET /api/admin/learners */
+export interface AdminLearner {
+  id: string;
+  name: string;
+  grade: number;
+  variant: string;
+  daily_minutes: number;
+  created_at: string;
+  parent_email: string;
+  general_level: string;
+  current_streak: number;
+  longest_streak: number;
+  weak_skills: string[];
+  top_error_codes: string[];
+  attempt_count: number;
+  lesson_count: number;
+}
+
+export interface AdminLearnerSkillState {
+  general_level: string;
+  s1_score: number; s2_score: number; s3_score: number; s4_score: number;
+  s5_score: number; s6_score: number; s7_score: number; s8_score: number;
+  s1_level: string; s2_level: string; s3_level: string; s4_level: string;
+  s5_level: string; s6_level: string; s7_level: string; s8_level: string;
+  s1_confidence: string; s2_confidence: string; s3_confidence: string; s4_confidence: string;
+  s5_confidence: string; s6_confidence: string; s7_confidence: string; s8_confidence: string;
+  top_error_codes: string[];
+  weak_skills: string[];
+  recent_error_codes: string[];
+  preferred_session_length: number;
+  current_streak: number;
+  longest_streak: number;
+  updated_at: string;
+}
+
+export interface AdminPlanLesson {
+  id: string;
+  day_number: number;
+  status: string;
+  accuracy: number | null;
+  primary_skill: string;
+  scheduled_date: string;
+  completed_at: string | null;
+}
+
+export interface AdminCheckpoint {
+  status: string;
+  decision: string | null;
+  scheduled_date: string;
+  completed_at: string | null;
+  result: unknown;
+}
+
+export interface AdminActivePlan {
+  template: string;
+  status: string;
+  source: string;
+  priority_skills: string[];
+  target_errors: string[];
+  current_day: number;
+  total_days: number;
+  daily_minutes: number;
+  started_at: string;
+  ended_at: string | null;
+  lesson_counts: { total: number; completed: number; in_progress: number; pending: number };
+  schedule: AdminPlanLesson[];
+  checkpoints: AdminCheckpoint[];
+}
+
+export interface AdminRecentLesson {
+  id: string;
+  day_number: number;
+  accuracy: number | null;
+  completed_at: string | null;
+  primary_skill: string;
+}
+
+export interface AdminDiagnosticResult {
+  general_level: string | null;
+  skill_levels: Record<string, string>;
+  top_errors: string[];
+  priority_skills: string[];
+}
+
+export interface AdminDiagnostic {
+  status: string;
+  current_phase: string;
+  phase_a_completed: boolean;
+  phase_b_completed: boolean;
+  phase_c_completed: boolean;
+  phase_counts: {
+    a_expected: number;
+    b_expected: number | null;
+    c_expected: number;
+  } | null;
+  weak_skills_detected: string[];
+  result: AdminDiagnosticResult | null;
+  started_at: string;
+  completed_at: string | null;
+  attempt_count: number;
+}
+
+/** Full detail from GET /api/admin/learners/:id */
+export interface AdminLearnerDetail {
+  id: string;
+  name: string;
+  grade: number;
+  variant: string;
+  daily_minutes: number;
+  created_at: string;
+  parent_email: string;
+  skill_state: AdminLearnerSkillState | null;
+  active_plan: AdminActivePlan | null;
+  recent_lessons: AdminRecentLesson[];
+  diagnostic: AdminDiagnostic | null;
+}
+
 /** User-activity stats from GET /api/admin/stats (learner data, not content). */
 export interface ActivityStats {
   totals: {

@@ -1,6 +1,8 @@
 import axios from "axios";
 import type {
   ActivityStats,
+  AdminLearner,
+  AdminLearnerDetail,
   ContentStats,
   ReviewAction,
   TaskContent,
@@ -46,6 +48,27 @@ adminClient.interceptors.response.use((r) => r, errorInterceptor);
 
 export async function getActivityStats(): Promise<ActivityStats> {
   const { data } = await adminClient.get<{ success: boolean; data: ActivityStats }>("/stats");
+  return data.data;
+}
+
+export interface AdminLearnersPage {
+  learners: AdminLearner[];
+  meta: { page: number; per_page: number; total: number; has_next: boolean };
+}
+
+export async function getAdminLearners(
+  page = 1,
+  search = '',
+  per_page = 50,
+): Promise<AdminLearnersPage> {
+  const { data } = await adminClient.get<{ success: boolean; data: AdminLearnersPage }>("/learners", {
+    params: { page, per_page, ...(search ? { search } : {}) },
+  });
+  return data.data;
+}
+
+export async function getAdminLearner(id: string): Promise<AdminLearnerDetail> {
+  const { data } = await adminClient.get<{ success: boolean; data: AdminLearnerDetail }>(`/learners/${id}`);
   return data.data;
 }
 
