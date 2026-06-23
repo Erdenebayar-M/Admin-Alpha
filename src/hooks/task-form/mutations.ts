@@ -45,6 +45,9 @@ export async function runTaskSubmission({
     level_target: form.level_target,
     error_targets: form.error_targets,
     grade_band: canonicalGradeBand,
+    grade_levels: form.grade_levels.length > 0
+      ? form.grade_levels
+      : canonicalGradeBand.map((g) => `${g}:${form.level_target || 'M0'}`),
     difficulty: parseInt(form.difficulty, 10) || 1,
     estimated_time_seconds: parseInt(form.estimated_time_seconds, 10) || 30,
     lesson_slot_fit: form.lesson_slot_fit,

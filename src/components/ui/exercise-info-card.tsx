@@ -12,6 +12,8 @@ import {
   GRADE_CODES,
   GRADE_LABELS,
 } from "@/lib/task-defaults";
+
+const LEVEL_ORDER_CARD = ["M0", "M1", "M2", "M3", "M4", "M5"] as const;
 import { TaskTypeSelector } from "@/components/tasks/TaskTypeSelector";
 import type { TaskContent } from "@/lib/types";
 import { DifficultyDots } from "@/components/ui/difficulty-dots";
@@ -27,6 +29,7 @@ interface Props {
     | "primary_skill"
     | "level_target"
     | "grade_band"
+    | "grade_levels"
     | "difficulty"
     | "estimated_time_seconds"
     | "lesson_slot_fit"
@@ -56,6 +59,7 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
   const patch = (p: Partial<TaskContent>) => onDraftChange?.(p);
 
   const currentGrades = v("grade_band") as string[];
+  const currentGradeLevels = v("grade_levels") as string[];
   const currentErrors = v("error_targets") as string[];
   const currentType = v("task_type") as string;
 
@@ -63,11 +67,30 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
   const slotLabel = LESSON_SLOT_LABELS[task.lesson_slot_fit] ?? task.lesson_slot_fit;
   const typeInfo = TASK_TYPE_INFO[task.task_type];
 
+  // grade → level map from grade_levels cells
+  const gradeLevelMap = (): Record<string, string> => {
+    const map: Record<string, string> = {};
+    for (const cell of currentGradeLevels) {
+      const [g, l] = cell.split(":");
+      if (g && l) map[g] = l;
+    }
+    return map;
+  };
+
+  const setGradeLevel = (grade: string, level: string) => {
+    const filtered = currentGradeLevels.filter((c) => !c.startsWith(`${grade}:`));
+    patch({ grade_levels: [...filtered, `${grade}:${level}`] });
+  };
+
   const toggleGrade = (g: string) => {
-    const next = currentGrades.includes(g)
+    const isRemoving = currentGrades.includes(g);
+    const nextBand = isRemoving
       ? currentGrades.filter((x) => x !== g)
       : [...currentGrades, g];
-    patch({ grade_band: next });
+    const nextLevels = isRemoving
+      ? currentGradeLevels.filter((c) => !c.startsWith(`${g}:`))
+      : [...currentGradeLevels, `${g}:${gradeLevelMap()[currentGrades[0]] ?? "M0"}`];
+    patch({ grade_band: nextBand, grade_levels: nextLevels });
   };
 
   const toggleError = (code: string) => {
@@ -106,8 +129,21 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
             <DifficultyDots n={task.difficulty} />
           </MetaRow>
 
-          <MetaRow label="Анги">
-            <span>{task.grade_band.length > 0 ? task.grade_band.join(", ") : "—"}</span>
+          <MetaRow label="Анги / Түвшин">
+            {task.grade_levels && task.grade_levels.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {task.grade_levels.map((cell) => {
+                  const [g, l] = cell.split(":");
+                  return (
+                    <span key={cell} className="rounded border border-border bg-muted px-1.5 py-0.5 text-xs font-mono">
+                      {GRADE_LABELS[g] ?? g} · {l}
+                    </span>
+                  );
+                })}
+              </div>
+            ) : (
+              <span>{task.grade_band.length > 0 ? task.grade_band.join(", ") : "—"}</span>
+            )}
           </MetaRow>
 
           <MetaRow label="Хугацаа">
@@ -185,14 +221,6 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
                 options={SKILLS.map((s) => ({ value: s, label: `${s} — ${SKILL_LABELS[s]}` }))}
               />
             </Field>
-            <Field label="Түвшин">
-              <ComboSelect
-                value={v("level_target") as string}
-                onChange={(val) => patch({ level_target: val })}
-                placeholder="Сонгох…"
-                options={LEVELS.map((l) => ({ value: l, label: `${l} — ${LEVEL_LABELS[l]}` }))}
-              />
-            </Field>
           </div>
 
           <div className="space-y-4">
@@ -223,23 +251,42 @@ export function ExerciseInfoCard({ task, isEditing, draft, onDraftChange }: Prop
             </Field>
           </div>
 
-          <Field label="Анги">
-            <div className="flex flex-wrap gap-2">
-              {GRADE_CODES.map((g) => (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => toggleGrade(g)}
-                  className={cn(
-                    "rounded-lg border px-5 py-3 text-sm font-semibold transition-all",
-                    currentGrades.includes(g)
-                      ? "border-primary bg-primary/5 ring-2 ring-primary text-foreground"
-                      : "border-border hover:border-foreground/20 hover:bg-muted/50 text-muted-foreground",
-                  )}
-                >
-                  {GRADE_LABELS[g]}
-                </button>
-              ))}
+          <Field label="Анги / Түвшин">
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                {GRADE_CODES.map((g) => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => toggleGrade(g)}
+                    className={cn(
+                      "rounded-lg border px-5 py-3 text-sm font-semibold transition-all",
+                      currentGrades.includes(g)
+                        ? "border-primary bg-primary/5 ring-2 ring-primary text-foreground"
+                        : "border-border hover:border-foreground/20 hover:bg-muted/50 text-muted-foreground",
+                    )}
+                  >
+                    {GRADE_LABELS[g]}
+                  </button>
+                ))}
+              </div>
+              {currentGrades.length > 0 && (
+                <div className="space-y-1 pt-1">
+                  {currentGrades.map((g) => (
+                    <div key={g} className="flex items-center gap-2">
+                      <span className="w-16 text-xs font-semibold text-muted-foreground shrink-0">
+                        {GRADE_LABELS[g]}
+                      </span>
+                      <ComboSelect
+                        value={gradeLevelMap()[g] ?? "M0"}
+                        onChange={(val) => setGradeLevel(g, val)}
+                        placeholder="Түвшин…"
+                        options={LEVEL_ORDER_CARD.map((l) => ({ value: l, label: `${l} — ${LEVEL_LABELS[l]}` }))}
+                      />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </Field>
         </CardContent>

@@ -5,9 +5,29 @@ import { TASK_TYPE_INFO } from "./task-types";
 export * from "./task-types";
 export * from "./task-labels";
 
+const LEVEL_CODES_ADMIN = ["M0", "M1", "M2", "M3", "M4", "M5"] as const;
+
+function buildGradeLevels(gradeBands: string[], levelTarget: string): string[] {
+  const rangeMatch = levelTarget.match(/^(M[0-5])-(M[0-5])$/);
+  let levels: string[];
+  if (rangeMatch) {
+    const start = (LEVEL_CODES_ADMIN as readonly string[]).indexOf(rangeMatch[1]);
+    const end = (LEVEL_CODES_ADMIN as readonly string[]).indexOf(rangeMatch[2]);
+    levels = start >= 0 && end >= 0 ? [...LEVEL_CODES_ADMIN].slice(start, end + 1) : ["M0"];
+  } else {
+    levels = (LEVEL_CODES_ADMIN as readonly string[]).includes(levelTarget) ? [levelTarget] : ["M0"];
+  }
+  const cells: string[] = [];
+  for (const g of gradeBands) {
+    for (const l of levels) cells.push(`${g}:${l}`);
+  }
+  return cells;
+}
+
 interface DefaultValues {
   difficulty: string;
   level_target: string;
+  grade_levels: string[];
   estimated_time_seconds: string;
   lesson_slot_fit: string;
 }
@@ -23,6 +43,7 @@ export function computeDefaults(
     return {
       difficulty: "1",
       level_target: "M0",
+      grade_levels: buildGradeLevels(gradeBands, "M0"),
       estimated_time_seconds: "30",
       lesson_slot_fit: "CORE",
     };
@@ -113,6 +134,7 @@ export function computeDefaults(
   return {
     difficulty: String(difficulty),
     level_target: level,
+    grade_levels: buildGradeLevels(gradeBands, level),
     estimated_time_seconds: String(time),
     lesson_slot_fit: slot,
   };

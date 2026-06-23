@@ -13,6 +13,7 @@ export type FormState = {
   secondary_skill: string;
   level_target: string;
   grade_band: string[];
+  grade_levels: string[];
   error_targets: string[];
   difficulty: string;
   estimated_time_seconds: string;
@@ -67,6 +68,7 @@ export const INITIAL_FORM: FormState = {
   secondary_skill: "",
   level_target: "",
   grade_band: [],
+  grade_levels: [],
   error_targets: [],
   difficulty: "1",
   estimated_time_seconds: "30",

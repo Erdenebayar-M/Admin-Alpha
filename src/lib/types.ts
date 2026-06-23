@@ -55,6 +55,7 @@ export interface TaskContent {
   level_target: string;
   error_targets: string[];
   grade_band: string[];
+  grade_levels: string[];
   difficulty: number;
   estimated_time_seconds: number;
   lesson_slot_fit: string;
