@@ -149,6 +149,61 @@ export interface LiveTaskListResponse {
   data: { total: number; tasks: LiveTask[]; meta: PaginationMeta };
 }
 
+// ─── Word bank ──────────────────────────────────────────────────────────────
+
+export interface WordBankEntry {
+  id: string;
+  word: string;
+  category: string;
+  grade_band: string[];
+  char_count: number;
+  syllable_count: number;
+  grade: number | null;
+  app_level: string | null;
+  meaning_complexity: number | null;
+  spelling_complexity: number | null;
+  morph_complexity: number | null;
+  suggested_exercises: string | null;
+  spelling_tag: string | null;
+  part_of_speech: string | null;
+  meaning_type: string | null;
+}
+
+export interface WordsListResponse {
+  success: boolean;
+  data: { words: WordBankEntry[]; total: number; meta: PaginationMeta };
+}
+
+export interface WordFacets {
+  grades: number[];
+  categories: string[];
+  app_levels: string[];
+}
+
+export interface WordImportSummary {
+  parsed: number;
+  kept: number;
+  removed_review: number;
+  removed_duplicate: number;
+  removed_orthography: number;
+}
+
+export interface WordImportDropped {
+  no: number;
+  word: string;
+  reason: "review" | "duplicate" | "orthography";
+  detail?: string;
+}
+
+export interface WordImportResult {
+  committed: boolean;
+  grade: number | null;
+  prefix: string;
+  summary: WordImportSummary;
+  dropped?: WordImportDropped[];
+  imported?: number;
+}
+
 export interface ContentStats {
   pipeline: {
     stage1: number;

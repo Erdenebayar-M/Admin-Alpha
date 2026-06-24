@@ -10,6 +10,10 @@ import type {
   TaskVariant,
   TaskListResponse,
   TaskVariantResponse,
+  WordBankEntry,
+  WordsListResponse,
+  WordFacets,
+  WordImportResult,
 } from "./types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
@@ -355,5 +359,41 @@ export async function generateTasks(
     success: boolean;
     data: { results: GenerateTaskResult[]; total_cost_usd: number };
   }>('/generate', { task_ids, max_items, max_cost });
+  return data.data;
+}
+
+// ─── Word bank ────────────────────────────────────────────────────────────────
+
+export interface WordFilters {
+  grade?: number;
+  category?: string;
+  app_level?: string;
+  q?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export async function getWords(
+  filters: WordFilters = {},
+): Promise<{ words: WordBankEntry[]; total: number; meta: WordsListResponse['data']['meta'] }> {
+  const { data } = await client.get<WordsListResponse>('/words', { params: filters });
+  return data.data;
+}
+
+export async function getWordFacets(): Promise<WordFacets> {
+  const { data } = await client.get<{ success: boolean; data: WordFacets }>('/words/facets');
+  return data.data;
+}
+
+/** Upload an xlsx. `commit=false` previews (no writes); `commit=true` replaces that grade. */
+export async function importWords(file: File, commit: boolean): Promise<WordImportResult> {
+  const form = new FormData();
+  form.append('file', file);
+  form.append('commit', String(commit));
+  const { data } = await client.post<{ success: boolean; data: WordImportResult }>(
+    '/words/import',
+    form,
+    { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
   return data.data;
 }
