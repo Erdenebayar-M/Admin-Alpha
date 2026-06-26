@@ -369,6 +369,7 @@ export interface WordFilters {
   category?: string;
   app_level?: string;
   q?: string;
+  active?: 'true' | 'false' | 'all';
   page?: number;
   per_page?: number;
 }
@@ -383,6 +384,28 @@ export async function getWords(
 export async function getWordFacets(): Promise<WordFacets> {
   const { data } = await client.get<{ success: boolean; data: WordFacets }>('/words/facets');
   return data.data;
+}
+
+export interface PatchWordResult {
+  action: string;
+  id: string;
+  updated_fields: string[];
+  rederived: boolean;
+}
+
+export async function patchWord(
+  id: string,
+  updates: Record<string, unknown>,
+): Promise<PatchWordResult> {
+  const { data } = await client.patch<{ success: boolean; data: PatchWordResult }>(
+    `/words/${id}`,
+    updates,
+  );
+  return data.data;
+}
+
+export async function deactivateWord(id: string): Promise<void> {
+  await client.delete(`/words/${id}`);
 }
 
 /** Upload an xlsx. `commit=false` previews (no writes); `commit=true` replaces that grade. */

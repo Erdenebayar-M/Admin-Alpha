@@ -167,6 +167,9 @@ export interface WordBankEntry {
   spelling_tag: string | null;
   part_of_speech: string | null;
   meaning_type: string | null;
+  image_url: string | null;
+  is_active: boolean;
+  balarhai_unknown: boolean | null;
 }
 
 export interface WordsListResponse {

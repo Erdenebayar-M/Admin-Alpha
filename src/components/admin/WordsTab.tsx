@@ -1,45 +1,177 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { Upload } from "lucide-react";
-import { getWords, getWordFacets, type WordFilters } from "@/lib/api";
+import { createPortal } from "react-dom";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, EyeOff, Eye, Loader2 } from "lucide-react";
+import { getWords, getWordFacets, deactivateWord, type WordFilters } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-table";
-import { ImportWordsModal } from "@/components/words/ImportWordsModal";
+import { MediaCell } from "@/components/admin/MediaCell";
+import { EditWordModal } from "@/components/words/EditWordModal";
+import { useModalStore } from "@/lib/modal-store";
 import type { WordBankEntry } from "@/lib/types";
 
 const PER_PAGE = 50;
 
+const btnBase =
+  "min-w-[2rem] rounded-lg border px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+const btnIdle = "border-border bg-background text-foreground hover:bg-muted";
+const btnActive = "border-primary bg-primary text-primary-foreground shadow-sm";
+
+function Pagination({
+  page,
+  total,
+  perPage,
+  onChange,
+}: {
+  page: number;
+  total: number;
+  perPage: number;
+  onChange: (p: number) => void;
+}) {
+  const lastPage = Math.max(1, Math.ceil(total / perPage));
+
+  const range: (number | "…")[] = [];
+  const add = (n: number) => {
+    if (!range.length || range[range.length - 1] !== n) range.push(n);
+  };
+  for (let p = 1; p <= lastPage; p++) {
+    if (p === 1 || p === lastPage || Math.abs(p - page) <= 2) {
+      if (range.length && typeof range[range.length - 1] === "number" && (range[range.length - 1] as number) < p - 1) {
+        range.push("…");
+      }
+      add(p);
+    }
+  }
+
+  return (
+    <div className="mt-4 flex items-center justify-center gap-1.5">
+      <button type="button" disabled={page <= 1} onClick={() => onChange(1)} className={cn(btnBase, btnIdle)} title="Эхний хуудас">«</button>
+      <button type="button" disabled={page <= 1} onClick={() => onChange(page - 1)} className={cn(btnBase, btnIdle)}>‹</button>
+
+      {range.map((r, i) =>
+        r === "…" ? (
+          <span key={`gap-${i}`} className="px-1 text-sm text-muted-foreground">…</span>
+        ) : (
+          <button key={r} type="button" onClick={() => onChange(r)} className={cn(btnBase, r === page ? btnActive : btnIdle)}>
+            {r}
+          </button>
+        ),
+      )}
+
+      <button type="button" disabled={page >= lastPage} onClick={() => onChange(page + 1)} className={cn(btnBase, btnIdle)}>›</button>
+      <button type="button" disabled={page >= lastPage} onClick={() => onChange(lastPage)} className={cn(btnBase, btnIdle)} title="Сүүлийн хуудас">»</button>
+
+      <span className="ml-2 text-xs text-muted-foreground tabular-nums">
+        {(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} / {total} үг
+      </span>
+    </div>
+  );
+}
+
 function ComplexityCell({ m, s, mo }: { m: number | null; s: number | null; mo: number | null }) {
   const fmt = (n: number | null) => (n == null ? "—" : String(n));
+  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+
+  const tooltip = anchor
+    ? createPortal(
+        <span
+          className="pointer-events-none fixed z-[9999] whitespace-nowrap rounded-lg border border-border bg-popover px-3 py-2 text-left text-xs text-popover-foreground shadow-xl"
+          style={{ left: anchor.x, top: anchor.y - 8, transform: "translate(-50%, -100%)" }}
+        >
+          <span className="block">Утгын төвөгшил: <b>{fmt(m)}</b></span>
+          <span className="block">Зөв бичих төвөгшил: <b>{fmt(s)}</b></span>
+          <span className="block">Морфологийн төвөгшил: <b>{fmt(mo)}</b></span>
+        </span>,
+        document.body,
+      )
+    : null;
+
   return (
-    <span className="font-mono text-xs tabular-nums text-muted-foreground" title="Утга / Зөв бичих / Морфологи">
+    <span
+      className="cursor-help font-mono text-xs tabular-nums text-muted-foreground"
+      onMouseEnter={(e) => setAnchor({ x: e.clientX, y: e.clientY })}
+      onMouseMove={(e) => setAnchor({ x: e.clientX, y: e.clientY })}
+      onMouseLeave={() => setAnchor(null)}
+    >
       {fmt(m)}·{fmt(s)}·{fmt(mo)}
+      {tooltip}
     </span>
   );
 }
 
+function DeactivateConfirm({
+  word,
+  onCancel,
+  onConfirm,
+  loading,
+}: {
+  word: WordBankEntry;
+  onCancel: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="mb-1 text-base font-semibold text-foreground">Үгийг идэвхгүй болгох уу?</p>
+        <p className="mb-6 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{word.word}</span> — устгагдахгүй, зөвхөн нуугдана. Дараа нь дахин идэвхжүүлж болно.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Болих
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className="flex items-center gap-1.5 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {loading && <Loader2 className="size-4 animate-spin" />}
+            Идэвхгүй болгох
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function WordsTab() {
+  const queryClient = useQueryClient();
+  const showPageToast = useModalStore((s) => s.showPageToast);
+
   const [grade, setGrade] = useState<number | "all">("all");
   const [category, setCategory] = useState<string>("all");
   const [appLevel, setAppLevel] = useState<string>("all");
+  const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const [importOpen, setImportOpen] = useState(false);
 
-  // Debounce the search box so we don't fire a query per keystroke.
+  const [editWord, setEditWord] = useState<WordBankEntry | null>(null);
+  const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
   }, [search]);
 
-  // Reset to page 1 whenever a filter changes.
   useEffect(() => {
     setPage(1);
-  }, [grade, category, appLevel, debouncedSearch]);
+  }, [grade, category, appLevel, activeFilter, debouncedSearch]);
 
   const { data: facets } = useQuery({
     queryKey: ["word-facets"],
@@ -52,6 +184,7 @@ export function WordsTab() {
     ...(category !== "all" ? { category } : {}),
     ...(appLevel !== "all" ? { app_level: appLevel } : {}),
     ...(debouncedSearch ? { q: debouncedSearch } : {}),
+    active: activeFilter,
     page,
     per_page: PER_PAGE,
   };
@@ -64,7 +197,33 @@ export function WordsTab() {
 
   const words = data?.words ?? [];
   const total = data?.total ?? 0;
-  const hasNext = data?.meta.has_next ?? false;
+
+  async function handleDeactivateConfirm() {
+    if (!confirmDeactivate) return;
+    const target = confirmDeactivate;
+    setDeactivating(true);
+    try {
+      await deactivateWord(target.id);
+      await queryClient.invalidateQueries({ queryKey: ["words"] });
+      showPageToast({ type: "success", message: `"${target.word}" идэвхгүй болгогдлоо` });
+      setConfirmDeactivate(null);
+    } catch (e) {
+      showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
+    } finally {
+      setDeactivating(false);
+    }
+  }
+
+  async function handleReactivate(w: WordBankEntry) {
+    try {
+      const { patchWord } = await import("@/lib/api");
+      await patchWord(w.id, { is_active: true });
+      await queryClient.invalidateQueries({ queryKey: ["words"] });
+      showPageToast({ type: "success", message: `"${w.word}" дахин идэвхжүүлэгдлээ` });
+    } catch (e) {
+      showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
+    }
+  }
 
   const selectCls =
     "rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30";
@@ -130,16 +289,26 @@ export function WordsTab() {
             />
           </div>
 
-          {/* Import */}
-          <div className="ml-auto flex items-end">
-            <button
-              type="button"
-              onClick={() => setImportOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Upload className="size-4" />
-              Xlsx оруулах
-            </button>
+          {/* Active filter */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Төлөв</span>
+            <div className="flex gap-1.5">
+              {(["true", "false", "all"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setActiveFilter(v)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                    activeFilter === v
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                  )}
+                >
+                  {v === "true" ? "Идэвхтэй" : v === "false" ? "Идэвхгүй" : "Бүгд"}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -156,27 +325,42 @@ export function WordsTab() {
                 <th className={tableStyles.th}>Сэдэв</th>
                 <th className={tableStyles.th}>Үгийн аймаг</th>
                 <th className={tableStyles.th}>Зөв бичих таг</th>
-                <th className={tableStyles.th} title="Утга / Зөв бичих / Морфологи">Төвөгшил</th>
+                <th className={tableStyles.th}>Төвөгшил</th>
                 <th className={tableStyles.th}>Үсэг</th>
                 <th className={tableStyles.th}>Үе</th>
+                <th className={tableStyles.th}>Зураг</th>
+                <th className={tableStyles.th}>Үйлдэл</th>
               </tr>
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={10} cols={9} />
+                <SkeletonRows count={10} cols={11} />
               ) : words.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={11}>
                     <EmptyState
                       message="Үг олдсонгүй"
-                      subMessage="Шүүлтүүрийг өөрчлөх эсвэл xlsx файл оруулна уу"
+                      subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
                     />
                   </td>
                 </tr>
               ) : (
                 words.map((w: WordBankEntry) => (
-                  <tr key={w.id} className="transition-colors hover:bg-accent/50">
-                    <td className={cn(tableStyles.cell, "font-medium")}>{w.word}</td>
+                  <tr
+                    key={w.id}
+                    className={cn(
+                      "transition-colors hover:bg-accent/50",
+                      !w.is_active && "opacity-50",
+                    )}
+                  >
+                    <td className={cn(tableStyles.cell, "font-medium")}>
+                      <span className="flex items-center gap-1">
+                        {w.word}
+                        {w.balarhai_unknown && (
+                          <span title="Балархай эгшиг — шалгах шаардлагатай" className="text-amber-500">⚠</span>
+                        )}
+                      </span>
+                    </td>
                     <td className={tableStyles.cellMuted}>{w.grade ?? "—"}</td>
                     <td className={tableStyles.cellMuted}>{w.app_level ?? "—"}</td>
                     <td className={cn(tableStyles.cell, "max-w-[220px]")}>
@@ -191,6 +375,40 @@ export function WordsTab() {
                     </td>
                     <td className={tableStyles.cellMuted}>{w.char_count}</td>
                     <td className={tableStyles.cellMuted}>{w.syllable_count}</td>
+                    <td className={tableStyles.cell}>
+                      <MediaCell imageUrl={w.image_url} audioUrl={null} />
+                    </td>
+                    <td className={tableStyles.cell}>
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          title="Засах"
+                          onClick={() => setEditWord(w)}
+                          className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        >
+                          <Pencil className="size-3.5" />
+                        </button>
+                        {w.is_active ? (
+                          <button
+                            type="button"
+                            title="Идэвхгүй болгох"
+                            onClick={() => setConfirmDeactivate(w)}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            <EyeOff className="size-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            title="Дахин идэвхжүүлэх"
+                            onClick={() => handleReactivate(w)}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          >
+                            <Eye className="size-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </td>
                   </tr>
                 ))
               )}
@@ -203,30 +421,23 @@ export function WordsTab() {
 
       {/* Pagination */}
       {!isLoading && total > PER_PAGE && (
-        <div className="mt-4 flex items-center justify-center gap-3">
-          <button
-            type="button"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            ← Өмнөх
-          </button>
-          <span className="text-xs text-muted-foreground tabular-nums">
-            {page} / {Math.max(1, Math.ceil(total / PER_PAGE))}
-          </span>
-          <button
-            type="button"
-            disabled={!hasNext}
-            onClick={() => setPage((p) => p + 1)}
-            className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            Дараах →
-          </button>
-        </div>
+        <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
       )}
 
-      <ImportWordsModal open={importOpen} onOpenChange={setImportOpen} />
+      {/* Edit modal */}
+      {editWord && (
+        <EditWordModal word={editWord} onClose={() => setEditWord(null)} />
+      )}
+
+      {/* Deactivate confirm */}
+      {confirmDeactivate && (
+        <DeactivateConfirm
+          word={confirmDeactivate}
+          onCancel={() => setConfirmDeactivate(null)}
+          onConfirm={handleDeactivateConfirm}
+          loading={deactivating}
+        />
+      )}
     </div>
   );
 }
