@@ -26,6 +26,7 @@ const GRADE_LABELS: Record<string, string> = {
 };
 
 const GRADE_CODES = ["G1", "G2", "G3", "G4"] as const;
+const LEVEL_CODES = ["M0", "M1", "M2", "M3", "M4", "M5"] as const;
 const SKILL_ORDER = ["S1", "S2", "S3", "S4", "S5", "S6", "S7", "S8"];
 
 function ToggleChip<T extends string | number>({
@@ -102,6 +103,7 @@ export function GeneratePanel() {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [selectedGrades, setSelectedGrades] = useState<string[]>([]);
+  const [selectedLevels, setSelectedLevels] = useState<string[]>([]);
   const [maxItems, setMaxItems] = useState<1 | 2 | 3>(3);
   const [maxCost, setMaxCost] = useState<1 | 5 | 10 | 20>(5);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
@@ -125,6 +127,12 @@ export function GeneratePanel() {
     );
   }
 
+  function toggleLevel(lv: string) {
+    setSelectedLevels((prev) =>
+      prev.includes(lv) ? prev.filter((x) => x !== lv) : [...prev, lv],
+    );
+  }
+
   function toggleSpec(id: string) {
     setSelectedIds((prev) => {
       const next = new Set(prev);
@@ -138,7 +146,14 @@ export function GeneratePanel() {
   }
 
   const mutation = useMutation({
-    mutationFn: () => generateTasks([...selectedIds], maxItems, maxCost),
+    mutationFn: () =>
+      generateTasks(
+        [...selectedIds],
+        selectedGrades.map((g) => Number(g.slice(1))),
+        selectedLevels,
+        maxItems,
+        maxCost,
+      ),
     onSuccess: (data) => {
       setSelectedIds(new Set());
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
@@ -153,8 +168,9 @@ export function GeneratePanel() {
     },
   });
 
-  const hasSelection = selectedIds.size > 0;
-  const estimatedVariants = selectedIds.size * maxItems;
+  const hasSelection = selectedIds.size > 0 && selectedGrades.length > 0;
+  const cellCount = selectedGrades.length * (selectedLevels.length || 1);
+  const estimatedVariants = selectedIds.size * maxItems * cellCount;
 
   if (mutation.isPending) {
     return (
@@ -295,6 +311,18 @@ export function GeneratePanel() {
               <CardTitle className="text-sm">Тохиргоо</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <p className="mb-2 text-sm font-bold text-muted-foreground">
+                  Түвшин <span className="font-normal text-xs text-muted-foreground/70">(сонгохгүй бол бүх түвшин)</span>
+                </p>
+                <div className="flex flex-wrap gap-1">
+                  {LEVEL_CODES.map((lv) => (
+                    <ToggleChip key={lv} value={lv} active={selectedLevels.includes(lv)} onClick={toggleLevel}>
+                      {lv}
+                    </ToggleChip>
+                  ))}
+                </div>
+              </div>
               <div>
                 <p className="mb-2 text-sm font-bold text-muted-foreground">Даалгавар бүрт хувилбарын тоо</p>
                 <div className="flex gap-1">

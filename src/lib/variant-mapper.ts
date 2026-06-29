@@ -31,6 +31,7 @@ export function variantToReviewItem(v: TaskVariant): ReviewItem {
       level_target: v.level_target ?? "",
       error_targets: v.error_targets ?? [],
       grade_band: Array.isArray(v.grade_band) ? v.grade_band : [],
+      grade_levels: Array.isArray(v.grade_levels) ? v.grade_levels : [],
       difficulty: v.difficulty ?? 0,
       estimated_time_seconds: v.estimated_time_seconds ?? 0,
       lesson_slot_fit: v.lesson_slot_fit ?? "",

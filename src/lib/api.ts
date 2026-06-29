@@ -298,6 +298,7 @@ export interface LiveTaskFilters {
   grade?: 'G1' | 'G2' | 'G3' | 'G4';
   type?: string;
   skill?: string;
+  active?: 'true' | 'false' | 'all';
 }
 
 function normalizeLiveTask(t: LiveTask & { id?: string }): LiveTask {
@@ -315,7 +316,7 @@ export async function getLiveTask(id: string): Promise<LiveTask> {
   return normalizeLiveTask(data.data.task);
 }
 
-export async function updateLiveTask(id: string, updates: Partial<TaskContent>): Promise<void> {
+export async function updateLiveTask(id: string, updates: Partial<TaskContent> & { is_active?: boolean }): Promise<void> {
   await client.patch(`/live-tasks/${id}`, { updates });
 }
 
@@ -338,6 +339,8 @@ export interface GenerateSpec {
 
 export interface GenerateTaskResult {
   task_type: string;
+  grade: number;
+  level: string | null;
   passed: number;
   rejected: number;
   drafts_created: number;
@@ -350,15 +353,28 @@ export async function getGenerateSpecs(): Promise<GenerateSpec[]> {
   return data.data.specs;
 }
 
+/**
+ * Generate drafts for the given task types across every (grade × level) cell.
+ * `grades` are numeric (1–4). Empty `levels` → backend runs one "any level" pass
+ * per grade. `max_cost` is a single shared budget across all cells.
+ */
 export async function generateTasks(
   task_ids: string[],
+  grades: number[],
+  levels: string[],
   max_items: number,
   max_cost: number,
 ): Promise<{ results: GenerateTaskResult[]; total_cost_usd: number }> {
   const { data } = await client.post<{
     success: boolean;
     data: { results: GenerateTaskResult[]; total_cost_usd: number };
-  }>('/generate', { task_ids, max_items, max_cost });
+  }>('/generate', {
+    task_ids,
+    grades,
+    ...(levels.length > 0 ? { levels } : {}),
+    max_items,
+    max_cost,
+  });
   return data.data;
 }
 
