@@ -141,6 +141,7 @@ export interface ReviewAction {
 
 export interface LiveTask extends TaskContent {
   is_diagnostic: boolean;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -178,7 +179,7 @@ export interface WordsListResponse {
 }
 
 export interface WordFacets {
-  grades: number[];
+  grades: string[]; // "G1"–"G4", from Word.grade_band
   categories: string[];
   app_levels: string[];
 }

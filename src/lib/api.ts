@@ -381,7 +381,7 @@ export async function generateTasks(
 // ─── Word bank ────────────────────────────────────────────────────────────────
 
 export interface WordFilters {
-  grade?: number;
+  grade?: 'G1' | 'G2' | 'G3' | 'G4';
   category?: string;
   app_level?: string;
   q?: string;

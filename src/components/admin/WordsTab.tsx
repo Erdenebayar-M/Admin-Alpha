@@ -152,7 +152,7 @@ export function WordsTab() {
   const queryClient = useQueryClient();
   const showPageToast = useModalStore((s) => s.showPageToast);
 
-  const [grade, setGrade] = useState<number | "all">("all");
+  const [grade, setGrade] = useState<"G1" | "G2" | "G3" | "G4" | "all">("all");
   const [category, setCategory] = useState<string>("all");
   const [appLevel, setAppLevel] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
@@ -241,7 +241,7 @@ export function WordsTab() {
                 <button
                   key={String(g)}
                   type="button"
-                  onClick={() => setGrade(g === "all" ? "all" : Number(g))}
+                  onClick={() => setGrade(g as "G1" | "G2" | "G3" | "G4" | "all")}
                   className={cn(
                     "rounded-lg border px-4 py-2 text-sm font-medium transition-colors",
                     grade === g
@@ -249,7 +249,7 @@ export function WordsTab() {
                       : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
                   )}
                 >
-                  {g === "all" ? "Бүгд" : `${g}-р анги`}
+                  {g === "all" ? "Бүгд" : `${g.slice(1)}-р анги`}
                 </button>
               ))}
             </div>
@@ -361,7 +361,7 @@ export function WordsTab() {
                         )}
                       </span>
                     </td>
-                    <td className={tableStyles.cellMuted}>{w.grade ?? "—"}</td>
+                    <td className={tableStyles.cellMuted}>{w.grade_band.length ? w.grade_band.map((g) => g.slice(1)).join(", ") : "—"}</td>
                     <td className={tableStyles.cellMuted}>{w.app_level ?? "—"}</td>
                     <td className={cn(tableStyles.cell, "max-w-[220px]")}>
                       <span className="line-clamp-1 text-xs text-muted-foreground">{w.category || "—"}</span>
