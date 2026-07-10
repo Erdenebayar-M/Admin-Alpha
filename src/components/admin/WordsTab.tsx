@@ -156,6 +156,7 @@ export function WordsTab() {
   const [category, setCategory] = useState<string>("all");
   const [appLevel, setAppLevel] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
+  const [hasForms, setHasForms] = useState<"all" | "true">("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -171,7 +172,7 @@ export function WordsTab() {
 
   useEffect(() => {
     setPage(1);
-  }, [grade, category, appLevel, activeFilter, debouncedSearch]);
+  }, [grade, category, appLevel, activeFilter, hasForms, debouncedSearch]);
 
   const { data: facets } = useQuery({
     queryKey: ["word-facets"],
@@ -184,6 +185,7 @@ export function WordsTab() {
     ...(category !== "all" ? { category } : {}),
     ...(appLevel !== "all" ? { app_level: appLevel } : {}),
     ...(debouncedSearch ? { q: debouncedSearch } : {}),
+    ...(hasForms === "true" ? { has_forms: "true" as const } : {}),
     active: activeFilter,
     page,
     per_page: PER_PAGE,
@@ -310,6 +312,28 @@ export function WordsTab() {
               ))}
             </div>
           </div>
+
+          {/* Has-forms filter */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Хэлбэр</span>
+            <div className="flex gap-1.5">
+              {(["all", "true"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setHasForms(v)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                    hasForms === v
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                  )}
+                >
+                  {v === "all" ? "Бүгд" : "Хэлбэртэй"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -328,16 +352,17 @@ export function WordsTab() {
                 <th className={tableStyles.th}>Төвөгшил</th>
                 <th className={tableStyles.th}>Үсэг</th>
                 <th className={tableStyles.th}>Үе</th>
+                <th className={tableStyles.th}>Хэлбэрүүд</th>
                 <th className={tableStyles.th}>Зураг</th>
                 <th className={tableStyles.th}>Үйлдэл</th>
               </tr>
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={10} cols={11} />
+                <SkeletonRows count={10} cols={12} />
               ) : words.length === 0 ? (
                 <tr>
-                  <td colSpan={11}>
+                  <td colSpan={12}>
                     <EmptyState
                       message="Үг олдсонгүй"
                       subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
@@ -375,6 +400,23 @@ export function WordsTab() {
                     </td>
                     <td className={tableStyles.cellMuted}>{w.char_count}</td>
                     <td className={tableStyles.cellMuted}>{w.syllable_count}</td>
+                    <td className={cn(tableStyles.cell, "max-w-[260px]")}>
+                      {w.forms.length ? (
+                        <span
+                          className="flex items-center gap-1.5"
+                          title={w.forms.map((f) => f.word).join(", ")}
+                        >
+                          <span className="shrink-0 rounded bg-primary/10 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-primary">
+                            {w.forms.length}
+                          </span>
+                          <span className="line-clamp-1 text-xs text-muted-foreground">
+                            {w.forms.map((f) => f.word).join(", ")}
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </td>
                     <td className={tableStyles.cell}>
                       <MediaCell imageUrl={w.image_url} audioUrl={null} />
                     </td>

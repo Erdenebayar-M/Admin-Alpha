@@ -171,6 +171,7 @@ export interface WordBankEntry {
   image_url: string | null;
   is_active: boolean;
   balarhai_unknown: boolean | null;
+  forms: { id: string; word: string }[]; // linked inflected forms (e.g. ах → ахтайгаа)
 }
 
 export interface WordsListResponse {
