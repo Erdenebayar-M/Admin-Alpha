@@ -110,38 +110,62 @@ function DeactivateConfirm({
 }: {
   word: WordBankEntry;
   onCancel: () => void;
-  onConfirm: () => void;
+  onConfirm: (mode: "solo" | "detach" | "cascade") => void;
   loading: boolean;
 }) {
+  const formCount = word.forms.length;
+  const destructiveBtn =
+    "flex items-center justify-center gap-1.5 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-40";
+  const neutralBtn =
+    "flex items-center justify-center gap-1.5 rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40";
+
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onCancel}>
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
       <div
-        className="relative w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-xl"
+        className="relative w-full max-w-md rounded-xl border border-border bg-background p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <p className="mb-1 text-base font-semibold text-foreground">Үгийг идэвхгүй болгох уу?</p>
-        <p className="mb-6 text-sm text-muted-foreground">
+        <p className="mb-5 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">{word.word}</span> — устгагдахгүй, зөвхөн нуугдана. Дараа нь дахин идэвхжүүлж болно.
+          {formCount > 0 && (
+            <> Энэ үг <span className="font-medium text-foreground">{formCount}</span> хэлбэртэй.</>
+          )}
         </p>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
-          >
-            Болих
-          </button>
-          <button
-            type="button"
-            disabled={loading}
-            onClick={onConfirm}
-            className="flex items-center gap-1.5 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {loading && <Loader2 className="size-4 animate-spin" />}
-            Идэвхгүй болгох
-          </button>
-        </div>
+        {formCount > 0 ? (
+          <div className="flex flex-col gap-2">
+            <button type="button" disabled={loading} onClick={() => onConfirm("detach")} className={neutralBtn}>
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              Зөвхөн үндсийг устгах (хэлбэрүүд үлдэнэ)
+            </button>
+            <button type="button" disabled={loading} onClick={() => onConfirm("cascade")} className={destructiveBtn}>
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              Хэлбэрүүдийн хамт устгах
+            </button>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            >
+              Болих
+            </button>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-2">
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              Болих
+            </button>
+            <button type="button" disabled={loading} onClick={() => onConfirm("solo")} className={destructiveBtn}>
+              {loading && <Loader2 className="size-4 animate-spin" />}
+              Идэвхгүй болгох
+            </button>
+          </div>
+        )}
       </div>
     </div>,
     document.body,
@@ -200,14 +224,16 @@ export function WordsTab() {
   const words = data?.words ?? [];
   const total = data?.total ?? 0;
 
-  async function handleDeactivateConfirm() {
+  async function handleDeactivateConfirm(mode: "solo" | "detach" | "cascade") {
     if (!confirmDeactivate) return;
     const target = confirmDeactivate;
     setDeactivating(true);
     try {
-      await deactivateWord(target.id);
+      await deactivateWord(target.id, mode);
       await queryClient.invalidateQueries({ queryKey: ["words"] });
-      showPageToast({ type: "success", message: `"${target.word}" идэвхгүй болгогдлоо` });
+      const suffix =
+        mode === "detach" ? " (хэлбэрүүд үлдлээ)" : mode === "cascade" ? " (хэлбэрүүдийн хамт)" : "";
+      showPageToast({ type: "success", message: `"${target.word}" идэвхгүй болгогдлоо${suffix}` });
       setConfirmDeactivate(null);
     } catch (e) {
       showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });

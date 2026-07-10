@@ -421,8 +421,33 @@ export async function patchWord(
   return data.data;
 }
 
-export async function deactivateWord(id: string): Promise<void> {
-  await client.delete(`/words/${id}`);
+/**
+ * Soft-delete a word. `mode` controls a root's linked forms:
+ *   solo (default) — deactivate just this row · detach — deactivate root, keep
+ *   forms as standalone · cascade — deactivate root + all its forms.
+ */
+export async function deactivateWord(
+  id: string,
+  mode: 'solo' | 'detach' | 'cascade' = 'solo',
+): Promise<void> {
+  await client.delete(`/words/${id}`, { params: { mode } });
+}
+
+export interface ConnectWordResult {
+  action: string;
+  id: string;
+  root_id: string;
+  root_word: string;
+  root_created: boolean;
+}
+
+/** Link a word under a root (reuses an existing root row, or creates a new one). */
+export async function connectWordToRoot(id: string, root: string): Promise<ConnectWordResult> {
+  const { data } = await client.post<{ success: boolean; data: ConnectWordResult }>(
+    `/words/${id}/connect`,
+    { root },
+  );
+  return data.data;
 }
 
 /** Upload an xlsx. `commit=false` previews (no writes); `commit=true` replaces that grade. */

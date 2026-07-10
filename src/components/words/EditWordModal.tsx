@@ -11,7 +11,7 @@ import {
   DialogBody,
   DialogClose,
 } from "@/components/ui/dialog";
-import { patchWord } from "@/lib/api";
+import { patchWord, deactivateWord, connectWordToRoot } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import type { WordBankEntry } from "@/lib/types";
@@ -66,6 +66,130 @@ function buildUpdates(form: Form, dirty: Set<string>): Record<string, unknown> {
   if (dirty.has("morph_complexity"))
     u.morph_complexity = form.morph_complexity ? parseInt(form.morph_complexity, 10) : null;
   return u;
+}
+
+const smallBtn =
+  "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
+
+/** Root ↔ forms management: connect to a root, list forms, delete (detach/cascade). */
+function RootFormsSection({ word, onDone }: { word: WordBankEntry; onDone: (msg: string) => void }) {
+  const [connectTo, setConnectTo] = useState("");
+  const [busy, setBusy] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function run(label: string, fn: () => Promise<string>) {
+    setBusy(label);
+    setErr(null);
+    try {
+      onDone(await fn());
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Алдаа гарлаа");
+      setBusy(null);
+    }
+  }
+
+  const hasForms = word.forms.length > 0;
+
+  return (
+    <div className="space-y-3 rounded-lg border border-border bg-muted/30 p-4">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Үндэс / Хэлбэрүүд
+      </p>
+
+      {word.root_word && (
+        <p className="text-sm text-muted-foreground">
+          Энэ үг <span className="font-medium text-foreground">{word.root_word.word}</span>-ийн хэлбэр.
+        </p>
+      )}
+
+      {/* Connect to a root */}
+      <div className="flex items-end gap-2">
+        <div className="flex flex-1 flex-col gap-1">
+          <label className="text-xs font-semibold text-muted-foreground">Үндэс үгэнд холбох</label>
+          <input
+            className={fieldCls}
+            value={connectTo}
+            onChange={(e) => setConnectTo(e.target.value)}
+            placeholder="жишээ: авах"
+          />
+        </div>
+        <button
+          type="button"
+          disabled={!connectTo.trim() || busy !== null}
+          onClick={() =>
+            run("connect", async () => {
+              const r = await connectWordToRoot(word.id, connectTo.trim());
+              return `"${word.word}" → "${r.root_word}"${r.root_created ? " (шинэ үндэс үүсгэв)" : ""}`;
+            })
+          }
+          className={cn(smallBtn, "border-primary bg-primary text-primary-foreground hover:bg-primary/90")}
+        >
+          Холбох
+        </button>
+      </div>
+
+      {/* Forms of this root */}
+      {hasForms && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-muted-foreground">Хэлбэрүүд ({word.forms.length})</p>
+          <div className="flex flex-wrap gap-1.5">
+            {word.forms.map((f) => (
+              <span
+                key={f.id}
+                className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs text-foreground"
+              >
+                {f.word}
+                <button
+                  type="button"
+                  title="Хэлбэрийг идэвхгүй болгох"
+                  disabled={busy !== null}
+                  onClick={() =>
+                    run(`form-${f.id}`, async () => {
+                      await deactivateWord(f.id, "solo");
+                      return `"${f.word}" идэвхгүй болголоо`;
+                    })
+                  }
+                  className="text-muted-foreground transition-colors hover:text-destructive"
+                >
+                  ✕
+                </button>
+              </span>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2 pt-1">
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() =>
+                run("detach", async () => {
+                  await deactivateWord(word.id, "detach");
+                  return `"${word.word}" устгаж, хэлбэрүүдийг чөлөөллөө`;
+                })
+              }
+              className={cn(smallBtn, "border-border bg-background text-foreground hover:bg-muted")}
+            >
+              Устгах (хэлбэрүүд үлдээх)
+            </button>
+            <button
+              type="button"
+              disabled={busy !== null}
+              onClick={() =>
+                run("cascade", async () => {
+                  await deactivateWord(word.id, "cascade");
+                  return `"${word.word}" болон хэлбэрүүдийг устгалаа`;
+                })
+              }
+              className={cn(smallBtn, "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20")}
+            >
+              Хэлбэрүүдийн хамт устгах
+            </button>
+          </div>
+        </div>
+      )}
+
+      {err && <p className="text-xs text-destructive">{err}</p>}
+    </div>
+  );
 }
 
 interface Props {
@@ -292,6 +416,16 @@ export function EditWordModal({ word, onClose }: Props) {
                 />
               </Field>
             </div>
+
+            {/* Root ↔ forms management */}
+            <RootFormsSection
+              word={word}
+              onDone={(msg) => {
+                queryClient.invalidateQueries({ queryKey: ["words"] });
+                showPageToast({ type: "success", message: msg });
+                onClose();
+              }}
+            />
 
             {error && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
