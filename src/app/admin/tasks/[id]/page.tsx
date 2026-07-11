@@ -5,7 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { getLiveTask, deleteLiveTask } from "@/lib/api";
+import { getLiveTask, deleteLiveTask, updateLiveTask } from "@/lib/api";
 import { TaskPreview } from "@/components/review/TaskPreview";
 import { PageHeader } from "@/components/ui/page-header";
 import { ExerciseInfoCard } from "@/components/ui/exercise-info-card";
@@ -32,23 +32,34 @@ export default function LiveTaskDetailPage() {
     staleTime: 30_000,
   });
 
-  const deleteMutation = useMutation({
+  const deactivateMutation = useMutation({
     mutationFn: () => deleteLiveTask(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["live-tasks"] });
-      router.push("/admin/tasks");
+      queryClient.invalidateQueries({ queryKey: ["live-task", id] });
+      showToast("Идэвхгүй болгогдлоо.");
     },
-    onError: (err) => showToast((err as Error).message ?? "Устгаж чадсангүй."),
+    onError: (err) => showToast((err as Error).message ?? "Алдаа гарлаа."),
   });
 
-  const handleDeleteClick = useCallback(() => {
+  const reactivateMutation = useMutation({
+    mutationFn: () => updateLiveTask(id, { is_active: true }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["live-tasks"] });
+      queryClient.invalidateQueries({ queryKey: ["live-task", id] });
+      showToast("Дахин идэвхжүүлэгдлээ.");
+    },
+    onError: (err) => showToast((err as Error).message ?? "Алдаа гарлаа."),
+  });
+
+  const handleDeactivateClick = useCallback(() => {
     if (confirmDelete) {
-      deleteMutation.mutate();
+      deactivateMutation.mutate();
     } else {
       setConfirmDelete(true);
       setTimeout(() => setConfirmDelete(false), 3000);
     }
-  }, [confirmDelete, deleteMutation]);
+  }, [confirmDelete, deactivateMutation]);
 
   if (isLoading) return <DetailSkeleton />;
 
@@ -89,37 +100,53 @@ export default function LiveTaskDetailPage() {
         <div className="space-y-3">
           <ExerciseInfoCard task={task} />
 
-          {/* Delete */}
+          {/* Active / deactivate */}
           <div className="rounded-lg border border-border bg-card p-4 space-y-2">
-              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Устгах</p>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleDeleteClick}
-                  disabled={deleteMutation.isPending}
-                  className={cn(
-                    "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:opacity-60",
-                    confirmDelete
-                      ? "bg-red-600 text-white hover:bg-red-700"
-                      : "border border-border text-red-500 hover:border-red-400 hover:bg-red-50",
-                  )}
-                >
-                  {deleteMutation.isPending ? "Устгаж байна…" : confirmDelete ? "Баталгаажуулах" : "Устгах"}
-                </button>
-                {confirmDelete && (
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Төлөв</p>
+            {task.is_active ? (
+              <>
+                <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={() => setConfirmDelete(false)}
-                    className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                    onClick={handleDeactivateClick}
+                    disabled={deactivateMutation.isPending}
+                    className={cn(
+                      "flex-1 rounded-md px-3 py-2 text-sm font-medium transition-colors disabled:opacity-60",
+                      confirmDelete
+                        ? "bg-red-600 text-white hover:bg-red-700"
+                        : "border border-border text-red-500 hover:border-red-400 hover:bg-red-50",
+                    )}
                   >
-                    Болих
+                    {deactivateMutation.isPending ? "Хадгалж байна…" : confirmDelete ? "Баталгаажуулах" : "Идэвхгүй болгох"}
                   </button>
+                  {confirmDelete && (
+                    <button
+                      type="button"
+                      onClick={() => setConfirmDelete(false)}
+                      className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
+                    >
+                      Болих
+                    </button>
+                  )}
+                </div>
+                {confirmDelete && (
+                  <p className="text-xs text-muted-foreground">Дараа нь дахин идэвхжүүлж болно.</p>
                 )}
-              </div>
-              {confirmDelete && (
-                <p className="text-xs text-red-500">Энэ үйлдлийг буцаах боломжгүй.</p>
-              )}
-            </div>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-amber-600 font-medium">Одоогоор идэвхгүй байна.</p>
+                <button
+                  type="button"
+                  onClick={() => reactivateMutation.mutate()}
+                  disabled={reactivateMutation.isPending}
+                  className="w-full rounded-md border border-border px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted disabled:opacity-60"
+                >
+                  {reactivateMutation.isPending ? "Хадгалж байна…" : "Дахин идэвхжүүлэх"}
+                </button>
+              </>
+            )}
+          </div>
 
         </div>
       </div>

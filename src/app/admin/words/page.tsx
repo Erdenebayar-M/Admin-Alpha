@@ -8,7 +8,7 @@ export default function WordsPage() {
     <div>
       <PageHeader
         title="Үгийн сан"
-        subtitle="Өгөгдлийн санд хадгалагдсан үгс — xlsx файлаас оруулах"
+        subtitle="Өгөгдлийн санд хадгалагдсан үгс"
       />
       <WordsTab />
     </div>

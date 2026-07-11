@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
-import { useQuery } from "@tanstack/react-query";
-import { getLiveTasks, type LiveTaskFilters } from "@/lib/api";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, EyeOff, Eye, Loader2 } from "lucide-react";
+import { getLiveTasks, deleteLiveTask, updateLiveTask, type LiveTaskFilters } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import { TASK_TYPE_INFO, GRADE_LABELS, SKILL_LABELS } from "@/lib/task-defaults";
@@ -34,17 +36,68 @@ function DescriptionCell({ text }: { text: string }) {
   );
 }
 
+function DeactivateConfirm({
+  task,
+  onCancel,
+  onConfirm,
+  loading,
+}: {
+  task: LiveTask;
+  onCancel: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+}) {
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm rounded-xl border border-border bg-background p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="mb-1 text-base font-semibold text-foreground">Даалгаврыг идэвхгүй болгох уу?</p>
+        <p className="mb-6 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">{task.task_id}</span> — устгагдахгүй, зөвхөн нуугдана. Дараа нь дахин идэвхжүүлж болно.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Болих
+          </button>
+          <button
+            type="button"
+            disabled={loading}
+            onClick={onConfirm}
+            className="flex items-center gap-1.5 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-40"
+          >
+            {loading && <Loader2 className="size-4 animate-spin" />}
+            Идэвхгүй болгох
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 type GradeFilter = "all" | "G1" | "G2" | "G3" | "G4";
 type SortOrder = "newest" | "oldest";
 
 export function TasksTab() {
   const [grade, setGrade] = useState<GradeFilter>("all");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
   const [sort, setSort] = useState<SortOrder>("newest");
   const { visited, markVisited } = useVisited("visited_tasks");
   const [toastVisible, setToastVisible] = useState(false);
   const router = useRouter();
-  const { pageToast, clearPageToast } = useModalStore();
+  const queryClient = useQueryClient();
+  const { pageToast, clearPageToast, showPageToast } = useModalStore();
+
+  const [confirmDeactivate, setConfirmDeactivate] = useState<LiveTask | null>(null);
+  const [deactivating, setDeactivating] = useState(false);
 
   useEffect(() => {
     if (!pageToast) return;
@@ -54,7 +107,10 @@ export function TasksTab() {
     return () => { clearTimeout(show); clearTimeout(hide); clearTimeout(clear); };
   }, [pageToast, clearPageToast]);
 
-  const filters: LiveTaskFilters = grade !== "all" ? { grade } : {};
+  const filters: LiveTaskFilters = {
+    ...(grade !== "all" ? { grade } : {}),
+    active: activeFilter,
+  };
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ["live-tasks", filters],
@@ -69,6 +125,32 @@ export function TasksTab() {
       const diff = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       return sort === "newest" ? -diff : diff;
     });
+
+  async function handleDeactivateConfirm() {
+    if (!confirmDeactivate) return;
+    const target = confirmDeactivate;
+    setDeactivating(true);
+    try {
+      await deleteLiveTask(target.task_id);
+      await queryClient.invalidateQueries({ queryKey: ["live-tasks"] });
+      showPageToast({ type: "success", message: `"${target.task_id}" идэвхгүй болгогдлоо` });
+      setConfirmDeactivate(null);
+    } catch (e) {
+      showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
+    } finally {
+      setDeactivating(false);
+    }
+  }
+
+  async function handleReactivate(task: LiveTask) {
+    try {
+      await updateLiveTask(task.task_id, { is_active: true });
+      await queryClient.invalidateQueries({ queryKey: ["live-tasks"] });
+      showPageToast({ type: "success", message: `"${task.task_id}" дахин идэвхжүүлэгдлээ` });
+    } catch (e) {
+      showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
+    }
+  }
 
   return (
     <div className="relative px-4 py-6 sm:px-6">
@@ -115,6 +197,28 @@ export function TasksTab() {
             </div>
           )}
 
+          {/* Active filter */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Төлөв</span>
+            <div className="flex gap-1.5">
+              {(["true", "false", "all"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setActiveFilter(v)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                    activeFilter === v
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                  )}
+                >
+                  {v === "true" ? "Идэвхтэй" : v === "false" ? "Идэвхгүй" : "Бүгд"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="ml-auto flex items-end gap-4 shrink-0">
             <div className="flex flex-col gap-2">
               <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Эрэмбэлэх</span>
@@ -145,14 +249,15 @@ export function TasksTab() {
                 <th className={tableStyles.th}>Медиа</th>
                 <th className={tableStyles.th}>Эх үүсвэр</th>
                 <th className={tableStyles.th}>Огноо</th>
+                <th className={tableStyles.th}>Үйлдэл</th>
               </tr>
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={8} cols={8} />
+                <SkeletonRows count={8} cols={9} />
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={8}>
+                  <td colSpan={9}>
                     <EmptyState
                       message="Батлагдсан даалгавар олдсонгүй"
                       subMessage="Шүүлтүүрийг өөрчилж дахин оролдоно уу"
@@ -169,6 +274,7 @@ export function TasksTab() {
                       className={cn(
                         tableStyles.row,
                         isUnvisited && tableStyles.rowUnvisited,
+                        !task.is_active && "opacity-50",
                       )}
                     >
                       <td className={tableStyles.cell}>
@@ -202,6 +308,37 @@ export function TasksTab() {
                       <td className={tableStyles.cellMuted}>
                         {fmtDate(task.created_at)}
                       </td>
+                      <td className={tableStyles.cell} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            title="Дэлгэрэнгүй / засах"
+                            onClick={() => { markVisited(task.task_id); router.push(`/admin/tasks/${task.task_id}`); }}
+                            className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                          >
+                            <Pencil className="size-3.5" />
+                          </button>
+                          {task.is_active ? (
+                            <button
+                              type="button"
+                              title="Идэвхгүй болгох"
+                              onClick={() => setConfirmDeactivate(task)}
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                            >
+                              <EyeOff className="size-3.5" />
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              title="Дахин идэвхжүүлэх"
+                              onClick={() => handleReactivate(task)}
+                              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                            >
+                              <Eye className="size-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   );
                 })
@@ -214,6 +351,16 @@ export function TasksTab() {
           <TableFooter count={filtered.length} label="даалгавар" />
         )}
       </div>
+
+      {/* Deactivate confirm */}
+      {confirmDeactivate && (
+        <DeactivateConfirm
+          task={confirmDeactivate}
+          onCancel={() => setConfirmDeactivate(null)}
+          onConfirm={handleDeactivateConfirm}
+          loading={deactivating}
+        />
+      )}
 
       {/* Page-level toast */}
       {pageToast && (

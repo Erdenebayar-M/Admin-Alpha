@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 
+const backendUrl = process.env.BACKEND_URL || "http://127.0.0.1:3000";
+
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.ngrok-free.dev", "*.ngrok-free.app", "*.ngrok.io"],
   experimental: {
@@ -8,8 +10,8 @@ const nextConfig: NextConfig = {
   async rewrites() {
     return {
       beforeFiles: [
-        { source: "/api/admin/:path*", destination: "http://127.0.0.1:3000/api/admin/:path*" },
-        { source: "/content/:path*",   destination: "http://127.0.0.1:3000/content/:path*" },
+        { source: "/api/admin/:path*", destination: `${backendUrl}/api/admin/:path*` },
+        { source: "/content/:path*",   destination: `${backendUrl}/content/:path*` },
       ],
       afterFiles: [],
       fallback: [],
