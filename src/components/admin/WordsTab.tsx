@@ -116,12 +116,14 @@ function InsertRowDivider({ onInsert }: { onInsert: () => void }) {
   return (
     <tr>
       <td colSpan={13} className="relative h-0 border-0 p-0 leading-none">
-        <div className="group/insertgap pointer-events-none absolute inset-x-0 -top-2.5 z-20 flex h-5 items-center justify-center">
+        {/* The whole band (not just the pill) is hoverable — pointer-events-none here
+            would stop it from ever receiving the hover that's supposed to reveal it. */}
+        <div className="group/insertgap absolute inset-x-0 -top-3 z-20 flex h-6 items-center justify-center">
           <button
             type="button"
             onClick={onInsert}
             title="Энд шинэ үг оруулах"
-            className="pointer-events-auto flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity hover:!opacity-100 group-hover/insertgap:opacity-100 hover:border-primary hover:text-primary"
+            className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover/insertgap:opacity-100 hover:border-primary hover:text-primary"
           >
             <Plus className="size-3" />
           </button>
