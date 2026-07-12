@@ -54,6 +54,14 @@ export async function uploadAudioToR2(
   return result.data;
 }
 
+export async function blobToBase64(blob: Blob): Promise<string> {
+  const buffer = await blob.arrayBuffer();
+  const bytes = new Uint8Array(buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
 export async function base64ToBlob(base64: string, mimeType: string): Promise<Blob> {
   const binaryString = atob(base64);
   const bytes = new Uint8Array(binaryString.length);

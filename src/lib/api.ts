@@ -245,6 +245,31 @@ export async function saveAudioAndUpdateTask(
   }
 }
 
+/** Same as saveAudioAndUpdateTask but takes a Blob directly — skips the
+ * base64⇄blob round trip when the audio came from the mic or a file picker
+ * rather than a base64-returning TTS call. */
+export async function saveAudioBlobAndUpdateTask(
+  blob: Blob,
+  variantId: string,
+  slot: 'dictation' | 'prompt',
+  stage: string = 'validated',
+): Promise<R2UploadResult> {
+  try {
+    const result = await uploadAudioToR2(blob);
+
+    await client.post('/update-audio', {
+      variant_id: variantId,
+      audio_url: result.url,
+      slot,
+      stage,
+    });
+
+    return result;
+  } catch (error) {
+    throw new Error(`Failed to save audio: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+}
+
 export async function uploadImageToUrl(base64: string): Promise<string> {
   const blob = await base64ToBlob(base64, 'image/jpeg');
   const result = await uploadImageToR2(blob);

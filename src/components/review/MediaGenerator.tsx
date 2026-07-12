@@ -1,14 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
+import { Mic, Square, Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TaskContent } from '@/lib/types';
 import { TASK_TYPE_INFO } from '@/lib/task-defaults';
 import {
   generateImage,
-  generateAudio,
   saveImageAndUpdateTask,
-  saveAudioAndUpdateTask,
+  saveAudioBlobAndUpdateTask,
 } from '@/lib/api';
 import { buildImagePrompt } from '@/lib/imagePromptTemplate';
 
@@ -65,13 +65,16 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
   const [imgBase64, setImgBase64] = useState('');
   const [imgError, setImgError] = useState('');
 
-  // Audio state
-  const [audioText, setAudioText] = useState(task.options.audio_text || task.prompt_text);
+  // Audio state — recorded via mic or picked as a file; TTS comes later
   const [audioSlot, setAudioSlot] = useState<'dictation' | 'prompt'>('dictation');
   const [audioStatus, setAudioStatus] = useState<GenStatus>('idle');
-  const [audioBase64, setAudioBase64] = useState('');
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioBlobUrl, setAudioBlobUrl] = useState('');
   const [audioError, setAudioError] = useState('');
+  const [recording, setRecording] = useState(false);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
 
   if (!showAudio && !showImage) return null;
 
@@ -111,30 +114,55 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
     setImgError('');
   }
 
-  async function handleGenerateAudio() {
+  function handleLocalAudio(blob: Blob) {
+    if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
+    const url = URL.createObjectURL(blob);
+    setAudioBlob(blob);
+    setAudioBlobUrl(url);
     setAudioError('');
-    setAudioStatus('generating');
+    setAudioStatus('preview');
+  }
+
+  async function startRecording() {
+    setAudioError('');
     try {
-      const res = await generateAudio(audioText, audioSlot);
-      const bytes = Uint8Array.from(atob(res.base64), (c) => c.charCodeAt(0));
-      const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/wav' }));
-      if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
-      setAudioBase64(res.base64);
-      setAudioBlobUrl(url);
-      setAudioStatus('preview');
-    } catch (e) {
-      setAudioError(e instanceof Error ? e.message : 'Generation failed');
-      setAudioStatus('idle');
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        handleLocalAudio(new Blob(chunksRef.current, { type: recorder.mimeType || 'audio/webm' }));
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+    } catch {
+      setAudioError('Микрофон уруу хандах эрх өгөгдсөнгүй');
     }
   }
 
+  function stopRecording() {
+    recorderRef.current?.stop();
+    setRecording(false);
+  }
+
+  function handleAudioFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (file) handleLocalAudio(file);
+  }
+
   async function handleAcceptAudio() {
+    if (!audioBlob) return;
     setAudioStatus('accepting');
     try {
-      await saveAudioAndUpdateTask(audioBase64, variantId, audioSlot, stage);
+      await saveAudioBlobAndUpdateTask(audioBlob, variantId, audioSlot, stage);
       URL.revokeObjectURL(audioBlobUrl);
       setAudioBlobUrl('');
-      setAudioBase64('');
+      setAudioBlob(null);
       setAudioError('');
       setAudioStatus('accepted');
       onMediaAccepted();
@@ -147,7 +175,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
   function handleDiscardAudio() {
     if (audioBlobUrl) URL.revokeObjectURL(audioBlobUrl);
     setAudioBlobUrl('');
-    setAudioBase64('');
+    setAudioBlob(null);
     setAudioStatus('idle');
     setAudioError('');
   }
@@ -255,18 +283,14 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
             </div>
           )}
 
-          {/* Audio tab */}
+          {/* Audio tab — record via mic or upload a file; TTS generation lands later */}
           {showAudio && tab === 'audio' && (
             <div className="space-y-2.5">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Text</label>
-                <textarea
-                  className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-ring"
-                  rows={3}
-                  value={audioText}
-                  onChange={(e) => setAudioText(e.target.value)}
-                  disabled={audioStatus !== 'idle' && audioStatus !== 'accepted'}
-                />
+                <label className="mb-1 block text-xs text-muted-foreground">Уншиж бичих текст</label>
+                <p className="rounded-md border border-dashed border-border bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
+                  &ldquo;{task.options.audio_text as string ?? task.prompt_text}&rdquo;
+                </p>
               </div>
 
               <div className="flex flex-wrap gap-4">
@@ -281,7 +305,7 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
                           value={s}
                           checked={audioSlot === s}
                           onChange={() => setAudioSlot(s)}
-                          disabled={audioStatus !== 'idle' && audioStatus !== 'accepted'}
+                          disabled={recording || (audioStatus !== 'idle' && audioStatus !== 'accepted')}
                           className="accent-foreground"
                         />
                         {s}
@@ -296,20 +320,38 @@ export function MediaGenerator({ task, variantId, stage = 'validated', onMediaAc
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
-                    onClick={handleGenerateAudio}
-                    disabled={!audioText.trim()}
-                    className={cn(btnBase, 'bg-primary text-primary-foreground hover:bg-primary/90')}
+                    onClick={recording ? stopRecording : startRecording}
+                    className={cn(
+                      btnBase,
+                      'flex items-center gap-1.5',
+                      recording
+                        ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                        : 'bg-primary text-primary-foreground hover:bg-primary/90',
+                    )}
                   >
-                    Generate audio
+                    {recording ? <Square className="size-3.5" /> : <Mic className="size-3.5" />}
+                    {recording ? 'Зогсоох' : 'Бичих'}
                   </button>
+                  <button
+                    type="button"
+                    disabled={recording}
+                    onClick={() => fileInputRef.current?.click()}
+                    className={cn(btnBase, 'flex items-center gap-1.5 border border-border text-muted-foreground hover:text-foreground')}
+                  >
+                    <Upload className="size-3.5" />
+                    Файл сонгох
+                  </button>
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="audio/*"
+                    className="hidden"
+                    onChange={handleAudioFileChange}
+                  />
                   {audioStatus === 'accepted' && (
                     <span className="text-xs font-medium text-green-600">Saved</span>
                   )}
                 </div>
-              )}
-
-              {audioStatus === 'generating' && (
-                <p className="text-xs text-muted-foreground animate-pulse">Generating…</p>
               )}
 
               {(audioStatus === 'preview' || audioStatus === 'accepting') && audioBlobUrl && (
