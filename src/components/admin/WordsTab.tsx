@@ -106,23 +106,88 @@ function Pagination({
   );
 }
 
-/** A thin hover strip between rows — like Google Sheets' "insert row" gutter. */
-function InsertRowDivider({ colSpan, onInsert }: { colSpan: number; onInsert: () => void }) {
-  return (
-    <tr className="group/insert">
-      <td colSpan={colSpan} className="h-2.5 p-0">
-        <div className="flex h-full items-center justify-center">
-          <button
-            type="button"
-            onClick={onInsert}
-            title="Энд шинэ үг оруулах"
-            className="flex h-4 w-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover/insert:opacity-100 hover:!opacity-100 hover:border-primary hover:text-primary"
-          >
-            <Plus className="size-2.5" />
-          </button>
-        </div>
-      </td>
-    </tr>
+/** Right-click row menu — Excel/Sheets-style "insert row" + a few row commands. */
+function RowContextMenu({
+  x,
+  y,
+  word,
+  onClose,
+  onInsert,
+  onEdit,
+  onToggleActive,
+}: {
+  x: number;
+  y: number;
+  word: WordBankEntry;
+  onClose: () => void;
+  onInsert: () => void;
+  onEdit: () => void;
+  onToggleActive: () => void;
+}) {
+  useEffect(() => {
+    const close = () => onClose();
+    const closeOnEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    // Skip one tick so the right-click that opened this menu doesn't also close it.
+    const t = setTimeout(() => {
+      window.addEventListener("click", close);
+      window.addEventListener("scroll", close, true);
+    }, 0);
+    window.addEventListener("keydown", closeOnEscape);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener("click", close);
+      window.removeEventListener("scroll", close, true);
+      window.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [onClose]);
+
+  const itemCls =
+    "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-popover-foreground transition-colors hover:bg-accent";
+
+  return createPortal(
+    <div
+      className="fixed z-[9999] min-w-[220px] rounded-lg border border-border bg-popover py-1 shadow-xl"
+      style={{ left: x, top: y }}
+      onContextMenu={(e) => e.preventDefault()}
+    >
+      <button
+        type="button"
+        onClick={() => {
+          onInsert();
+          onClose();
+        }}
+        className={itemCls}
+      >
+        <Plus className="size-3.5" />
+        Шинэ үг нэмэх («{word.word}»-д үндэслэн)
+      </button>
+      <div className="my-1 border-t border-border" />
+      <button
+        type="button"
+        onClick={() => {
+          onEdit();
+          onClose();
+        }}
+        className={itemCls}
+      >
+        <Pencil className="size-3.5" />
+        Засах
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          onToggleActive();
+          onClose();
+        }}
+        className={itemCls}
+      >
+        {word.is_active ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
+        {word.is_active ? "Идэвхгүй болгох" : "Дахин идэвхжүүлэх"}
+      </button>
+    </div>,
+    document.body,
   );
 }
 
@@ -291,8 +356,9 @@ export function WordsTab() {
   const [editWordId, setEditWordId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
   const [deactivating, setDeactivating] = useState(false);
-  // Sheet-style "insert row" — undefined prototype means insert into an empty list.
+  // undefined prototype means insert into an empty list.
   const [creating, setCreating] = useState<{ prototype?: WordBankEntry } | null>(null);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; word: WordBankEntry } | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulk, setConfirmBulk] = useState(false);
@@ -605,24 +671,16 @@ export function WordsTab() {
               {isLoading ? (
                 <SkeletonRows count={10} cols={13} />
               ) : words.length === 0 ? (
-                <>
-                  <InsertRowDivider colSpan={13} onInsert={() => setCreating({})} />
-                  <tr>
-                    <td colSpan={13}>
-                      <EmptyState
-                        message="Үг олдсонгүй"
-                        subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
-                      />
-                    </td>
-                  </tr>
-                </>
+                <tr>
+                  <td colSpan={13}>
+                    <EmptyState
+                      message="Үг олдсонгүй"
+                      subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
+                    />
+                  </td>
+                </tr>
               ) : (
-                words.flatMap((w: WordBankEntry, i) => [
-                  <InsertRowDivider
-                    key={`divider-${w.id}`}
-                    colSpan={13}
-                    onInsert={() => setCreating({ prototype: words[i - 1] ?? w })}
-                  />,
+                words.map((w: WordBankEntry) => (
                   <tr
                     key={w.id}
                     draggable={w.is_active}
@@ -649,7 +707,11 @@ export function WordsTab() {
                       const draggedId = e.dataTransfer.getData("text/plain");
                       if (draggedId) handleDropConnect(draggedId, w);
                     }}
-                    title="Чирж өөр үгэн дээр тавьж холбоно уу"
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setContextMenu({ x: e.clientX, y: e.clientY, word: w });
+                    }}
+                    title="Чирж өөр үгэн дээр тавьж холбоно уу · Хулганы баруун товч — цэс"
                     className={cn(
                       "transition-colors hover:bg-accent/50",
                       !w.is_active && "opacity-50",
@@ -753,17 +815,8 @@ export function WordsTab() {
                         )}
                       </div>
                     </td>
-                  </tr>,
-                  ...(i === words.length - 1
-                    ? [
-                        <InsertRowDivider
-                          key="divider-end"
-                          colSpan={13}
-                          onInsert={() => setCreating({ prototype: w })}
-                        />,
-                      ]
-                    : []),
-                ])
+                  </tr>
+                ))
               )}
             </tbody>
           </table>
@@ -775,6 +828,23 @@ export function WordsTab() {
       {/* Pagination */}
       {!isLoading && total > PER_PAGE && (
         <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
+      )}
+
+      {/* Row right-click menu */}
+      {contextMenu && (
+        <RowContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          word={contextMenu.word}
+          onClose={() => setContextMenu(null)}
+          onInsert={() => setCreating({ prototype: contextMenu.word })}
+          onEdit={() => setEditWordId(contextMenu.word.id)}
+          onToggleActive={() =>
+            contextMenu.word.is_active
+              ? setConfirmDeactivate(contextMenu.word)
+              : handleReactivate(contextMenu.word)
+          }
+        />
       )}
 
       {/* Create modal */}
