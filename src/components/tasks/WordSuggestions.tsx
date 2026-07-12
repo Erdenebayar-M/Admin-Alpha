@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { ImageIcon, Volume2 } from "lucide-react";
 import { getWords } from "@/lib/api";
 import type { WordBankEntry } from "@/lib/types";
 import { cn } from "@/lib/utils";
@@ -58,9 +59,17 @@ export function WordSuggestions({
                 onClick={() => onSelectWord(selectedWordId === w.id ? null : w.id)}
               />
               {(w.image_ok || w.audio_ok) && (
-                <span className="text-[10px] text-muted-foreground">
-                  {w.image_ok && "🖼"}
-                  {w.audio_ok && "🔊"}
+                <span className="flex items-center gap-1 text-muted-foreground">
+                  {w.image_ok && (
+                    <span title="Энэ үгэнд зураг бэлэн байгаа">
+                      <ImageIcon className="size-3" />
+                    </span>
+                  )}
+                  {w.audio_ok && (
+                    <span title="Энэ үгэнд аудио бэлэн байгаа">
+                      <Volume2 className="size-3" />
+                    </span>
+                  )}
                 </span>
               )}
               {showImageAction && w.image_ok && w.image_url && (
