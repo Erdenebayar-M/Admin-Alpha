@@ -414,6 +414,7 @@ export interface WordFilters {
   category?: string;
   app_level?: string;
   task_type?: string;
+  skill?: string;
   q?: string;
   active?: 'true' | 'false' | 'all';
   has_forms?: 'true' | 'all';

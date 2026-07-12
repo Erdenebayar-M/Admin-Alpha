@@ -237,6 +237,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
               <WordSuggestions
                 gradeBand={tf.form.grade_band}
                 taskType={tf.form.task_type}
+                skill={tf.form.primary_skill || undefined}
                 selectedWordId={tf.selectedWordId}
                 onSelectWord={tf.setSelectedWordId}
                 showImageAction={IMAGE_CAPABLE_TASK_TYPES.has(tf.form.task_type)}
