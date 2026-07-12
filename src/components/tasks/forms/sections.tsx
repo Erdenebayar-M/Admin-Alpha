@@ -3,7 +3,7 @@
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Separator } from "@/components/ui/separator";
+import { Card, CardContent } from "@/components/ui/card";
 import { Field, SuggestTextarea } from "../shared";
 import type { ContentFormProps, SubProps } from "./types";
 
@@ -65,33 +65,33 @@ export function MetadataSection({ form, set, groups }: Pick<ContentFormProps, "f
   const showPartial = groups.includes("dictation") || groups.includes("mini_text");
 
   return (
-    <>
-      <Separator />
-      <p className="text-sm font-semibold">Мета өгөгдөл</p>
-      <div className={`grid gap-4 ${showPartial ? "grid-cols-2" : "grid-cols-1"}`}>
-        <Field label="Зарцуулах хугацаа (секунд)">
-          <Input
-            type="number"
-            min={5}
-            value={form.estimated_time_seconds}
-            onChange={(e) => set("estimated_time_seconds", e.target.value)}
-          />
-        </Field>
-        {showPartial && (
-          <Field label="Хэсэгчилсэн оноо">
-            <div className="flex h-9 items-center gap-2">
-              <Checkbox
-                id="allow_partial_meta"
-                checked={form.allow_partial}
-                onCheckedChange={(c) => set("allow_partial", c === true)}
-              />
-              <label htmlFor="allow_partial_meta" className="cursor-pointer text-sm text-muted-foreground">
-                Тийм
-              </label>
-            </div>
+    <Card>
+      <CardContent className="pt-6 space-y-4">
+        <div className={`grid gap-4 ${showPartial ? "grid-cols-2" : "grid-cols-1"}`}>
+          <Field label="Зарцуулах хугацаа (секунд)">
+            <Input
+              type="number"
+              min={5}
+              value={form.estimated_time_seconds}
+              onChange={(e) => set("estimated_time_seconds", e.target.value)}
+            />
           </Field>
-        )}
-      </div>
-    </>
+          {showPartial && (
+            <Field label="Хэсэгчилсэн оноо">
+              <div className="flex h-9 items-center gap-2">
+                <Checkbox
+                  id="allow_partial_meta"
+                  checked={form.allow_partial}
+                  onCheckedChange={(c) => set("allow_partial", c === true)}
+                />
+                <label htmlFor="allow_partial_meta" className="cursor-pointer text-sm text-muted-foreground">
+                  Тийм
+                </label>
+              </div>
+            </Field>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
