@@ -388,6 +388,7 @@ export interface WordFilters {
   active?: 'true' | 'false' | 'all';
   has_forms?: 'true' | 'all';
   scope?: 'roots' | 'all';
+  needs_audio?: 'true';
   sort_by?:
     | 'word'
     | 'category'

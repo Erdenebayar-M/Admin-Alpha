@@ -520,6 +520,7 @@ export function WordsTab() {
   const [appLevel, setAppLevel] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
   const [hasForms, setHasForms] = useState<"all" | "true">("all");
+  const [needsAudio, setNeedsAudio] = useState<"all" | "true">("all");
   const [scope, setScope] = useState<"roots" | "all">("roots");
   const [sortBy, setSortBy] = useState<SortableColumn>("word");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -561,11 +562,11 @@ export function WordsTab() {
 
   useEffect(() => {
     setPage(1);
-  }, [grade, category, appLevel, activeFilter, hasForms, scope, sortBy, sortDir, debouncedSearch]);
+  }, [grade, category, appLevel, activeFilter, hasForms, needsAudio, scope, sortBy, sortDir, debouncedSearch]);
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [grade, category, appLevel, activeFilter, hasForms, scope, sortBy, sortDir, debouncedSearch, page]);
+  }, [grade, category, appLevel, activeFilter, hasForms, needsAudio, scope, sortBy, sortDir, debouncedSearch, page]);
 
   const { data: facets } = useQuery({
     queryKey: ["word-facets"],
@@ -579,6 +580,7 @@ export function WordsTab() {
     ...(appLevel !== "all" ? { app_level: appLevel } : {}),
     ...(debouncedSearch ? { q: debouncedSearch } : {}),
     ...(hasForms === "true" ? { has_forms: "true" as const } : {}),
+    ...(needsAudio === "true" ? { needs_audio: "true" as const } : {}),
     scope,
     sort_by: sortBy,
     sort_dir: sortDir,
@@ -806,6 +808,28 @@ export function WordsTab() {
               ))}
             </div>
           </div>
+
+          {/* Needs-audio filter — words flagged audio_ok with no audio_url yet */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Аудио</span>
+            <div className="flex gap-1.5">
+              {(["all", "true"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setNeedsAudio(v)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                    needsAudio === v
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                  )}
+                >
+                  {v === "all" ? "Бүгд" : "Аудио хэрэгтэй"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -994,7 +1018,7 @@ export function WordsTab() {
                       )}
                     </td>
                     <td className={tableStyles.cell}>
-                      <MediaCell imageUrl={w.image_url} audioUrl={null} />
+                      <MediaCell imageUrl={w.image_url} audioUrl={w.audio_url} />
                     </td>
                     <td className={tableStyles.cell}>
                       <div className="flex items-center gap-1">

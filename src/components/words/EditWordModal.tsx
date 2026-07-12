@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw, Pencil, Link2Off } from "lucide-react";
+import { Loader2, RefreshCw, Pencil, Link2Off, Mic, Square, Upload, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,7 @@ import {
 } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
+import { uploadAudioToR2 } from "@/lib/r2Upload";
 import type { WordBankEntry, WordFacets } from "@/lib/types";
 
 const REDERIVE = new Set(["word", "part_of_speech", "meaning_type"]);
@@ -40,6 +41,7 @@ export interface Form {
   meaning_complexity: string;
   spelling_complexity: string;
   morph_complexity: string;
+  audio_url: string | null;
 }
 
 export const EMPTY_FORM: Form = {
@@ -54,6 +56,7 @@ export const EMPTY_FORM: Form = {
   meaning_complexity: "",
   spelling_complexity: "",
   morph_complexity: "",
+  audio_url: null,
 };
 
 export function toForm(w: WordBankEntry): Form {
@@ -69,6 +72,7 @@ export function toForm(w: WordBankEntry): Form {
     meaning_complexity: w.meaning_complexity?.toString() ?? "",
     spelling_complexity: w.spelling_complexity?.toString() ?? "",
     morph_complexity: w.morph_complexity?.toString() ?? "",
+    audio_url: w.audio_url ?? null,
   };
 }
 
@@ -104,6 +108,7 @@ function buildUpdates(form: Form, dirty: Set<string>): Record<string, unknown> {
     u.spelling_complexity = form.spelling_complexity ? parseInt(form.spelling_complexity, 10) : null;
   if (dirty.has("morph_complexity"))
     u.morph_complexity = form.morph_complexity ? parseInt(form.morph_complexity, 10) : null;
+  if (dirty.has("audio_url")) u.audio_url = form.audio_url;
   return u;
 }
 
@@ -493,6 +498,121 @@ function SelectOrCustom({
   );
 }
 
+/** Record via mic (primary) or upload a file (fallback); either way uploads to R2 and reports the resulting URL. */
+function AudioField({
+  value,
+  onChange,
+}: {
+  value: string | null;
+  onChange: (url: string | null) => void;
+}) {
+  const [recording, setRecording] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+  const recorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  async function upload(blob: Blob) {
+    setBusy(true);
+    setErr(null);
+    try {
+      const result = await uploadAudioToR2(blob);
+      onChange(result.url);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Аудио байршуулахад алдаа гарлаа");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startRecording() {
+    setErr(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      chunksRef.current = [];
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunksRef.current.push(e.data);
+      };
+      recorder.onstop = () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(chunksRef.current, { type: recorder.mimeType || "audio/webm" });
+        void upload(blob);
+      };
+      recorder.start();
+      recorderRef.current = recorder;
+      setRecording(true);
+    } catch {
+      setErr("Микрофон уруу хандах эрх өгөгдсөнгүй");
+    }
+  }
+
+  function stopRecording() {
+    recorderRef.current?.stop();
+    setRecording(false);
+  }
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    e.target.value = "";
+    if (file) void upload(file);
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          disabled={busy}
+          onClick={recording ? stopRecording : startRecording}
+          className={cn(
+            smallBtn,
+            "flex items-center gap-1.5",
+            recording
+              ? "border-destructive/40 bg-destructive/10 text-destructive hover:bg-destructive/20"
+              : "border-primary bg-primary text-primary-foreground hover:bg-primary/90",
+          )}
+        >
+          {recording ? <Square className="size-3.5" /> : <Mic className="size-3.5" />}
+          {recording ? "Зогсоох" : "Бичих"}
+        </button>
+        <button
+          type="button"
+          disabled={busy || recording}
+          onClick={() => fileInputRef.current?.click()}
+          className={cn(smallBtn, "flex items-center gap-1.5 border-border bg-background text-foreground hover:bg-muted")}
+        >
+          <Upload className="size-3.5" />
+          Файл сонгох
+        </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="audio/*"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        {busy && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+      </div>
+      {value && (
+        <div className="flex items-center gap-2">
+          <audio controls src={value} className="h-8 max-w-xs" />
+          <button
+            type="button"
+            title="Аудио устгах"
+            onClick={() => onChange(null)}
+            className="text-muted-foreground transition-colors hover:text-destructive"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+      )}
+      {err && <p className="text-xs text-destructive">{err}</p>}
+    </div>
+  );
+}
+
 /** The word field grid shared by the edit and create modals — core info, grade/level, complexity, tags. */
 export function WordFieldsGrid({
   form,
@@ -637,6 +757,12 @@ export function WordFieldsGrid({
           />
         </Field>
       </div>
+
+      {/* Audio */}
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Аудио
+      </p>
+      <AudioField value={form.audio_url} onChange={(url) => setField("audio_url", url)} />
     </>
   );
 }
