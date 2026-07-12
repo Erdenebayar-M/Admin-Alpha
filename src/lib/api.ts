@@ -413,6 +413,8 @@ export interface CreateWordResult {
   action: string;
   id: string;
   word: string;
+  root_id: string | null;
+  root_word: string | null;
 }
 
 export async function createWord(payload: Record<string, unknown>): Promise<CreateWordResult> {

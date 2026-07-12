@@ -16,6 +16,7 @@ import {
   deactivateWord,
   connectWordToRoot,
   disconnectWordFromRoot,
+  createWord,
   getWord,
   getWords,
   getWordFacets,
@@ -189,6 +190,52 @@ function RootConnectField({
   );
 }
 
+/** Type a brand-new word and create it already linked as a form of this root. */
+function AddFormField({
+  word,
+  busy,
+  run,
+}: {
+  word: WordBankEntry;
+  busy: string | null;
+  run: (label: string, fn: () => Promise<string>, keepOpen?: boolean) => Promise<void>;
+}) {
+  const [newForm, setNewForm] = useState("");
+
+  return (
+    <div className="flex items-end gap-2">
+      <div className="flex flex-1 flex-col gap-1">
+        <label className="text-xs font-semibold text-muted-foreground">Шинэ хэлбэр нэмэх</label>
+        <input
+          className={fieldCls}
+          value={newForm}
+          onChange={(e) => setNewForm(e.target.value)}
+          placeholder="жишээ: унтахаас"
+        />
+      </div>
+      <button
+        type="button"
+        disabled={!newForm.trim() || busy !== null}
+        onClick={() =>
+          run(
+            "add-form",
+            async () => {
+              const w = newForm.trim();
+              await createWord({ word: w, category: word.category, root_id: word.id });
+              setNewForm("");
+              return `"${w}" → "${word.word}"-ийн хэлбэр болж үүслээ`;
+            },
+            true,
+          )
+        }
+        className={cn(smallBtn, "border-primary bg-primary text-primary-foreground hover:bg-primary/90")}
+      >
+        Нэмэх
+      </button>
+    </div>
+  );
+}
+
 /** Root ↔ forms management: connect to a root, list forms, delete (detach/cascade). */
 function RootFormsSection({
   word,
@@ -231,6 +278,9 @@ function RootFormsSection({
 
       {/* Connect to a root */}
       <RootConnectField word={word} busy={busy} run={run} />
+
+      {/* Add a brand-new form of this root (only meaningful when this word is itself a root) */}
+      {!word.root_word && <AddFormField word={word} busy={busy} run={run} />}
 
       {/* Forms of this root */}
       {hasForms && (
