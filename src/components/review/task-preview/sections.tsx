@@ -48,14 +48,18 @@ export function ChoiceSection({
 }: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
   const choices = opts.choices ?? [];
 
+  // correct_answer is a separate top-level field from options.choices[].is_correct —
+  // keep them in sync whenever the correct choice or its text changes.
   function updateChoice(i: number, patch: Partial<{ text: string; is_correct: boolean }>) {
     const next = choices.map((c, idx) => (idx === i ? { ...c, ...patch } : c));
-    onDraftChange({ options: { ...allOpts, choices: next } });
+    const draftPatch: Partial<TaskContent> = { options: { ...allOpts, choices: next } };
+    if (next[i].is_correct) draftPatch.correct_answer = next[i].text;
+    onDraftChange(draftPatch);
   }
 
   function markCorrect(i: number) {
     const next = choices.map((c, idx) => ({ ...c, is_correct: idx === i }));
-    onDraftChange({ options: { ...allOpts, choices: next } });
+    onDraftChange({ options: { ...allOpts, choices: next }, correct_answer: next[i].text });
   }
 
   return (
