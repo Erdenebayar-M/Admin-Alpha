@@ -434,16 +434,23 @@ function SelectOrCustom({
 
   if (customMode) {
     return (
-      <input
-        autoFocus
-        className={fieldCls}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onBlur={() => {
-          if (!value) setCustomMode(false);
-        }}
-        placeholder={placeholder}
-      />
+      <div className="flex items-center gap-2">
+        <input
+          autoFocus
+          className={fieldCls}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+        />
+        <button
+          type="button"
+          onClick={() => setCustomMode(false)}
+          title="Жагсаалтаас сонгох руу буцах"
+          className="shrink-0 whitespace-nowrap text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+        >
+          ← жагсаалт
+        </button>
+      </div>
     );
   }
 
@@ -453,7 +460,6 @@ function SelectOrCustom({
       value={value || ""}
       onChange={(e) => {
         if (e.target.value === CUSTOM_OPTION) {
-          onChange("");
           setCustomMode(true);
         } else {
           onChange(e.target.value);
