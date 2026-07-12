@@ -113,20 +113,32 @@ function Pagination({
  * the "+" pill is absolutely positioned over the seam and only fades in on hover.
  */
 function InsertRowDivider({ onInsert }: { onInsert: () => void }) {
+  const [hoverX, setHoverX] = useState<number | null>(null);
+
   return (
     <tr>
       <td colSpan={13} className="relative h-0 border-0 p-0 leading-none">
-        {/* The whole band (not just the pill) is hoverable — pointer-events-none here
-            would stop it from ever receiving the hover that's supposed to reveal it. */}
-        <div className="group/insertgap absolute inset-x-0 -top-3 z-20 flex h-6 items-center justify-center">
-          <button
-            type="button"
-            onClick={onInsert}
-            title="Энд шинэ үг оруулах"
-            className="flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover/insertgap:opacity-100 hover:border-primary hover:text-primary"
-          >
-            <Plus className="size-3" />
-          </button>
+        {/* The pill follows the cursor along the seam instead of sitting fixed in the center. */}
+        <div
+          className="absolute inset-x-0 -top-3 z-20 h-6"
+          onMouseMove={(e) => {
+            const rect = e.currentTarget.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            setHoverX(Math.min(Math.max(x, 12), rect.width - 12));
+          }}
+          onMouseLeave={() => setHoverX(null)}
+        >
+          {hoverX !== null && (
+            <button
+              type="button"
+              onClick={onInsert}
+              title="Энд шинэ үг оруулах"
+              style={{ left: hoverX }}
+              className="absolute top-1/2 flex h-5 w-5 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-border bg-background text-muted-foreground shadow-sm transition-colors hover:border-primary hover:text-primary"
+            >
+              <Plus className="size-3" />
+            </button>
+          )}
         </div>
       </td>
     </tr>
