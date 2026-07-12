@@ -168,17 +168,25 @@ function RootConnectField({
 }
 
 /** Root ↔ forms management: connect to a root, list forms, delete (detach/cascade). */
-function RootFormsSection({ word, onDone }: { word: WordBankEntry; onDone: (msg: string) => void }) {
+function RootFormsSection({
+  word,
+  onDone,
+}: {
+  word: WordBankEntry;
+  onDone: (msg: string, keepOpen?: boolean) => void;
+}) {
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
-  async function run(label: string, fn: () => Promise<string>) {
+  async function run(label: string, fn: () => Promise<string>, keepOpen = false) {
     setBusy(label);
     setErr(null);
     try {
-      onDone(await fn());
+      const msg = await fn();
+      onDone(msg, keepOpen);
     } catch (e) {
       setErr(e instanceof Error ? e.message : "Алдаа гарлаа");
+    } finally {
       setBusy(null);
     }
   }
@@ -216,10 +224,14 @@ function RootFormsSection({ word, onDone }: { word: WordBankEntry; onDone: (msg:
                   title="Хэлбэрийг идэвхгүй болгох"
                   disabled={busy !== null}
                   onClick={() =>
-                    run(`form-${f.id}`, async () => {
-                      await deactivateWord(f.id, "solo");
-                      return `"${f.word}" идэвхгүй болголоо`;
-                    })
+                    run(
+                      `form-${f.id}`,
+                      async () => {
+                        await deactivateWord(f.id, "solo");
+                        return `"${f.word}" идэвхгүй болголоо`;
+                      },
+                      true,
+                    )
                   }
                   className="text-muted-foreground transition-colors hover:text-destructive"
                 >
@@ -492,10 +504,10 @@ export function EditWordModal({ word, onClose }: Props) {
             {/* Root ↔ forms management */}
             <RootFormsSection
               word={word}
-              onDone={(msg) => {
+              onDone={(msg, keepOpen) => {
                 queryClient.invalidateQueries({ queryKey: ["words"] });
                 showPageToast({ type: "success", message: msg });
-                onClose();
+                if (!keepOpen) onClose();
               }}
             />
 

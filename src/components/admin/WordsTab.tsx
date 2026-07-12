@@ -185,7 +185,7 @@ export function WordsTab() {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
 
-  const [editWord, setEditWord] = useState<WordBankEntry | null>(null);
+  const [editWordId, setEditWordId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
   const [deactivating, setDeactivating] = useState(false);
 
@@ -223,6 +223,7 @@ export function WordsTab() {
 
   const words = data?.words ?? [];
   const total = data?.total ?? 0;
+  const editWord = words.find((w) => w.id === editWordId) ?? null;
 
   async function handleDeactivateConfirm(mode: "solo" | "detach" | "cascade") {
     if (!confirmDeactivate) return;
@@ -451,7 +452,7 @@ export function WordsTab() {
                         <button
                           type="button"
                           title="Засах"
-                          onClick={() => setEditWord(w)}
+                          onClick={() => setEditWordId(w.id)}
                           className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
                         >
                           <Pencil className="size-3.5" />
@@ -494,7 +495,7 @@ export function WordsTab() {
 
       {/* Edit modal */}
       {editWord && (
-        <EditWordModal word={editWord} onClose={() => setEditWord(null)} />
+        <EditWordModal word={editWord} onClose={() => setEditWordId(null)} />
       )}
 
       {/* Deactivate confirm */}
