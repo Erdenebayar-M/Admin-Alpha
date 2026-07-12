@@ -5,7 +5,7 @@ const backendUrl = process.env.BACKEND_URL || "http://127.0.0.1:3000";
 const nextConfig: NextConfig = {
   allowedDevOrigins: ["*.ngrok-free.dev", "*.ngrok-free.app", "*.ngrok.io"],
   experimental: {
-    proxyTimeout: 300_000, // 5 min — LLM generation + AI review can take 60-120 s
+    proxyTimeout: 600_000, // 10 min — matches backend's LLM-route timeout (src/index.ts)
   },
   async rewrites() {
     return {

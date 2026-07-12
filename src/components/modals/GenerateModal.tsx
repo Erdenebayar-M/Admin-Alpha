@@ -8,6 +8,7 @@ import {
   getGenerateSpecs,
   generateTasks,
   type GenerateSpec,
+  type GenerateTaskResult,
 } from "@/lib/api";
 import {
   SKILL_LABELS,
@@ -107,6 +108,7 @@ export function GeneratePanel() {
   const [maxItems, setMaxItems] = useState<1 | 2 | 3>(3);
   const [maxCost, setMaxCost] = useState<1 | 5 | 10 | 20>(5);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+  const [lastResults, setLastResults] = useState<GenerateTaskResult[] | null>(null);
 
   const { data: specs = [], isLoading } = useQuery({
     queryKey: ["generate-specs"],
@@ -119,6 +121,11 @@ export function GeneratePanel() {
         ? []
         : specs.filter((s) => s.grade_band.some((g) => selectedGrades.includes(g))),
     [specs, selectedGrades],
+  );
+
+  const specNameById = useMemo(
+    () => new Map(specs.map((s) => [s.id, s.mongolian_name])),
+    [specs],
   );
 
   function toggleGrade(g: string) {
@@ -156,11 +163,18 @@ export function GeneratePanel() {
       ),
     onSuccess: (data) => {
       setSelectedIds(new Set());
+      setLastResults(data.results);
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
       queryClient.invalidateQueries({ queryKey: ["content-stats"] });
       const total = data.results.reduce((s, r) => s + r.drafts_created, 0);
-      setToast({ msg: `${total} даалгавар амжилттай үүсгэгдлээ`, ok: true });
-      setTimeout(() => router.push("/admin/review"), 1500);
+      const missed = data.results.reduce((s, r) => s + r.rejected, 0) + data.results.filter((r) => r.error).length;
+      setToast({
+        msg: missed > 0
+          ? `${total} даалгавар үүсгэгдлээ · ${missed} алгассан — доор дэлгэрэнгүй`
+          : `${total} даалгавар амжилттай үүсгэгдлээ`,
+        ok: true,
+      });
+      setTimeout(() => setToast(null), 4000);
     },
     onError: (err: Error) => {
       setToast({ msg: err.message ?? "Үүсгэхэд алдаа гарлаа. Дахин оролдоно уу.", ok: false });
@@ -169,8 +183,9 @@ export function GeneratePanel() {
   });
 
   const hasSelection = selectedIds.size > 0 && selectedGrades.length > 0;
-  const cellCount = selectedGrades.length * (selectedLevels.length || 1);
-  const estimatedVariants = selectedIds.size * maxItems * cellCount;
+  // One generation cell per (grade × task type); selected levels are a filter
+  // within each cell, not a multiplier — see backend content.ts /generate.
+  const estimatedVariants = selectedIds.size * maxItems * selectedGrades.length;
 
   if (mutation.isPending) {
     return (
@@ -365,6 +380,54 @@ export function GeneratePanel() {
           )}
         </div>
       </div>
+
+      {lastResults && (
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-sm">Үр дүн (нүд тус бүрээр)</CardTitle>
+              <button
+                type="button"
+                onClick={() => router.push("/admin/review")}
+                className="text-xs text-primary hover:underline"
+              >
+                Review queue-рүү очих
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-left text-xs font-medium text-muted-foreground">
+                    <th className="py-1.5 pr-3">Даалгаврын төрөл</th>
+                    <th className="py-1.5 pr-3">Анги</th>
+                    <th className="py-1.5 pr-3 text-right">Үүссэн</th>
+                    <th className="py-1.5 pr-3 text-right">Алгассан</th>
+                    <th className="py-1.5 pr-3 text-right">AI хориглосон</th>
+                    <th className="py-1.5">Тайлбар</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {lastResults.map((r, i) => {
+                    const missed = r.rejected > 0 || !!r.error || r.drafts_created === 0;
+                    return (
+                      <tr key={`${r.task_type}-${r.grade}-${i}`} className={missed ? "text-amber-700 dark:text-amber-400" : ""}>
+                        <td className="py-1.5 pr-3">{specNameById.get(r.task_type) ?? r.task_type}</td>
+                        <td className="py-1.5 pr-3">G{r.grade}</td>
+                        <td className="py-1.5 pr-3 text-right font-medium text-foreground">{r.drafts_created}</td>
+                        <td className="py-1.5 pr-3 text-right">{r.rejected}</td>
+                        <td className="py-1.5 pr-3 text-right">{r.ai_blocked}</td>
+                        <td className="py-1.5 text-xs">{r.error ?? (missed ? "Зарим хувилбар алгассан эсвэл шалгуур дээр унасан" : "")}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {toast && (
         <div

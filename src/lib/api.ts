@@ -340,12 +340,13 @@ export interface GenerateSpec {
 export interface GenerateTaskResult {
   task_type: string;
   grade: number;
-  level: string | null;
+  levels: string[] | null;
   passed: number;
   rejected: number;
   drafts_created: number;
   ai_blocked: number;
   cost_usd: number;
+  error?: string;
 }
 
 export async function getGenerateSpecs(): Promise<GenerateSpec[]> {
