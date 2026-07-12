@@ -51,10 +51,13 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
     if (!tf.canSubmit) return;
     tf.submit(undefined, {
       onSuccess: (result) => {
-        setToast({ msg: `Хяналтанд илгээгдлээ: ${result.task_id}`, ok: true });
+        const msg = result.mediaWarnings?.length
+          ? `Хяналтанд илгээгдлээ: ${result.task_id} · Медиа хадгалагдсангүй (${result.mediaWarnings.join(", ")}) — review хэсгээс дахин оролдоно уу`
+          : `Хяналтанд илгээгдлээ: ${result.task_id}`;
+        setToast({ msg, ok: !result.mediaWarnings?.length });
         queryClient.invalidateQueries({ queryKey: ["review-queue"] });
         queryClient.invalidateQueries({ queryKey: ["content-stats"] });
-        setTimeout(() => onClose(), 1500);
+        setTimeout(() => onClose(), result.mediaWarnings?.length ? 3500 : 1500);
       },
       onError: (err: Error) => {
         setToast({ msg: err.message ?? "Алдаа гарлаа.", ok: false });

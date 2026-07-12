@@ -302,6 +302,9 @@ export interface CreateTaskPayload {
 export interface CreateTaskResult {
   task_id: string;
   variant_id: string;
+  /** Set client-side (not by the server) when the task itself saved but
+   * attached media (audio/image) failed — e.g. ["audio"]. */
+  mediaWarnings?: string[];
 }
 
 export async function createTask(payload: CreateTaskPayload): Promise<CreateTaskResult> {

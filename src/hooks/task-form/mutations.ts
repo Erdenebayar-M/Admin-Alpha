@@ -65,18 +65,22 @@ export async function runTaskSubmission({
     localStorage.setItem("last_created_task", JSON.stringify(form));
   } catch { /* localStorage full — non-critical */ }
 
-  // Upload media and update DB before resolving — keeps isPending true until done
+  // Upload media and update DB before resolving — keeps isPending true until done.
+  // POST /tasks always creates a TaskDraft (stage=STAGE2), never a live Task, so
+  // these must use a non-"validated" stage or /update-audio and /update-image
+  // look for the row in the wrong table and 404.
+  const mediaWarnings: string[] = [];
   const saves: Promise<unknown>[] = [];
   if (audioPreview?.base64) {
     saves.push(
-      saveAudioAndUpdateTask(audioPreview.base64, result.variant_id, audioPreview.slot)
-        .catch((err) => console.error('Failed to save audio:', err)),
+      saveAudioAndUpdateTask(audioPreview.base64, result.variant_id, audioPreview.slot, 'stage2')
+        .catch((err) => { console.error('Failed to save audio:', err); mediaWarnings.push('audio'); }),
     );
   }
   if (imagePreview?.base64) {
     saves.push(
-      saveImageAndUpdateTask(imagePreview.base64, result.variant_id)
-        .catch((err) => console.error('Failed to save image:', err)),
+      saveImageAndUpdateTask(imagePreview.base64, result.variant_id, 'stage2')
+        .catch((err) => { console.error('Failed to save image:', err); mediaWarnings.push('image'); }),
     );
   }
   await Promise.all(saves);
@@ -101,5 +105,5 @@ export async function runTaskSubmission({
     await editVariant(result.variant_id, { options: { ...buildOptions(form, currentGroup), pairs: updatedPairs } }).catch((err) => console.error('Failed to update pair images:', err));
   }
 
-  return result;
+  return mediaWarnings.length > 0 ? { ...result, mediaWarnings } : result;
 }
