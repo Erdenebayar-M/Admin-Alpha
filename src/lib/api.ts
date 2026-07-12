@@ -403,6 +403,12 @@ export async function getWordFacets(): Promise<WordFacets> {
   return data.data;
 }
 
+/** Fetch a single word by id (root or form) — used to load a form's full record for editing. */
+export async function getWord(id: string): Promise<WordBankEntry> {
+  const { data } = await client.get<{ success: boolean; data: { word: WordBankEntry } }>(`/words/${id}`);
+  return data.data.word;
+}
+
 export interface PatchWordResult {
   action: string;
   id: string;
@@ -461,6 +467,19 @@ export async function connectWordToRoot(id: string, root: string): Promise<Conne
   const { data } = await client.post<{ success: boolean; data: ConnectWordResult }>(
     `/words/${id}/connect`,
     { root },
+  );
+  return data.data;
+}
+
+export interface DisconnectWordResult {
+  action: string;
+  id: string;
+}
+
+/** Unlink a word from its root — it becomes a standalone, active word again. */
+export async function disconnectWordFromRoot(id: string): Promise<DisconnectWordResult> {
+  const { data } = await client.post<{ success: boolean; data: DisconnectWordResult }>(
+    `/words/${id}/disconnect`,
   );
   return data.data;
 }

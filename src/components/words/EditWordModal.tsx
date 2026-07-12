@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Loader2, RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, Pencil, Link2Off } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +11,7 @@ import {
   DialogBody,
   DialogClose,
 } from "@/components/ui/dialog";
-import { patchWord, deactivateWord, connectWordToRoot, getWords } from "@/lib/api";
+import { patchWord, deactivateWord, connectWordToRoot, disconnectWordFromRoot, getWord, getWords } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import type { WordBankEntry } from "@/lib/types";
@@ -171,9 +171,11 @@ function RootConnectField({
 function RootFormsSection({
   word,
   onDone,
+  onEditForm,
 }: {
   word: WordBankEntry;
   onDone: (msg: string, keepOpen?: boolean) => void;
+  onEditForm: (id: string) => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -219,6 +221,33 @@ function RootFormsSection({
                 className="inline-flex items-center gap-1 rounded-full border border-border bg-background px-2 py-0.5 text-xs text-foreground"
               >
                 {f.word}
+                <button
+                  type="button"
+                  title="Хэлбэрийг засах"
+                  disabled={busy !== null}
+                  onClick={() => onEditForm(f.id)}
+                  className="text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Pencil className="size-3" />
+                </button>
+                <button
+                  type="button"
+                  title="Үндэс үгээс тасалах"
+                  disabled={busy !== null}
+                  onClick={() =>
+                    run(
+                      `disconnect-${f.id}`,
+                      async () => {
+                        await disconnectWordFromRoot(f.id);
+                        return `"${f.word}" холбоос таслагдлаа`;
+                      },
+                      true,
+                    )
+                  }
+                  className="text-muted-foreground transition-colors hover:text-amber-600"
+                >
+                  <Link2Off className="size-3" />
+                </button>
                 <button
                   type="button"
                   title="Хэлбэрийг идэвхгүй болгох"
@@ -319,6 +348,13 @@ export function EditWordModal({ word, onClose }: Props) {
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const [editFormId, setEditFormId] = useState<string | null>(null);
+  const { data: editFormWord } = useQuery({
+    queryKey: ["word", editFormId],
+    queryFn: () => getWord(editFormId!),
+    enabled: editFormId !== null,
+  });
 
   function setField<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -504,12 +540,18 @@ export function EditWordModal({ word, onClose }: Props) {
             {/* Root ↔ forms management */}
             <RootFormsSection
               word={word}
+              onEditForm={(id) => setEditFormId(id)}
               onDone={(msg, keepOpen) => {
                 queryClient.invalidateQueries({ queryKey: ["words"] });
+                queryClient.invalidateQueries({ queryKey: ["word"] });
                 showPageToast({ type: "success", message: msg });
                 if (!keepOpen) onClose();
               }}
             />
+
+            {editFormWord && (
+              <EditWordModal word={editFormWord} onClose={() => setEditFormId(null)} />
+            )}
 
             {error && (
               <div className="rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
