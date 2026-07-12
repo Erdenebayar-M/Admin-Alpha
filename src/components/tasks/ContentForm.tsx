@@ -1,6 +1,5 @@
 "use client";
 
-import { MetadataSection } from "./forms/sections";
 import {
   ChoiceContent,
   ListenChoiceContent,
@@ -27,13 +26,14 @@ import {
 import { MatchPairsContent, AssembleWordContent } from "./forms/match-assemble-forms";
 import { SelfCheckContent } from "./forms/self-check-form";
 import type { ContentFormProps, SubProps } from "./forms/types";
-import { WordSuggestions } from "./WordSuggestions";
 
 export type { ContentFormProps };
 
 // The only task types wired to <ImagePreview> in their content form (see
 // choice-forms.tsx's ImageChoiceContent and fill-forms.tsx's ImageFillContent).
-const IMAGE_CAPABLE_TASK_TYPES = new Set(["TT_1_2", "TT_2_1", "TT_2_3"]);
+// Exported for WordSuggestions' showImageAction, rendered as its own column
+// in CreateTaskModal.tsx rather than nested inside this component.
+export const IMAGE_CAPABLE_TASK_TYPES = new Set(["TT_1_2", "TT_2_1", "TT_2_3"]);
 
 // ─── TYPE_CONTENT_MAP ─────────────────────────────────────────────────────────
 
@@ -94,8 +94,8 @@ const TYPE_CONTENT_MAP: Record<string, React.FC<SubProps>> = {
 // ─── Main export ─────────────────────────────────────────────────────────────
 
 export function ContentForm({
-  form, set, toggleList, groups, errors, taskType, audioPreview, onAudioGenerated, imagePreview, onImageGenerated,
-  selectedWordId = null, onSelectWord = () => {}, saveAudioToWord = false, onSaveAudioToWordChange = () => {},
+  form, set, errors, taskType, audioPreview, onAudioGenerated, imagePreview, onImageGenerated,
+  selectedWordId = null, saveAudioToWord = false, onSaveAudioToWordChange = () => {},
 }: ContentFormProps) {
   const TypeContent = TYPE_CONTENT_MAP[taskType];
 
@@ -104,30 +104,17 @@ export function ContentForm({
   }
 
   return (
-    <div className="space-y-4">
-      <TypeContent
-        form={form}
-        set={set}
-        errors={errors}
-        audioPreview={audioPreview}
-        onAudioGenerated={onAudioGenerated}
-        imagePreview={imagePreview}
-        onImageGenerated={onImageGenerated}
-        selectedWordId={selectedWordId}
-        saveAudioToWord={saveAudioToWord}
-        onSaveAudioToWordChange={onSaveAudioToWordChange}
-      />
-      {form.grade_band.length > 0 && taskType && (
-        <WordSuggestions
-          gradeBand={form.grade_band}
-          taskType={taskType}
-          selectedWordId={selectedWordId}
-          onSelectWord={onSelectWord}
-          showImageAction={IMAGE_CAPABLE_TASK_TYPES.has(taskType)}
-          onUseImage={(word) => onImageGenerated({ tempId: "", base64: "", url: word.image_url ?? undefined })}
-        />
-      )}
-      <MetadataSection form={form} set={set} toggleList={toggleList} groups={groups} />
-    </div>
+    <TypeContent
+      form={form}
+      set={set}
+      errors={errors}
+      audioPreview={audioPreview}
+      onAudioGenerated={onAudioGenerated}
+      imagePreview={imagePreview}
+      onImageGenerated={onImageGenerated}
+      selectedWordId={selectedWordId}
+      saveAudioToWord={saveAudioToWord}
+      onSaveAudioToWordChange={onSaveAudioToWordChange}
+    />
   );
 }

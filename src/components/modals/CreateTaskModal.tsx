@@ -7,7 +7,9 @@ import { useTaskForm } from "@/hooks/useTaskForm";
 import { GRADE_CODES, GRADE_LABELS } from "@/lib/task-defaults";
 import { TaskTypeSelector } from "@/components/tasks/TaskTypeSelector";
 import { ClassificationForm } from "@/components/tasks/ClassificationForm";
-import { ContentForm } from "@/components/tasks/ContentForm";
+import { ContentForm, IMAGE_CAPABLE_TASK_TYPES } from "@/components/tasks/ContentForm";
+import { MetadataSection } from "@/components/tasks/forms/sections";
+import { WordSuggestions } from "@/components/tasks/WordSuggestions";
 import { TaskPreviewCard } from "@/components/tasks/TaskPreviewCard";
 import { TemplateManager } from "@/components/tasks/TemplateManager";
 import { Button } from "@/components/ui/button";
@@ -202,7 +204,7 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
         )}
 
         {step === 1 && (
-          <div className="grid grid-cols-1 lg:grid-cols-[1fr_300px] gap-6 items-start">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_260px_300px] gap-6 items-start">
             <Card>
               <CardHeader>
                 <CardTitle>Дасгалын тайлбар</CardTitle>
@@ -231,7 +233,20 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                 />
               </CardContent>
             </Card>
-            <ClassificationForm form={tf.form} set={tf.set} toggleList={tf.toggleList} errors={tf.errors} />
+            {tf.form.grade_band.length > 0 && tf.form.task_type && (
+              <WordSuggestions
+                gradeBand={tf.form.grade_band}
+                taskType={tf.form.task_type}
+                selectedWordId={tf.selectedWordId}
+                onSelectWord={tf.setSelectedWordId}
+                showImageAction={IMAGE_CAPABLE_TASK_TYPES.has(tf.form.task_type)}
+                onUseImage={(word) => tf.setImagePreview({ tempId: "", base64: "", url: word.image_url ?? undefined })}
+              />
+            )}
+            <div className="space-y-4">
+              <ClassificationForm form={tf.form} set={tf.set} toggleList={tf.toggleList} errors={tf.errors} />
+              <MetadataSection form={tf.form} set={tf.set} toggleList={tf.toggleList} groups={tf.groups} />
+            </div>
           </div>
         )}
 
