@@ -169,7 +169,12 @@ export interface WordBankEntry {
   part_of_speech: string | null;
   meaning_type: string | null;
   image_url: string | null;
+  image_ok: boolean;
   audio_url: string | null;
+  audio_ok: boolean;
+  distractors: string[];
+  blank_hint: string | null;
+  sample_sentence: string | null;
   is_active: boolean;
   is_edited: boolean;
   balarhai_unknown: boolean | null;

@@ -14,9 +14,14 @@ export interface ContentFormProps {
   onAudioGenerated: (state: AudioPreviewState) => void;
   imagePreview: ImagePreviewState | null;
   onImageGenerated: (state: ImagePreviewState) => void;
+  selectedWordId?: string | null;
+  onSelectWord?: (id: string | null) => void;
+  saveAudioToWord?: boolean;
+  onSaveAudioToWordChange?: (value: boolean) => void;
 }
 
 export type SubProps = Pick<
   ContentFormProps,
-  "form" | "set" | "errors" | "audioPreview" | "onAudioGenerated" | "imagePreview" | "onImageGenerated"
+  | "form" | "set" | "errors" | "audioPreview" | "onAudioGenerated" | "imagePreview" | "onImageGenerated"
+  | "selectedWordId" | "saveAudioToWord" | "onSaveAudioToWordChange"
 >;

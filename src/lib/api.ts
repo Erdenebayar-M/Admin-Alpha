@@ -413,6 +413,7 @@ export interface WordFilters {
   grade?: 'G1' | 'G2' | 'G3' | 'G4';
   category?: string;
   app_level?: string;
+  task_type?: string;
   q?: string;
   active?: 'true' | 'false' | 'all';
   has_forms?: 'true' | 'all';

@@ -11,6 +11,9 @@ type Status = "idle" | "generating" | "ready" | "error";
 export interface ImagePreviewState {
   tempId: string;
   base64: string;
+  /** Set instead of base64 when reusing an existing Word's image_url —
+   * no generation/upload needed, saved directly at task-creation time. */
+  url?: string;
 }
 
 interface ImagePreviewProps {

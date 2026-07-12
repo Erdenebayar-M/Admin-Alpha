@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Field, ChipInput } from "../shared";
+import { Field, ChipInput, ReusedWordImage } from "../shared";
 import { AudioPreview } from "../AudioPreview";
 import { ImagePreview } from "../ImagePreview";
 import { CommonFields, FeedbackFields } from "./sections";
@@ -88,7 +88,7 @@ export function ListenChoiceContent({ form, set, errors, audioPreview, onAudioGe
 
 // ─── choice + image (TT_IMAGE_WORD_MATCH) ────────────────────────────────────
 
-export function ImageChoiceContent({ form, set, errors, onImageGenerated }: SubProps) {
+export function ImageChoiceContent({ form, set, errors, imagePreview, onImageGenerated }: SubProps) {
   return (
     <>
       <div className="rounded-lg border border-pink-200 bg-pink-50/50 p-3 text-xs text-pink-800 dark:border-pink-800 dark:bg-pink-950/30 dark:text-pink-200">
@@ -117,13 +117,17 @@ export function ImageChoiceContent({ form, set, errors, onImageGenerated }: SubP
           placeholder="Буруу сонголт бичээд Enter дарна..."
         />
       </Field>
-      <ImagePreview
-        correctAnswer={form.correct_answer}
-        imageDescription={form.image_description}
-        onDescriptionChange={(desc) => set("image_description", desc)}
-        onGenerated={onImageGenerated}
-        gradeBand={form.grade_band}
-      />
+      {imagePreview?.url ? (
+        <ReusedWordImage url={imagePreview.url} onClear={() => onImageGenerated({ tempId: "", base64: "" })} />
+      ) : (
+        <ImagePreview
+          correctAnswer={form.correct_answer}
+          imageDescription={form.image_description}
+          onDescriptionChange={(desc) => set("image_description", desc)}
+          onGenerated={onImageGenerated}
+          gradeBand={form.grade_band}
+        />
+      )}
       <FeedbackFields form={form} set={set} />
     </>
   );

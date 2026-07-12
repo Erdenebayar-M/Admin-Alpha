@@ -4,6 +4,7 @@ import {
   saveAudioAndUpdateTask,
   uploadImageToUrl,
   editVariant,
+  patchWord,
 } from "@/lib/api";
 import type { CreateTaskPayload, CreateTaskResult } from "@/lib/api";
 import {
@@ -21,6 +22,10 @@ export interface SubmitTaskArgs {
   form: FormState;
   audioPreview: AudioPreviewState | null;
   imagePreview: ImagePreviewState | null;
+  /** Word the author picked from WordSuggestions, if any — transient, not
+   * persisted to the task; only used to target the word-audio dual-write. */
+  selectedWordId?: string | null;
+  saveAudioToWord?: boolean;
 }
 
 /**
@@ -32,6 +37,8 @@ export async function runTaskSubmission({
   form,
   audioPreview,
   imagePreview,
+  selectedWordId,
+  saveAudioToWord,
 }: SubmitTaskArgs): Promise<CreateTaskResult> {
   const currentGroup = (TASK_TYPE_INFO[form.task_type]?.groups[0] ?? "choice") as OptionGroup;
   const canonicalGradeBand = [...new Set(form.grade_band)];
@@ -56,7 +63,10 @@ export async function runTaskSubmission({
     feedback_wrong: form.feedback_wrong || undefined,
     initial_text: form.initial_text || undefined,
     audio_url: null,
-    image_url: null,
+    // A reused word image (imagePreview.url) is already a stable, hosted URL —
+    // set it directly at creation, skipping the AI-generate/upload round trip
+    // used for imagePreview.base64 below.
+    image_url: imagePreview?.url ?? null,
     interaction_form: deriveInteractionForm(form.task_type),
   };
   const result = await createTask(payload);
@@ -74,6 +84,12 @@ export async function runTaskSubmission({
   if (audioPreview?.base64) {
     saves.push(
       saveAudioAndUpdateTask(audioPreview.base64, result.variant_id, audioPreview.slot, 'stage2')
+        .then((res) => {
+          if (selectedWordId && saveAudioToWord) {
+            return patchWord(selectedWordId, { audio_url: res.url })
+              .catch((err) => { console.error('Failed to save audio to word bank:', err); mediaWarnings.push('word-audio'); });
+          }
+        })
         .catch((err) => { console.error('Failed to save audio:', err); mediaWarnings.push('audio'); }),
     );
   }

@@ -35,6 +35,11 @@ export function useTaskForm() {
   const dirtyFields = useRef(new Set<string>());
   const [audioPreview, setAudioPreview] = useState<AudioPreviewState | null>(null);
   const [imagePreview, setImagePreview] = useState<ImagePreviewState | null>(null);
+  // Transient — which suggested Word the author is basing this task on. Not
+  // persisted to the task itself; only used to target the word-bank audio
+  // dual-write for word-dictation types (TT_7_3).
+  const [selectedWordId, setSelectedWordId] = useState<string | null>(null);
+  const [saveAudioToWord, setSaveAudioToWord] = useState(true);
 
   const typeInfo: TaskTypeInfo | null = form.task_type ? TASK_TYPE_INFO[form.task_type] ?? null : null;
   const groups: OptionGroup[] = typeInfo?.groups ?? [];
@@ -149,6 +154,8 @@ export function useTaskForm() {
     dirtyFields.current.clear();
     setAudioPreview(null);
     setImagePreview(null);
+    setSelectedWordId(null);
+    setSaveAudioToWord(true);
   }, []);
 
   const loadFromTemplate = useCallback((template: TaskTemplate) => {
@@ -178,6 +185,7 @@ export function useTaskForm() {
       if (!raw) return false;
       const last = JSON.parse(raw) as FormState;
       dirtyFields.current.clear();
+      setSelectedWordId(null); // don't carry a stale word-audio target into the duplicated task
       setForm({
         ...last,
         prompt_text: "",
@@ -236,7 +244,7 @@ export function useTaskForm() {
 
   // Submission
   const mutation = useMutation({
-    mutationFn: async () => runTaskSubmission({ form, audioPreview, imagePreview }),
+    mutationFn: async () => runTaskSubmission({ form, audioPreview, imagePreview, selectedWordId, saveAudioToWord }),
   });
 
   return {
@@ -272,5 +280,9 @@ export function useTaskForm() {
     setAudioPreview,
     imagePreview,
     setImagePreview,
+    selectedWordId,
+    setSelectedWordId,
+    saveAudioToWord,
+    setSaveAudioToWord,
   };
 }

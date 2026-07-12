@@ -2,7 +2,7 @@
 
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { Field, SuggestTextarea } from "../shared";
+import { Field, SuggestTextarea, ReusedWordImage } from "../shared";
 import { AudioPreview } from "../AudioPreview";
 import { ImagePreview } from "../ImagePreview";
 import { CommonFields, FeedbackFields } from "./sections";
@@ -207,7 +207,7 @@ export function AudioFillContent({ form, set, errors, audioPreview, onAudioGener
 
 // ─── image fill (TT_2_1) ─────────────────────────────────────────────────────
 
-export function ImageFillContent({ form, set, errors, onImageGenerated }: SubProps) {
+export function ImageFillContent({ form, set, errors, imagePreview, onImageGenerated }: SubProps) {
   const ctx = form.context_word.trim();
   const pos = form.blank_position;
   const preview = ctx
@@ -271,13 +271,17 @@ export function ImageFillContent({ form, set, errors, onImageGenerated }: SubPro
           placeholder="Жнэ: _ар тусгална"
         />
       </Field>
-      <ImagePreview
-        correctAnswer={form.context_word || form.correct_answer}
-        imageDescription={form.image_description}
-        onDescriptionChange={(desc) => set("image_description", desc)}
-        onGenerated={onImageGenerated}
-        gradeBand={form.grade_band}
-      />
+      {imagePreview?.url ? (
+        <ReusedWordImage url={imagePreview.url} onClear={() => onImageGenerated({ tempId: "", base64: "" })} />
+      ) : (
+        <ImagePreview
+          correctAnswer={form.context_word || form.correct_answer}
+          imageDescription={form.image_description}
+          onDescriptionChange={(desc) => set("image_description", desc)}
+          onGenerated={onImageGenerated}
+          gradeBand={form.grade_band}
+        />
+      )}
       <FeedbackFields form={form} set={set} />
     </>
   );

@@ -41,6 +41,24 @@ export function Field({
   );
 }
 
+/** Shown instead of <ImagePreview> when a word's existing image was reused via WordSuggestions. */
+export function ReusedWordImage({ url, onClear }: { url: string; onClear: () => void }) {
+  return (
+    <div className="rounded-lg border border-dashed p-3 space-y-2">
+      <p className="text-xs font-medium text-muted-foreground">Үгийн зургийг ашиглаж байна</p>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt="Сонгосон үгийн зураг" className="rounded-md border max-h-48 object-contain" />
+      <button
+        type="button"
+        onClick={onClear}
+        className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+      >
+        Цуцлах — өөр зураг үүсгэх
+      </button>
+    </div>
+  );
+}
+
 export function ToggleChip({
   label,
   selected,

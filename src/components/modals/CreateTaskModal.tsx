@@ -51,8 +51,11 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
     if (!tf.canSubmit) return;
     tf.submit(undefined, {
       onSuccess: (result) => {
+        const warningLabels: Record<string, string> = {
+          audio: "аудио", image: "зураг", "word-audio": "үгийн сангийн аудио",
+        };
         const msg = result.mediaWarnings?.length
-          ? `Хяналтанд илгээгдлээ: ${result.task_id} · Медиа хадгалагдсангүй (${result.mediaWarnings.join(", ")}) — review хэсгээс дахин оролдоно уу`
+          ? `Хяналтанд илгээгдлээ: ${result.task_id} · Хадгалагдсангүй: ${result.mediaWarnings.map((w) => warningLabels[w] ?? w).join(", ")} — review хэсгээс дахин оролдоно уу`
           : `Хяналтанд илгээгдлээ: ${result.task_id}`;
         setToast({ msg, ok: !result.mediaWarnings?.length });
         queryClient.invalidateQueries({ queryKey: ["review-queue"] });
@@ -221,6 +224,10 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                   onAudioGenerated={tf.setAudioPreview}
                   imagePreview={tf.imagePreview}
                   onImageGenerated={tf.setImagePreview}
+                  selectedWordId={tf.selectedWordId}
+                  onSelectWord={tf.setSelectedWordId}
+                  saveAudioToWord={tf.saveAudioToWord}
+                  onSaveAudioToWordChange={tf.setSaveAudioToWord}
                 />
               </CardContent>
             </Card>

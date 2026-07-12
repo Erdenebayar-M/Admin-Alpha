@@ -12,7 +12,10 @@ import type { SubProps } from "./types";
 
 // ─── dictation ────────────────────────────────────────────────────────────────
 
-export function DictationContent({ form, set, errors, audioPreview, onAudioGenerated }: SubProps) {
+export function DictationContent({
+  form, set, errors, audioPreview, onAudioGenerated, selectedWordId, saveAudioToWord, onSaveAudioToWordChange,
+}: SubProps) {
+  const isWordDictation = form.task_type === "TT_7_3";
   return (
     <>
       <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-3 text-xs text-blue-800 dark:border-blue-800 dark:bg-blue-950/30 dark:text-blue-200">
@@ -52,6 +55,18 @@ export function DictationContent({ form, set, errors, audioPreview, onAudioGener
         slot="dictation"
         onGenerated={onAudioGenerated}
       />
+      {isWordDictation && selectedWordId && (
+        <div className="flex h-9 items-center gap-2">
+          <Checkbox
+            id="save_audio_to_word"
+            checked={saveAudioToWord}
+            onCheckedChange={(c) => onSaveAudioToWordChange?.(c === true)}
+          />
+          <label htmlFor="save_audio_to_word" className="cursor-pointer text-sm text-muted-foreground">
+            Мөн сонгосон үгийн санд хадгалах
+          </label>
+        </div>
+      )}
       <FeedbackFields form={form} set={set} />
     </>
   );
