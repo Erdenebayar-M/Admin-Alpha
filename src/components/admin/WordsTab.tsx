@@ -1,23 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, EyeOff, Eye, Loader2, Plus } from "lucide-react";
+import { Pencil, EyeOff, Eye, Loader2, Plus, Check, X } from "lucide-react";
 import {
   getWords,
   getWordFacets,
   deactivateWord,
   bulkDeactivateWords,
   connectWordToRoot,
+  createWord,
   type WordFilters,
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-table";
 import { MediaCell } from "@/components/admin/MediaCell";
-import { EditWordModal } from "@/components/words/EditWordModal";
-import { CreateWordModal } from "@/components/words/CreateWordModal";
+import { EditWordModal, EMPTY_FORM, toForm, buildCreatePayload, type Form } from "@/components/words/EditWordModal";
 import { useModalStore } from "@/lib/modal-store";
 import type { WordBankEntry } from "@/lib/types";
 
@@ -106,88 +106,208 @@ function Pagination({
   );
 }
 
-/** Right-click row menu — Excel/Sheets-style "insert row" + a few row commands. */
-function RowContextMenu({
-  x,
-  y,
-  word,
-  onClose,
-  onInsert,
-  onEdit,
-  onToggleActive,
+
+/**
+ * A hoverable seam between two rows — like Google Sheets' "insert row" gutter.
+ * The <tr> itself takes zero layout height, so no gap is visible between rows;
+ * the "+" pill is absolutely positioned over the seam and only fades in on hover.
+ */
+function InsertRowDivider({ onInsert }: { onInsert: () => void }) {
+  return (
+    <tr>
+      <td colSpan={13} className="relative h-0 border-0 p-0 leading-none">
+        <div className="group/insertgap pointer-events-none absolute inset-x-0 -top-2.5 z-20 flex h-5 items-center justify-center">
+          <button
+            type="button"
+            onClick={onInsert}
+            title="Энд шинэ үг оруулах"
+            className="pointer-events-auto flex h-5 w-5 items-center justify-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity hover:!opacity-100 group-hover/insertgap:opacity-100 hover:border-primary hover:text-primary"
+          >
+            <Plus className="size-3" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
+/** An inline, in-table draft row — filled in directly, no popup. */
+function InlineCreateRow({
+  prototype,
+  onCancel,
+  onCreated,
 }: {
-  x: number;
-  y: number;
-  word: WordBankEntry;
-  onClose: () => void;
-  onInsert: () => void;
-  onEdit: () => void;
-  onToggleActive: () => void;
+  prototype?: WordBankEntry;
+  onCancel: () => void;
+  onCreated: (result: { word: string }) => void;
 }) {
-  useEffect(() => {
-    const close = () => onClose();
-    const closeOnEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    // Skip one tick so the right-click that opened this menu doesn't also close it.
-    const t = setTimeout(() => {
-      window.addEventListener("click", close);
-      window.addEventListener("scroll", close, true);
-    }, 0);
-    window.addEventListener("keydown", closeOnEscape);
-    return () => {
-      clearTimeout(t);
-      window.removeEventListener("click", close);
-      window.removeEventListener("scroll", close, true);
-      window.removeEventListener("keydown", closeOnEscape);
-    };
-  }, [onClose]);
+  const [form, setForm] = useState<Form>(() => (prototype ? toForm(prototype) : EMPTY_FORM));
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const itemCls =
-    "flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-popover-foreground transition-colors hover:bg-accent";
+  function setField<K extends keyof Form>(key: K, value: Form[K]) {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setError(null);
+  }
 
-  return createPortal(
-    <div
-      className="fixed z-[9999] min-w-[220px] rounded-lg border border-border bg-popover py-1 shadow-xl"
-      style={{ left: x, top: y }}
-      onContextMenu={(e) => e.preventDefault()}
-    >
-      <button
-        type="button"
-        onClick={() => {
-          onInsert();
-          onClose();
-        }}
-        className={itemCls}
-      >
-        <Plus className="size-3.5" />
-        Шинэ үг нэмэх («{word.word}»-д үндэслэн)
-      </button>
-      <div className="my-1 border-t border-border" />
-      <button
-        type="button"
-        onClick={() => {
-          onEdit();
-          onClose();
-        }}
-        className={itemCls}
-      >
-        <Pencil className="size-3.5" />
-        Засах
-      </button>
-      <button
-        type="button"
-        onClick={() => {
-          onToggleActive();
-          onClose();
-        }}
-        className={itemCls}
-      >
-        {word.is_active ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}
-        {word.is_active ? "Идэвхгүй болгох" : "Дахин идэвхжүүлэх"}
-      </button>
-    </div>,
-    document.body,
+  async function handleSave() {
+    if (!form.word.trim() || !form.category.trim()) {
+      setError("Үг болон сэдэв заавал бөглөнө үү");
+      return;
+    }
+    setSaving(true);
+    setError(null);
+    try {
+      const result = await createWord(buildCreatePayload(form));
+      onCreated(result);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Үүсгэхэд алдаа гарлаа");
+      setSaving(false);
+    }
+  }
+
+  const cellInputCls =
+    "w-full rounded border border-border bg-background px-1.5 py-1 text-xs text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30";
+  const numCls = cn(cellInputCls, "w-9 text-center");
+
+  return (
+    <>
+      <tr className="bg-primary/5">
+        <td className={tableStyles.cell} />
+        <td className={tableStyles.cell}>
+          <input
+            autoFocus
+            className={cellInputCls}
+            value={form.word}
+            onChange={(e) => setField("word", e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleSave();
+              if (e.key === "Escape") onCancel();
+            }}
+            placeholder="үг"
+          />
+        </td>
+        <td className={tableStyles.cell}>
+          <div className="flex gap-0.5">
+            {["G1", "G2", "G3", "G4"].map((g) => (
+              <button
+                key={g}
+                type="button"
+                onClick={() =>
+                  setField(
+                    "grade_band",
+                    form.grade_band.includes(g)
+                      ? form.grade_band.filter((x) => x !== g)
+                      : [...form.grade_band, g],
+                  )
+                }
+                className={cn(
+                  "rounded border px-1 text-[10px] font-medium transition-colors",
+                  form.grade_band.includes(g)
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border text-muted-foreground hover:border-primary/50",
+                )}
+              >
+                {g.slice(1)}
+              </button>
+            ))}
+          </div>
+        </td>
+        <td className={tableStyles.cell}>
+          <input
+            className={cellInputCls}
+            value={form.app_level}
+            onChange={(e) => setField("app_level", e.target.value)}
+            placeholder="M0"
+          />
+        </td>
+        <td className={tableStyles.cell}>
+          <input
+            list="wordbank-categories"
+            className={cellInputCls}
+            value={form.category}
+            onChange={(e) => setField("category", e.target.value)}
+            placeholder="сэдэв"
+          />
+        </td>
+        <td className={tableStyles.cell}>
+          <input
+            list="wordbank-parts-of-speech"
+            className={cellInputCls}
+            value={form.part_of_speech}
+            onChange={(e) => setField("part_of_speech", e.target.value)}
+            placeholder="нэр үг"
+          />
+        </td>
+        <td className={tableStyles.cell}>
+          <input
+            className={cellInputCls}
+            value={form.spelling_tag}
+            onChange={(e) => setField("spelling_tag", e.target.value)}
+          />
+        </td>
+        <td className={tableStyles.cell}>
+          <div className="flex gap-0.5">
+            <input
+              type="number"
+              className={numCls}
+              value={form.meaning_complexity}
+              onChange={(e) => setField("meaning_complexity", e.target.value)}
+              title="Утгын төвөгшил (1-5)"
+            />
+            <input
+              type="number"
+              className={numCls}
+              value={form.spelling_complexity}
+              onChange={(e) => setField("spelling_complexity", e.target.value)}
+              title="Зөв бичих төвөгшил (1-4)"
+            />
+            <input
+              type="number"
+              className={numCls}
+              value={form.morph_complexity}
+              onChange={(e) => setField("morph_complexity", e.target.value)}
+              title="Морфологийн төвөгшил (1-3)"
+            />
+          </div>
+        </td>
+        <td className={tableStyles.cellMuted}>—</td>
+        <td className={tableStyles.cellMuted}>—</td>
+        <td className={tableStyles.cellMuted}>—</td>
+        <td className={tableStyles.cell}>
+          <MediaCell imageUrl={null} audioUrl={null} />
+        </td>
+        <td className={tableStyles.cell}>
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              disabled={saving}
+              onClick={handleSave}
+              title="Хадгалах"
+              className="rounded-md p-1.5 text-primary transition-colors hover:bg-primary/10 disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {saving ? <Loader2 className="size-3.5 animate-spin" /> : <Check className="size-3.5" />}
+            </button>
+            <button
+              type="button"
+              disabled={saving}
+              onClick={onCancel}
+              title="Цуцлах"
+              className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        </td>
+      </tr>
+      {error && (
+        <tr className="bg-primary/5">
+          <td colSpan={13} className="px-3 pb-2 pt-0 text-xs text-destructive">
+            {error}
+          </td>
+        </tr>
+      )}
+    </>
   );
 }
 
@@ -356,9 +476,13 @@ export function WordsTab() {
   const [editWordId, setEditWordId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
   const [deactivating, setDeactivating] = useState(false);
-  // undefined prototype means insert into an empty list.
-  const [creating, setCreating] = useState<{ prototype?: WordBankEntry } | null>(null);
-  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; word: WordBankEntry } | null>(null);
+  // Sheet-style inline "insert row". afterId null = insert above the first row;
+  // otherwise the id of the row the new draft row should appear directly below.
+  const [inserting, setInserting] = useState<{ afterId: string | null; prototype?: WordBankEntry } | null>(null);
+
+  function startInsert(afterId: string | null, prototype?: WordBankEntry) {
+    setInserting({ afterId, prototype });
+  }
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulk, setConfirmBulk] = useState(false);
@@ -468,6 +592,12 @@ export function WordsTab() {
     } catch (e) {
       showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
     }
+  }
+
+  async function handleInlineCreated(result: { word: string }) {
+    await queryClient.invalidateQueries({ queryKey: ["words"] });
+    showPageToast({ type: "success", message: `"${result.word}" үүсгэгдлээ` });
+    setInserting(null);
   }
 
   async function handleDropConnect(draggedId: string, target: WordBankEntry) {
@@ -671,18 +801,39 @@ export function WordsTab() {
               {isLoading ? (
                 <SkeletonRows count={10} cols={13} />
               ) : words.length === 0 ? (
-                <tr>
-                  <td colSpan={13}>
-                    <EmptyState
-                      message="Үг олдсонгүй"
-                      subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
+                <>
+                  {inserting ? (
+                    <InlineCreateRow
+                      prototype={inserting.prototype}
+                      onCancel={() => setInserting(null)}
+                      onCreated={handleInlineCreated}
                     />
-                  </td>
-                </tr>
+                  ) : (
+                    <InsertRowDivider onInsert={() => startInsert(null)} />
+                  )}
+                  <tr>
+                    <td colSpan={13}>
+                      <EmptyState
+                        message="Үг олдсонгүй"
+                        subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
+                      />
+                    </td>
+                  </tr>
+                </>
               ) : (
-                words.map((w: WordBankEntry) => (
+                <>
+                  {inserting?.afterId === null ? (
+                    <InlineCreateRow
+                      prototype={inserting.prototype}
+                      onCancel={() => setInserting(null)}
+                      onCreated={handleInlineCreated}
+                    />
+                  ) : (
+                    <InsertRowDivider onInsert={() => startInsert(null, words[0])} />
+                  )}
+                  {words.map((w: WordBankEntry) => (
+                <Fragment key={w.id}>
                   <tr
-                    key={w.id}
                     draggable={w.is_active}
                     onDragStart={(e) => {
                       setDraggingId(w.id);
@@ -707,11 +858,7 @@ export function WordsTab() {
                       const draggedId = e.dataTransfer.getData("text/plain");
                       if (draggedId) handleDropConnect(draggedId, w);
                     }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      setContextMenu({ x: e.clientX, y: e.clientY, word: w });
-                    }}
-                    title="Чирж өөр үгэн дээр тавьж холбоно уу · Хулганы баруун товч — цэс"
+                    title="Чирж өөр үгэн дээр тавьж холбоно уу"
                     className={cn(
                       "transition-colors hover:bg-accent/50",
                       !w.is_active && "opacity-50",
@@ -816,7 +963,18 @@ export function WordsTab() {
                       </div>
                     </td>
                   </tr>
-                ))
+                  {inserting?.afterId === w.id ? (
+                    <InlineCreateRow
+                      prototype={inserting.prototype}
+                      onCancel={() => setInserting(null)}
+                      onCreated={handleInlineCreated}
+                    />
+                  ) : (
+                    <InsertRowDivider onInsert={() => startInsert(w.id, w)} />
+                  )}
+                </Fragment>
+                  ))}
+                </>
               )}
             </tbody>
           </table>
@@ -828,28 +986,6 @@ export function WordsTab() {
       {/* Pagination */}
       {!isLoading && total > PER_PAGE && (
         <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
-      )}
-
-      {/* Row right-click menu */}
-      {contextMenu && (
-        <RowContextMenu
-          x={contextMenu.x}
-          y={contextMenu.y}
-          word={contextMenu.word}
-          onClose={() => setContextMenu(null)}
-          onInsert={() => setCreating({ prototype: contextMenu.word })}
-          onEdit={() => setEditWordId(contextMenu.word.id)}
-          onToggleActive={() =>
-            contextMenu.word.is_active
-              ? setConfirmDeactivate(contextMenu.word)
-              : handleReactivate(contextMenu.word)
-          }
-        />
-      )}
-
-      {/* Create modal */}
-      {creating && (
-        <CreateWordModal prototype={creating.prototype} onClose={() => setCreating(null)} />
       )}
 
       {/* Edit modal */}

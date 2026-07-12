@@ -72,6 +72,22 @@ export function toForm(w: WordBankEntry): Form {
   };
 }
 
+export function buildCreatePayload(form: Form): Record<string, unknown> {
+  return {
+    word: form.word.trim(),
+    category: form.category.trim(),
+    part_of_speech: form.part_of_speech || null,
+    meaning_type: form.meaning_type || null,
+    app_level: form.app_level || null,
+    grade_band: form.grade_band,
+    spelling_tag: form.spelling_tag || null,
+    suggested_exercises: form.suggested_exercises || null,
+    meaning_complexity: form.meaning_complexity ? parseInt(form.meaning_complexity, 10) : null,
+    spelling_complexity: form.spelling_complexity ? parseInt(form.spelling_complexity, 10) : null,
+    morph_complexity: form.morph_complexity ? parseInt(form.morph_complexity, 10) : null,
+  };
+}
+
 function buildUpdates(form: Form, dirty: Set<string>): Record<string, unknown> {
   const u: Record<string, unknown> = {};
   if (dirty.has("word")) u.word = form.word.trim();
