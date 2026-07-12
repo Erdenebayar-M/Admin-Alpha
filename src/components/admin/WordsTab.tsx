@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, EyeOff, Eye, Loader2 } from "lucide-react";
-import { getWords, getWordFacets, deactivateWord, bulkDeactivateWords, type WordFilters } from "@/lib/api";
+import {
+  getWords,
+  getWordFacets,
+  deactivateWord,
+  bulkDeactivateWords,
+  connectWordToRoot,
+  type WordFilters,
+} from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-table";
@@ -32,6 +39,15 @@ function Pagination({
   onChange: (p: number) => void;
 }) {
   const lastPage = Math.max(1, Math.ceil(total / perPage));
+  const [jumpValue, setJumpValue] = useState("");
+
+  function submitJump() {
+    const n = parseInt(jumpValue, 10);
+    if (Number.isFinite(n)) {
+      onChange(Math.min(Math.max(n, 1), lastPage));
+    }
+    setJumpValue("");
+  }
 
   const range: (number | "…")[] = [];
   const add = (n: number) => {
@@ -67,6 +83,24 @@ function Pagination({
       <span className="ml-2 text-xs text-muted-foreground tabular-nums">
         {(page - 1) * perPage + 1}–{Math.min(page * perPage, total)} / {total} үг
       </span>
+
+      <div className="ml-2 flex items-center gap-1">
+        <input
+          type="number"
+          min={1}
+          max={lastPage}
+          value={jumpValue}
+          onChange={(e) => setJumpValue(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") submitJump();
+          }}
+          placeholder={String(page)}
+          className="w-14 rounded-lg border border-border bg-background px-2 py-1.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+        />
+        <button type="button" onClick={submitJump} className={cn(btnBase, btnIdle)}>
+          Очих
+        </button>
+      </div>
     </div>
   );
 }
@@ -240,6 +274,9 @@ export function WordsTab() {
   const [confirmBulk, setConfirmBulk] = useState(false);
   const [bulkDeactivating, setBulkDeactivating] = useState(false);
 
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const [dragOverId, setDragOverId] = useState<string | null>(null);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
@@ -337,6 +374,18 @@ export function WordsTab() {
       await patchWord(w.id, { is_active: true });
       await queryClient.invalidateQueries({ queryKey: ["words"] });
       showPageToast({ type: "success", message: `"${w.word}" дахин идэвхжүүлэгдлээ` });
+    } catch (e) {
+      showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
+    }
+  }
+
+  async function handleDropConnect(draggedId: string, target: WordBankEntry) {
+    setDragOverId(null);
+    if (draggedId === target.id || !target.is_active) return;
+    try {
+      const r = await connectWordToRoot(draggedId, target.word);
+      await queryClient.invalidateQueries({ queryKey: ["words"] });
+      showPageToast({ type: "success", message: `→ "${r.root_word}"-д холбогдлоо` });
     } catch (e) {
       showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
     }
@@ -521,9 +570,36 @@ export function WordsTab() {
                 words.map((w: WordBankEntry) => (
                   <tr
                     key={w.id}
+                    draggable={w.is_active}
+                    onDragStart={(e) => {
+                      setDraggingId(w.id);
+                      e.dataTransfer.setData("text/plain", w.id);
+                      e.dataTransfer.effectAllowed = "link";
+                    }}
+                    onDragEnd={() => {
+                      setDraggingId(null);
+                      setDragOverId(null);
+                    }}
+                    onDragOver={(e) => {
+                      if (!w.is_active) return;
+                      e.preventDefault();
+                      e.dataTransfer.dropEffect = "link";
+                    }}
+                    onDragEnter={() => {
+                      if (w.is_active) setDragOverId(w.id);
+                    }}
+                    onDragLeave={() => setDragOverId((prev) => (prev === w.id ? null : prev))}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const draggedId = e.dataTransfer.getData("text/plain");
+                      if (draggedId) handleDropConnect(draggedId, w);
+                    }}
+                    title="Чирж өөр үгэн дээр тавьж холбоно уу"
                     className={cn(
                       "transition-colors hover:bg-accent/50",
                       !w.is_active && "opacity-50",
+                      draggingId === w.id && "opacity-40",
+                      dragOverId === w.id && draggingId !== w.id && "bg-primary/10 outline outline-2 outline-primary",
                     )}
                   >
                     <td className={tableStyles.cell}>

@@ -184,6 +184,8 @@ export interface WordFacets {
   grades: string[]; // "G1"–"G4", from Word.grade_band
   categories: string[];
   app_levels: string[];
+  part_of_speech: string[];
+  meaning_type: string[];
 }
 
 export interface WordImportSummary {

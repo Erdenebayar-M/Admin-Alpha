@@ -11,7 +11,15 @@ import {
   DialogBody,
   DialogClose,
 } from "@/components/ui/dialog";
-import { patchWord, deactivateWord, connectWordToRoot, disconnectWordFromRoot, getWord, getWords } from "@/lib/api";
+import {
+  patchWord,
+  deactivateWord,
+  connectWordToRoot,
+  disconnectWordFromRoot,
+  getWord,
+  getWords,
+  getWordFacets,
+} from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import type { WordBankEntry } from "@/lib/types";
@@ -340,6 +348,65 @@ function Field({
   );
 }
 
+const CUSTOM_OPTION = "__custom__";
+
+/** Select populated from known values (+ the current value if it isn't in the list), with an escape hatch to type a new one. */
+function SelectOrCustom({
+  value,
+  options,
+  onChange,
+  placeholder,
+}: {
+  value: string;
+  options: string[];
+  onChange: (value: string) => void;
+  placeholder?: string;
+}) {
+  const known = new Set(options);
+  if (value) known.add(value);
+  const sorted = [...known].sort((a, b) => a.localeCompare(b, "mn"));
+
+  const [customMode, setCustomMode] = useState(false);
+
+  if (customMode) {
+    return (
+      <input
+        autoFocus
+        className={fieldCls}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        onBlur={() => {
+          if (!value) setCustomMode(false);
+        }}
+        placeholder={placeholder}
+      />
+    );
+  }
+
+  return (
+    <select
+      className={fieldCls}
+      value={value || ""}
+      onChange={(e) => {
+        if (e.target.value === CUSTOM_OPTION) {
+          onChange("");
+          setCustomMode(true);
+        } else {
+          onChange(e.target.value);
+        }
+      }}
+    >
+      <option value="">—</option>
+      {sorted.map((v) => (
+        <option key={v} value={v}>
+          {v}
+        </option>
+      ))}
+      <option value={CUSTOM_OPTION}>+ Шинэ утга нэмэх</option>
+    </select>
+  );
+}
+
 export function EditWordModal({ word, onClose }: Props) {
   const queryClient = useQueryClient();
   const showPageToast = useModalStore((s) => s.showPageToast);
@@ -348,6 +415,12 @@ export function EditWordModal({ word, onClose }: Props) {
   const [dirty, setDirty] = useState<Set<string>>(new Set());
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const { data: facets } = useQuery({
+    queryKey: ["word-facets"],
+    queryFn: getWordFacets,
+    staleTime: 60_000,
+  });
 
   const [editFormId, setEditFormId] = useState<string | null>(null);
   const { data: editFormWord } = useQuery({
@@ -418,26 +491,26 @@ export function EditWordModal({ word, onClose }: Props) {
                 />
               </Field>
               <Field label="Ангилал (category)">
-                <input
-                  className={fieldCls}
+                <SelectOrCustom
                   value={form.category}
-                  onChange={(e) => setField("category", e.target.value)}
+                  options={facets?.categories ?? []}
+                  onChange={(v) => setField("category", v)}
                   placeholder="Амьтад"
                 />
               </Field>
               <Field label="Үгийн аймаг" rederives>
-                <input
-                  className={fieldCls}
+                <SelectOrCustom
                   value={form.part_of_speech}
-                  onChange={(e) => setField("part_of_speech", e.target.value)}
+                  options={facets?.part_of_speech ?? []}
+                  onChange={(v) => setField("part_of_speech", v)}
                   placeholder="нэр үг"
                 />
               </Field>
               <Field label="Утгын төрөл" rederives hint="зурагтай → бодит/зурагтай холбож болно">
-                <input
-                  className={fieldCls}
+                <SelectOrCustom
                   value={form.meaning_type}
-                  onChange={(e) => setField("meaning_type", e.target.value)}
+                  options={facets?.meaning_type ?? []}
+                  onChange={(v) => setField("meaning_type", v)}
                 />
               </Field>
             </div>
