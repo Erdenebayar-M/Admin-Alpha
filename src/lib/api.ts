@@ -387,6 +387,7 @@ export interface WordFilters {
   q?: string;
   active?: 'true' | 'false' | 'all';
   has_forms?: 'true' | 'all';
+  scope?: 'roots' | 'all';
   page?: number;
   per_page?: number;
 }

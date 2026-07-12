@@ -56,7 +56,7 @@ export const EMPTY_FORM: Form = {
   morph_complexity: "",
 };
 
-function toForm(w: WordBankEntry): Form {
+export function toForm(w: WordBankEntry): Form {
   return {
     word: w.word,
     category: w.category ?? "",

@@ -170,6 +170,7 @@ export interface WordBankEntry {
   meaning_type: string | null;
   image_url: string | null;
   is_active: boolean;
+  is_edited: boolean;
   balarhai_unknown: boolean | null;
   forms: { id: string; word: string }[]; // linked inflected forms (e.g. ах → ахтайгаа)
   root_word: { id: string; word: string } | null; // this row's root, when it is itself a form

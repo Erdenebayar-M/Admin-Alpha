@@ -263,6 +263,7 @@ export function WordsTab() {
   const [appLevel, setAppLevel] = useState<string>("all");
   const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
   const [hasForms, setHasForms] = useState<"all" | "true">("all");
+  const [scope, setScope] = useState<"roots" | "all">("roots");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -270,7 +271,7 @@ export function WordsTab() {
   const [editWordId, setEditWordId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
   const [deactivating, setDeactivating] = useState(false);
-  const [creating, setCreating] = useState(false);
+  const [creatingFrom, setCreatingFrom] = useState<WordBankEntry | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulk, setConfirmBulk] = useState(false);
@@ -286,11 +287,11 @@ export function WordsTab() {
 
   useEffect(() => {
     setPage(1);
-  }, [grade, category, appLevel, activeFilter, hasForms, debouncedSearch]);
+  }, [grade, category, appLevel, activeFilter, hasForms, scope, debouncedSearch]);
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [grade, category, appLevel, activeFilter, hasForms, debouncedSearch, page]);
+  }, [grade, category, appLevel, activeFilter, hasForms, scope, debouncedSearch, page]);
 
   const { data: facets } = useQuery({
     queryKey: ["word-facets"],
@@ -304,6 +305,7 @@ export function WordsTab() {
     ...(appLevel !== "all" ? { app_level: appLevel } : {}),
     ...(debouncedSearch ? { q: debouncedSearch } : {}),
     ...(hasForms === "true" ? { has_forms: "true" as const } : {}),
+    scope,
     active: activeFilter,
     page,
     per_page: PER_PAGE,
@@ -398,17 +400,6 @@ export function WordsTab() {
 
   return (
     <div className="relative px-4 py-6 sm:px-6">
-      <div className="mb-4 flex items-center justify-end">
-        <button
-          type="button"
-          onClick={() => setCreating(true)}
-          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
-        >
-          <Plus className="size-4" />
-          Шинэ үг нэмэх
-        </button>
-      </div>
-
       {/* Filter card */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-6">
@@ -490,6 +481,28 @@ export function WordsTab() {
             </div>
           </div>
 
+          {/* Scope filter — roots only vs. flattened list including form words */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Харах</span>
+            <div className="flex gap-1.5">
+              {(["roots", "all"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setScope(v)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                    scope === v
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                  )}
+                >
+                  {v === "roots" ? "Зөвхөн үндэс" : "Бүгд (хэлбэрийн хамт)"}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Has-forms filter */}
           <div className="flex flex-col gap-2">
             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Хэлбэр</span>
@@ -543,6 +556,7 @@ export function WordsTab() {
           <table className={tableStyles.table}>
             <thead className={tableStyles.thead}>
               <tr>
+                <th className={tableStyles.th} />
                 <th className={tableStyles.th}>
                   <input
                     type="checkbox"
@@ -569,10 +583,10 @@ export function WordsTab() {
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={10} cols={13} />
+                <SkeletonRows count={10} cols={14} />
               ) : words.length === 0 ? (
                 <tr>
-                  <td colSpan={13}>
+                  <td colSpan={14}>
                     <EmptyState
                       message="Үг олдсонгүй"
                       subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
@@ -611,10 +625,21 @@ export function WordsTab() {
                     className={cn(
                       "transition-colors hover:bg-accent/50",
                       !w.is_active && "opacity-50",
+                      w.is_edited && "bg-amber-50/60 dark:bg-amber-900/10",
                       draggingId === w.id && "opacity-40",
                       dragOverId === w.id && draggingId !== w.id && "bg-primary/10 outline outline-2 outline-primary",
                     )}
                   >
+                    <td className={tableStyles.cell}>
+                      <button
+                        type="button"
+                        title={`"${w.word}"-ийн талбарууд дээр үндэслэн шинэ үг нэмэх`}
+                        onClick={() => setCreatingFrom(w)}
+                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                      >
+                        <Plus className="size-3.5" />
+                      </button>
+                    </td>
                     <td className={tableStyles.cell}>
                       {w.is_active && (
                         <input
@@ -631,6 +656,17 @@ export function WordsTab() {
                         {w.word}
                         {w.balarhai_unknown && (
                           <span title="Балархай эгшиг — шалгах шаардлагатай" className="text-amber-500">⚠</span>
+                        )}
+                        {w.is_edited && (
+                          <span title="Админ засварласан" className="text-amber-600">✎</span>
+                        )}
+                        {w.root_word && (
+                          <span
+                            title={`"${w.root_word.word}"-ийн хэлбэр`}
+                            className="text-xs font-normal text-muted-foreground"
+                          >
+                            ↳ {w.root_word.word}
+                          </span>
                         )}
                       </span>
                     </td>
@@ -715,7 +751,9 @@ export function WordsTab() {
       )}
 
       {/* Create modal */}
-      {creating && <CreateWordModal onClose={() => setCreating(false)} />}
+      {creatingFrom && (
+        <CreateWordModal prototype={creatingFrom} onClose={() => setCreatingFrom(null)} />
+      )}
 
       {/* Edit modal */}
       {editWord && (

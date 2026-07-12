@@ -14,7 +14,8 @@ import {
 import { createWord, getWordFacets } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
-import { WordFieldsGrid, EMPTY_FORM, type Form } from "./EditWordModal";
+import { WordFieldsGrid, EMPTY_FORM, toForm, type Form } from "./EditWordModal";
+import type { WordBankEntry } from "@/lib/types";
 
 function buildCreatePayload(form: Form): Record<string, unknown> {
   return {
@@ -34,13 +35,15 @@ function buildCreatePayload(form: Form): Record<string, unknown> {
 
 interface Props {
   onClose: () => void;
+  /** When creating from a row's "+" button — pre-fills every field with this word's values. */
+  prototype?: WordBankEntry;
 }
 
-export function CreateWordModal({ onClose }: Props) {
+export function CreateWordModal({ onClose, prototype }: Props) {
   const queryClient = useQueryClient();
   const showPageToast = useModalStore((s) => s.showPageToast);
 
-  const [form, setForm] = useState<Form>(EMPTY_FORM);
+  const [form, setForm] = useState<Form>(() => (prototype ? toForm(prototype) : EMPTY_FORM));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -77,7 +80,14 @@ export function CreateWordModal({ onClose }: Props) {
     <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
       <DialogContent size="large">
         <DialogHeader>
-          <DialogTitle>Шинэ үг нэмэх</DialogTitle>
+          <div>
+            <DialogTitle>Шинэ үг нэмэх</DialogTitle>
+            {prototype && (
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                &quot;{prototype.word}&quot;-ийн талбаруудаас хуулбарлав — бүгдийг өөрчилж болно
+              </p>
+            )}
+          </div>
           <DialogClose className="text-muted-foreground transition-colors hover:text-foreground">✕</DialogClose>
         </DialogHeader>
 
