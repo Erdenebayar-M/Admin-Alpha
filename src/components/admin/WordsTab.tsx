@@ -3,7 +3,7 @@
 import { Fragment, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, EyeOff, Eye, Loader2, Plus, Check, X } from "lucide-react";
+import { Pencil, EyeOff, Eye, Loader2, Plus, Check, X, ArrowUp, ArrowDown, ArrowUpDown } from "lucide-react";
 import {
   getWords,
   getWordFacets,
@@ -27,6 +27,44 @@ const btnBase =
   "min-w-[2rem] rounded-lg border px-2 py-1.5 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 const btnIdle = "border-border bg-background text-foreground hover:bg-muted";
 const btnActive = "border-primary bg-primary text-primary-foreground shadow-sm";
+
+type SortableColumn = NonNullable<WordFilters["sort_by"]>;
+
+/** Clickable column header — click toggles asc/desc, switching columns starts at asc. */
+function SortableHeader({
+  column,
+  label,
+  sortBy,
+  sortDir,
+  onSort,
+}: {
+  column: SortableColumn;
+  label: string;
+  sortBy: SortableColumn;
+  sortDir: "asc" | "desc";
+  onSort: (column: SortableColumn) => void;
+}) {
+  const active = sortBy === column;
+  return (
+    <th className={tableStyles.th}>
+      <button
+        type="button"
+        onClick={() => onSort(column)}
+        className={cn(
+          "flex items-center gap-1 transition-colors",
+          active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        {label}
+        {active ? (
+          sortDir === "asc" ? <ArrowUp className="size-3" /> : <ArrowDown className="size-3" />
+        ) : (
+          <ArrowUpDown className="size-3 opacity-40" />
+        )}
+      </button>
+    </th>
+  );
+}
 
 function Pagination({
   page,
@@ -483,9 +521,20 @@ export function WordsTab() {
   const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
   const [hasForms, setHasForms] = useState<"all" | "true">("all");
   const [scope, setScope] = useState<"roots" | "all">("roots");
+  const [sortBy, setSortBy] = useState<SortableColumn>("word");
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
+
+  function handleSort(column: SortableColumn) {
+    if (column === sortBy) {
+      setSortDir((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortBy(column);
+      setSortDir("asc");
+    }
+  }
 
   const [editWordId, setEditWordId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
@@ -512,11 +561,11 @@ export function WordsTab() {
 
   useEffect(() => {
     setPage(1);
-  }, [grade, category, appLevel, activeFilter, hasForms, scope, debouncedSearch]);
+  }, [grade, category, appLevel, activeFilter, hasForms, scope, sortBy, sortDir, debouncedSearch]);
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [grade, category, appLevel, activeFilter, hasForms, scope, debouncedSearch, page]);
+  }, [grade, category, appLevel, activeFilter, hasForms, scope, sortBy, sortDir, debouncedSearch, page]);
 
   const { data: facets } = useQuery({
     queryKey: ["word-facets"],
@@ -531,6 +580,8 @@ export function WordsTab() {
     ...(debouncedSearch ? { q: debouncedSearch } : {}),
     ...(hasForms === "true" ? { has_forms: "true" as const } : {}),
     scope,
+    sort_by: sortBy,
+    sort_dir: sortDir,
     active: activeFilter,
     page,
     per_page: PER_PAGE,
@@ -797,15 +848,15 @@ export function WordsTab() {
                     aria-label="Бүгдийг сонгох"
                   />
                 </th>
-                <th className={tableStyles.th}>Үг</th>
+                <SortableHeader column="word" label="Үг" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                 <th className={tableStyles.th}>Анги</th>
-                <th className={tableStyles.th}>Түвшин</th>
-                <th className={tableStyles.th}>Сэдэв</th>
-                <th className={tableStyles.th}>Үгийн аймаг</th>
-                <th className={tableStyles.th}>Зөв бичих таг</th>
-                <th className={tableStyles.th}>Төвөгшил</th>
-                <th className={tableStyles.th}>Үсэг</th>
-                <th className={tableStyles.th}>Үе</th>
+                <SortableHeader column="app_level" label="Түвшин" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader column="category" label="Сэдэв" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader column="part_of_speech" label="Үгийн аймаг" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader column="spelling_tag" label="Зөв бичих таг" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader column="meaning_complexity" label="Төвөгшил" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader column="char_count" label="Үсэг" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
+                <SortableHeader column="syllable_count" label="Үе" sortBy={sortBy} sortDir={sortDir} onSort={handleSort} />
                 <th className={tableStyles.th}>Хэлбэрүүд</th>
                 <th className={tableStyles.th}>Зураг</th>
                 <th className={tableStyles.th}>Үйлдэл</th>

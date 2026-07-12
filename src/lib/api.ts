@@ -388,6 +388,18 @@ export interface WordFilters {
   active?: 'true' | 'false' | 'all';
   has_forms?: 'true' | 'all';
   scope?: 'roots' | 'all';
+  sort_by?:
+    | 'word'
+    | 'category'
+    | 'app_level'
+    | 'part_of_speech'
+    | 'spelling_tag'
+    | 'char_count'
+    | 'syllable_count'
+    | 'meaning_complexity'
+    | 'spelling_complexity'
+    | 'morph_complexity';
+  sort_dir?: 'asc' | 'desc';
   page?: number;
   per_page?: number;
 }
