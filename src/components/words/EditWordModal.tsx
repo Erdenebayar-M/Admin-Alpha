@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useEffect, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Loader2, RefreshCw } from "lucide-react";
 import {
   Dialog,
@@ -11,7 +11,7 @@ import {
   DialogBody,
   DialogClose,
 } from "@/components/ui/dialog";
-import { patchWord, deactivateWord, connectWordToRoot } from "@/lib/api";
+import { patchWord, deactivateWord, connectWordToRoot, getWords } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
 import type { WordBankEntry } from "@/lib/types";
@@ -71,9 +71,104 @@ function buildUpdates(form: Form, dirty: Set<string>): Record<string, unknown> {
 const smallBtn =
   "rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40";
 
+/** Search-as-you-type field for picking an existing root word (or explicitly creating a new one). */
+function RootConnectField({
+  word,
+  busy,
+  run,
+}: {
+  word: WordBankEntry;
+  busy: string | null;
+  run: (label: string, fn: () => Promise<string>) => Promise<void>;
+}) {
+  const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQuery(query.trim()), 300);
+    return () => clearTimeout(t);
+  }, [query]);
+
+  const { data } = useQuery({
+    queryKey: ["word-root-search", debouncedQuery],
+    queryFn: () => getWords({ q: debouncedQuery, active: "true", per_page: 8 }),
+    enabled: debouncedQuery.length > 0,
+    staleTime: 30_000,
+  });
+
+  const matches = (data?.words ?? []).filter((w) => w.id !== word.id);
+  const hasExactMatch = matches.some((w) => w.word.toLowerCase() === debouncedQuery.toLowerCase());
+  const showDropdown = open && debouncedQuery.length > 0;
+
+  function select(value: string) {
+    setQuery(value);
+    setOpen(false);
+  }
+
+  return (
+    <div className="flex items-end gap-2">
+      <div className="relative flex flex-1 flex-col gap-1">
+        <label className="text-xs font-semibold text-muted-foreground">Үндэс үгэнд холбох</label>
+        <input
+          className={fieldCls}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+          }}
+          onFocus={() => setOpen(true)}
+          onBlur={() => setTimeout(() => setOpen(false), 150)}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setOpen(false);
+          }}
+          placeholder="жишээ: авах"
+        />
+        {showDropdown && (
+          <div className="absolute top-full z-20 mt-1 max-h-56 w-full overflow-auto rounded-lg border border-border bg-popover shadow-lg">
+            {matches.map((w) => (
+              <button
+                key={w.id}
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => select(w.word)}
+                className="block w-full px-3 py-1.5 text-left text-sm text-popover-foreground hover:bg-accent"
+              >
+                {w.word}
+              </button>
+            ))}
+            {!hasExactMatch && (
+              <button
+                type="button"
+                onMouseDown={(e) => e.preventDefault()}
+                onClick={() => select(debouncedQuery)}
+                className="block w-full border-t border-dashed border-border px-3 py-1.5 text-left text-sm font-medium text-primary hover:bg-accent"
+              >
+                + Шинэ үндэс үг үүсгэх: &quot;{debouncedQuery}&quot;
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+      <button
+        type="button"
+        disabled={!query.trim() || busy !== null}
+        onClick={() =>
+          run("connect", async () => {
+            const r = await connectWordToRoot(word.id, query.trim());
+            return `"${word.word}" → "${r.root_word}"${r.root_created ? " (шинэ үндэс үүсгэв)" : ""}`;
+          })
+        }
+        className={cn(smallBtn, "border-primary bg-primary text-primary-foreground hover:bg-primary/90")}
+      >
+        Холбох
+      </button>
+    </div>
+  );
+}
+
 /** Root ↔ forms management: connect to a root, list forms, delete (detach/cascade). */
 function RootFormsSection({ word, onDone }: { word: WordBankEntry; onDone: (msg: string) => void }) {
-  const [connectTo, setConnectTo] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
@@ -103,30 +198,7 @@ function RootFormsSection({ word, onDone }: { word: WordBankEntry; onDone: (msg:
       )}
 
       {/* Connect to a root */}
-      <div className="flex items-end gap-2">
-        <div className="flex flex-1 flex-col gap-1">
-          <label className="text-xs font-semibold text-muted-foreground">Үндэс үгэнд холбох</label>
-          <input
-            className={fieldCls}
-            value={connectTo}
-            onChange={(e) => setConnectTo(e.target.value)}
-            placeholder="жишээ: авах"
-          />
-        </div>
-        <button
-          type="button"
-          disabled={!connectTo.trim() || busy !== null}
-          onClick={() =>
-            run("connect", async () => {
-              const r = await connectWordToRoot(word.id, connectTo.trim());
-              return `"${word.word}" → "${r.root_word}"${r.root_created ? " (шинэ үндэс үүсгэв)" : ""}`;
-            })
-          }
-          className={cn(smallBtn, "border-primary bg-primary text-primary-foreground hover:bg-primary/90")}
-        >
-          Холбох
-        </button>
-      </div>
+      <RootConnectField word={word} busy={busy} run={run} />
 
       {/* Forms of this root */}
       {hasForms && (
