@@ -7,6 +7,7 @@ import { SectionCard } from "@/components/ui/section-card";
 import { MediaGenerator } from "./MediaGenerator";
 import { resolveAssetUrl, fmtDateTime, Field, inputClass, textareaClass } from "./task-preview/helpers";
 import {
+  ChoiceSection,
   FillSection,
   SentenceFillSection,
   DictationSection,
@@ -192,26 +193,7 @@ export function TaskPreview({
         )}
 
         {isChoiceTask && (opts.choices?.length ?? 0) > 0 && (
-          <Field label="Сонголтууд">
-            <div className="flex flex-wrap gap-1.5">
-              {opts.choices!.map((c, i) => (
-                <span
-                  key={i}
-                  className={cn(
-                    "rounded-md border px-2.5 py-1 text-sm font-medium",
-                    c.is_correct
-                      ? "border-green-400 bg-green-50 text-green-800"
-                      : "border-red-300 bg-red-50 text-red-800",
-                  )}
-                >
-                  {c.text}
-                </span>
-              ))}
-            </div>
-            {opts.audio_trigger && (
-              <p className="mt-1 text-xs text-muted-foreground">Аудио trigger идэвхтэй</p>
-            )}
-          </Field>
+          <ChoiceSection opts={currentOpts} isEditMode={isEditMode} onDraftChange={onDraftChange} allOpts={currentOpts} />
         )}
 
         {isFillTask && (

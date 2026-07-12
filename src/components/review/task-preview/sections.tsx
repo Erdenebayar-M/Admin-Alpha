@@ -43,6 +43,70 @@ export function FillSection({
   );
 }
 
+export function ChoiceSection({
+  opts, isEditMode, onDraftChange, allOpts,
+}: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
+  const choices = opts.choices ?? [];
+
+  function updateChoice(i: number, patch: Partial<{ text: string; is_correct: boolean }>) {
+    const next = choices.map((c, idx) => (idx === i ? { ...c, ...patch } : c));
+    onDraftChange({ options: { ...allOpts, choices: next } });
+  }
+
+  function markCorrect(i: number) {
+    const next = choices.map((c, idx) => ({ ...c, is_correct: idx === i }));
+    onDraftChange({ options: { ...allOpts, choices: next } });
+  }
+
+  return (
+    <Field label="Сонголтууд">
+      {isEditMode ? (
+        <div className="space-y-1.5">
+          {choices.map((c, i) => (
+            <div key={i} className="flex items-center gap-2">
+              <input
+                type="radio"
+                name="choice-correct"
+                checked={c.is_correct}
+                onChange={() => markCorrect(i)}
+                title="Зөв хариулт болгох"
+                className="accent-green-600"
+              />
+              <input
+                className={cn(
+                  inputClass,
+                  c.is_correct && "border-green-400 bg-green-50 text-green-900",
+                )}
+                value={c.text}
+                onChange={(e) => updateChoice(i, { text: e.target.value })}
+              />
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-1.5">
+          {choices.map((c, i) => (
+            <span
+              key={i}
+              className={cn(
+                "rounded-md border px-2.5 py-1 text-sm font-medium",
+                c.is_correct
+                  ? "border-green-400 bg-green-50 text-green-800"
+                  : "border-red-300 bg-red-50 text-red-800",
+              )}
+            >
+              {c.text}
+            </span>
+          ))}
+        </div>
+      )}
+      {opts.audio_trigger && (
+        <p className="mt-1 text-xs text-muted-foreground">Аудио trigger идэвхтэй</p>
+      )}
+    </Field>
+  );
+}
+
 export function SentenceFillSection({
   opts, isEditMode, onDraftChange, allOpts,
 }: { opts: TaskContent["options"]; isEditMode: boolean; onDraftChange: (p: Partial<TaskContent>) => void; allOpts: TaskContent["options"]; }) {
