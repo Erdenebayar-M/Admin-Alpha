@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Pencil, EyeOff, Eye, Loader2 } from "lucide-react";
+import { Pencil, EyeOff, Eye, Loader2, Plus } from "lucide-react";
 import {
   getWords,
   getWordFacets,
@@ -17,6 +17,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-table";
 import { MediaCell } from "@/components/admin/MediaCell";
 import { EditWordModal } from "@/components/words/EditWordModal";
+import { CreateWordModal } from "@/components/words/CreateWordModal";
 import { useModalStore } from "@/lib/modal-store";
 import type { WordBankEntry } from "@/lib/types";
 
@@ -269,6 +270,7 @@ export function WordsTab() {
   const [editWordId, setEditWordId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
   const [deactivating, setDeactivating] = useState(false);
+  const [creating, setCreating] = useState(false);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulk, setConfirmBulk] = useState(false);
@@ -396,6 +398,17 @@ export function WordsTab() {
 
   return (
     <div className="relative px-4 py-6 sm:px-6">
+      <div className="mb-4 flex items-center justify-end">
+        <button
+          type="button"
+          onClick={() => setCreating(true)}
+          className="flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90"
+        >
+          <Plus className="size-4" />
+          Шинэ үг нэмэх
+        </button>
+      </div>
+
       {/* Filter card */}
       <div className="mb-4 rounded-xl border border-border bg-card p-4 shadow-sm">
         <div className="flex flex-wrap items-end gap-6">
@@ -700,6 +713,9 @@ export function WordsTab() {
       {!isLoading && total > PER_PAGE && (
         <Pagination page={page} total={total} perPage={PER_PAGE} onChange={setPage} />
       )}
+
+      {/* Create modal */}
+      {creating && <CreateWordModal onClose={() => setCreating(false)} />}
 
       {/* Edit modal */}
       {editWord && (

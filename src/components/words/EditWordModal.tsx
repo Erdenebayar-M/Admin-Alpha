@@ -22,12 +22,12 @@ import {
 } from "@/lib/api";
 import { useModalStore } from "@/lib/modal-store";
 import { cn } from "@/lib/utils";
-import type { WordBankEntry } from "@/lib/types";
+import type { WordBankEntry, WordFacets } from "@/lib/types";
 
 const REDERIVE = new Set(["word", "part_of_speech", "meaning_type"]);
 const GRADES = ["G1", "G2", "G3", "G4"];
 
-interface Form {
+export interface Form {
   word: string;
   category: string;
   part_of_speech: string;
@@ -40,6 +40,20 @@ interface Form {
   spelling_complexity: string;
   morph_complexity: string;
 }
+
+export const EMPTY_FORM: Form = {
+  word: "",
+  category: "",
+  part_of_speech: "",
+  meaning_type: "",
+  app_level: "",
+  grade_band: [],
+  spelling_tag: "",
+  suggested_exercises: "",
+  meaning_complexity: "",
+  spelling_complexity: "",
+  morph_complexity: "",
+};
 
 function toForm(w: WordBankEntry): Form {
   return {
@@ -407,6 +421,154 @@ function SelectOrCustom({
   );
 }
 
+/** The word field grid shared by the edit and create modals — core info, grade/level, complexity, tags. */
+export function WordFieldsGrid({
+  form,
+  setField,
+  facets,
+}: {
+  form: Form;
+  setField: <K extends keyof Form>(key: K, value: Form[K]) => void;
+  facets: WordFacets | undefined;
+}) {
+  return (
+    <>
+      {/* Core */}
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Үндсэн мэдээлэл
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Үг" rederives>
+          <input
+            className={fieldCls}
+            value={form.word}
+            onChange={(e) => setField("word", e.target.value)}
+            placeholder="ном"
+          />
+        </Field>
+        <Field label="Ангилал (category)">
+          <SelectOrCustom
+            value={form.category}
+            options={facets?.categories ?? []}
+            onChange={(v) => setField("category", v)}
+            placeholder="Амьтад"
+          />
+        </Field>
+        <Field label="Үгийн аймаг" rederives>
+          <SelectOrCustom
+            value={form.part_of_speech}
+            options={facets?.part_of_speech ?? []}
+            onChange={(v) => setField("part_of_speech", v)}
+            placeholder="нэр үг"
+          />
+        </Field>
+        <Field label="Утгын төрөл" rederives hint="зурагтай → бодит/зурагтай холбож болно">
+          <SelectOrCustom
+            value={form.meaning_type}
+            options={facets?.meaning_type ?? []}
+            onChange={(v) => setField("meaning_type", v)}
+          />
+        </Field>
+      </div>
+
+      {/* Grade & level */}
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Анги & түвшин
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Анги (grade_band)">
+          <div className="flex flex-wrap gap-3 pt-1">
+            {GRADES.map((g) => (
+              <label key={g} className="flex cursor-pointer items-center gap-1.5 text-sm">
+                <input
+                  type="checkbox"
+                  className="accent-primary"
+                  checked={form.grade_band.includes(g)}
+                  onChange={(e) =>
+                    setField(
+                      "grade_band",
+                      e.target.checked
+                        ? [...form.grade_band, g]
+                        : form.grade_band.filter((x) => x !== g),
+                    )
+                  }
+                />
+                {g}
+              </label>
+            ))}
+          </div>
+        </Field>
+        <Field label="Апп түвшин (app_level)">
+          <input
+            className={fieldCls}
+            value={form.app_level}
+            onChange={(e) => setField("app_level", e.target.value)}
+            placeholder="M0–M5"
+          />
+        </Field>
+      </div>
+
+      {/* Complexity */}
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Төвөгшлийн түвшин
+      </p>
+      <div className="grid grid-cols-3 gap-4">
+        <Field label="Утгын (1–5)">
+          <input
+            type="number"
+            min={1}
+            max={5}
+            className={fieldCls}
+            value={form.meaning_complexity}
+            onChange={(e) => setField("meaning_complexity", e.target.value)}
+          />
+        </Field>
+        <Field label="Зөв бичих (1–4)">
+          <input
+            type="number"
+            min={1}
+            max={4}
+            className={fieldCls}
+            value={form.spelling_complexity}
+            onChange={(e) => setField("spelling_complexity", e.target.value)}
+          />
+        </Field>
+        <Field label="Морфологийн (1–3)">
+          <input
+            type="number"
+            min={1}
+            max={3}
+            className={fieldCls}
+            value={form.morph_complexity}
+            onChange={(e) => setField("morph_complexity", e.target.value)}
+          />
+        </Field>
+      </div>
+
+      {/* Tags */}
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+        Тэмдэглэгээ
+      </p>
+      <div className="grid grid-cols-2 gap-4">
+        <Field label="Зөв бичих tag">
+          <input
+            className={fieldCls}
+            value={form.spelling_tag}
+            onChange={(e) => setField("spelling_tag", e.target.value)}
+          />
+        </Field>
+        <Field label="Санал болгох дасгал">
+          <input
+            className={fieldCls}
+            value={form.suggested_exercises}
+            onChange={(e) => setField("suggested_exercises", e.target.value)}
+          />
+        </Field>
+      </div>
+    </>
+  );
+}
+
 export function EditWordModal({ word, onClose }: Props) {
   const queryClient = useQueryClient();
   const showPageToast = useModalStore((s) => s.showPageToast);
@@ -477,138 +639,7 @@ export function EditWordModal({ word, onClose }: Props) {
 
         <DialogBody className="px-6 py-5">
           <div className="space-y-5">
-            {/* Core */}
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Үндсэн мэдээлэл
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Үг" rederives>
-                <input
-                  className={fieldCls}
-                  value={form.word}
-                  onChange={(e) => setField("word", e.target.value)}
-                  placeholder="ном"
-                />
-              </Field>
-              <Field label="Ангилал (category)">
-                <SelectOrCustom
-                  value={form.category}
-                  options={facets?.categories ?? []}
-                  onChange={(v) => setField("category", v)}
-                  placeholder="Амьтад"
-                />
-              </Field>
-              <Field label="Үгийн аймаг" rederives>
-                <SelectOrCustom
-                  value={form.part_of_speech}
-                  options={facets?.part_of_speech ?? []}
-                  onChange={(v) => setField("part_of_speech", v)}
-                  placeholder="нэр үг"
-                />
-              </Field>
-              <Field label="Утгын төрөл" rederives hint="зурагтай → бодит/зурагтай холбож болно">
-                <SelectOrCustom
-                  value={form.meaning_type}
-                  options={facets?.meaning_type ?? []}
-                  onChange={(v) => setField("meaning_type", v)}
-                />
-              </Field>
-            </div>
-
-            {/* Grade & level */}
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Анги & түвшин
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Анги (grade_band)">
-                <div className="flex flex-wrap gap-3 pt-1">
-                  {GRADES.map((g) => (
-                    <label key={g} className="flex cursor-pointer items-center gap-1.5 text-sm">
-                      <input
-                        type="checkbox"
-                        className="accent-primary"
-                        checked={form.grade_band.includes(g)}
-                        onChange={(e) =>
-                          setField(
-                            "grade_band",
-                            e.target.checked
-                              ? [...form.grade_band, g]
-                              : form.grade_band.filter((x) => x !== g),
-                          )
-                        }
-                      />
-                      {g}
-                    </label>
-                  ))}
-                </div>
-              </Field>
-              <Field label="Апп түвшин (app_level)">
-                <input
-                  className={fieldCls}
-                  value={form.app_level}
-                  onChange={(e) => setField("app_level", e.target.value)}
-                  placeholder="M0–M5"
-                />
-              </Field>
-            </div>
-
-            {/* Complexity */}
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Төвөгшлийн түвшин
-            </p>
-            <div className="grid grid-cols-3 gap-4">
-              <Field label="Утгын (1–5)">
-                <input
-                  type="number"
-                  min={1}
-                  max={5}
-                  className={fieldCls}
-                  value={form.meaning_complexity}
-                  onChange={(e) => setField("meaning_complexity", e.target.value)}
-                />
-              </Field>
-              <Field label="Зөв бичих (1–4)">
-                <input
-                  type="number"
-                  min={1}
-                  max={4}
-                  className={fieldCls}
-                  value={form.spelling_complexity}
-                  onChange={(e) => setField("spelling_complexity", e.target.value)}
-                />
-              </Field>
-              <Field label="Морфологийн (1–3)">
-                <input
-                  type="number"
-                  min={1}
-                  max={3}
-                  className={fieldCls}
-                  value={form.morph_complexity}
-                  onChange={(e) => setField("morph_complexity", e.target.value)}
-                />
-              </Field>
-            </div>
-
-            {/* Tags */}
-            <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
-              Тэмдэглэгээ
-            </p>
-            <div className="grid grid-cols-2 gap-4">
-              <Field label="Зөв бичих tag">
-                <input
-                  className={fieldCls}
-                  value={form.spelling_tag}
-                  onChange={(e) => setField("spelling_tag", e.target.value)}
-                />
-              </Field>
-              <Field label="Санал болгох дасгал">
-                <input
-                  className={fieldCls}
-                  value={form.suggested_exercises}
-                  onChange={(e) => setField("suggested_exercises", e.target.value)}
-                />
-              </Field>
-            </div>
+            <WordFieldsGrid form={form} setField={setField} facets={facets} />
 
             {/* Root ↔ forms management */}
             <RootFormsSection

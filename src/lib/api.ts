@@ -409,6 +409,17 @@ export async function getWord(id: string): Promise<WordBankEntry> {
   return data.data.word;
 }
 
+export interface CreateWordResult {
+  action: string;
+  id: string;
+  word: string;
+}
+
+export async function createWord(payload: Record<string, unknown>): Promise<CreateWordResult> {
+  const { data } = await client.post<{ success: boolean; data: CreateWordResult }>('/words', payload);
+  return data.data;
+}
+
 export interface PatchWordResult {
   action: string;
   id: string;
