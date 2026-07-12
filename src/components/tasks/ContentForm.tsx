@@ -105,16 +105,6 @@ export function ContentForm({
 
   return (
     <div className="space-y-4">
-      {form.grade_band.length > 0 && taskType && (
-        <WordSuggestions
-          gradeBand={form.grade_band}
-          taskType={taskType}
-          selectedWordId={selectedWordId}
-          onSelectWord={onSelectWord}
-          showImageAction={IMAGE_CAPABLE_TASK_TYPES.has(taskType)}
-          onUseImage={(word) => onImageGenerated({ tempId: "", base64: "", url: word.image_url ?? undefined })}
-        />
-      )}
       <TypeContent
         form={form}
         set={set}
@@ -127,6 +117,16 @@ export function ContentForm({
         saveAudioToWord={saveAudioToWord}
         onSaveAudioToWordChange={onSaveAudioToWordChange}
       />
+      {form.grade_band.length > 0 && taskType && (
+        <WordSuggestions
+          gradeBand={form.grade_band}
+          taskType={taskType}
+          selectedWordId={selectedWordId}
+          onSelectWord={onSelectWord}
+          showImageAction={IMAGE_CAPABLE_TASK_TYPES.has(taskType)}
+          onUseImage={(word) => onImageGenerated({ tempId: "", base64: "", url: word.image_url ?? undefined })}
+        />
+      )}
       <MetadataSection form={form} set={set} toggleList={toggleList} groups={groups} />
     </div>
   );
