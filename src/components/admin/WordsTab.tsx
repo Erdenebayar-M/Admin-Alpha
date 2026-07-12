@@ -106,6 +106,26 @@ function Pagination({
   );
 }
 
+/** A thin hover strip between rows — like Google Sheets' "insert row" gutter. */
+function InsertRowDivider({ colSpan, onInsert }: { colSpan: number; onInsert: () => void }) {
+  return (
+    <tr className="group/insert">
+      <td colSpan={colSpan} className="h-2.5 p-0">
+        <div className="flex h-full items-center justify-center">
+          <button
+            type="button"
+            onClick={onInsert}
+            title="Энд шинэ үг оруулах"
+            className="flex h-4 w-4 items-center justify-center rounded-full border border-border bg-background text-muted-foreground opacity-0 shadow-sm transition-opacity group-hover/insert:opacity-100 hover:!opacity-100 hover:border-primary hover:text-primary"
+          >
+            <Plus className="size-2.5" />
+          </button>
+        </div>
+      </td>
+    </tr>
+  );
+}
+
 function ComplexityCell({ m, s, mo }: { m: number | null; s: number | null; mo: number | null }) {
   const fmt = (n: number | null) => (n == null ? "—" : String(n));
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
@@ -271,7 +291,8 @@ export function WordsTab() {
   const [editWordId, setEditWordId] = useState<string | null>(null);
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
   const [deactivating, setDeactivating] = useState(false);
-  const [creatingFrom, setCreatingFrom] = useState<WordBankEntry | null>(null);
+  // Sheet-style "insert row" — undefined prototype means insert into an empty list.
+  const [creating, setCreating] = useState<{ prototype?: WordBankEntry } | null>(null);
 
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [confirmBulk, setConfirmBulk] = useState(false);
@@ -556,7 +577,6 @@ export function WordsTab() {
           <table className={tableStyles.table}>
             <thead className={tableStyles.thead}>
               <tr>
-                <th className={tableStyles.th} />
                 <th className={tableStyles.th}>
                   <input
                     type="checkbox"
@@ -583,18 +603,26 @@ export function WordsTab() {
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={10} cols={14} />
+                <SkeletonRows count={10} cols={13} />
               ) : words.length === 0 ? (
-                <tr>
-                  <td colSpan={14}>
-                    <EmptyState
-                      message="Үг олдсонгүй"
-                      subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
-                    />
-                  </td>
-                </tr>
+                <>
+                  <InsertRowDivider colSpan={13} onInsert={() => setCreating({})} />
+                  <tr>
+                    <td colSpan={13}>
+                      <EmptyState
+                        message="Үг олдсонгүй"
+                        subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
+                      />
+                    </td>
+                  </tr>
+                </>
               ) : (
-                words.map((w: WordBankEntry) => (
+                words.flatMap((w: WordBankEntry, i) => [
+                  <InsertRowDivider
+                    key={`divider-${w.id}`}
+                    colSpan={13}
+                    onInsert={() => setCreating({ prototype: words[i - 1] ?? w })}
+                  />,
                   <tr
                     key={w.id}
                     draggable={w.is_active}
@@ -630,16 +658,6 @@ export function WordsTab() {
                       dragOverId === w.id && draggingId !== w.id && "bg-primary/10 outline outline-2 outline-primary",
                     )}
                   >
-                    <td className={tableStyles.cell}>
-                      <button
-                        type="button"
-                        title={`"${w.word}"-ийн талбарууд дээр үндэслэн шинэ үг нэмэх`}
-                        onClick={() => setCreatingFrom(w)}
-                        className="rounded-md p-1.5 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                      >
-                        <Plus className="size-3.5" />
-                      </button>
-                    </td>
                     <td className={tableStyles.cell}>
                       {w.is_active && (
                         <input
@@ -735,8 +753,17 @@ export function WordsTab() {
                         )}
                       </div>
                     </td>
-                  </tr>
-                ))
+                  </tr>,
+                  ...(i === words.length - 1
+                    ? [
+                        <InsertRowDivider
+                          key="divider-end"
+                          colSpan={13}
+                          onInsert={() => setCreating({ prototype: w })}
+                        />,
+                      ]
+                    : []),
+                ])
               )}
             </tbody>
           </table>
@@ -751,8 +778,8 @@ export function WordsTab() {
       )}
 
       {/* Create modal */}
-      {creatingFrom && (
-        <CreateWordModal prototype={creatingFrom} onClose={() => setCreatingFrom(null)} />
+      {creating && (
+        <CreateWordModal prototype={creating.prototype} onClose={() => setCreating(null)} />
       )}
 
       {/* Edit modal */}
