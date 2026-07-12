@@ -433,6 +433,21 @@ export async function deactivateWord(
   await client.delete(`/words/${id}`, { params: { mode } });
 }
 
+export interface BulkDeactivateWordsResult {
+  action: string;
+  requested: number;
+  deactivated: number;
+}
+
+/** Soft-delete many words at once. No cascade/detach — deactivates exactly the given ids. */
+export async function bulkDeactivateWords(ids: string[]): Promise<BulkDeactivateWordsResult> {
+  const { data } = await client.post<{ success: boolean; data: BulkDeactivateWordsResult }>(
+    '/words/bulk-deactivate',
+    { ids },
+  );
+  return data.data;
+}
+
 export interface ConnectWordResult {
   action: string;
   id: string;

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, EyeOff, Eye, Loader2 } from "lucide-react";
-import { getWords, getWordFacets, deactivateWord, type WordFilters } from "@/lib/api";
+import { getWords, getWordFacets, deactivateWord, bulkDeactivateWords, type WordFilters } from "@/lib/api";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "@/components/ui/empty-state";
 import { tableStyles, TableFooter, SkeletonRows } from "@/components/admin/data-table";
@@ -172,6 +172,53 @@ function DeactivateConfirm({
   );
 }
 
+function BulkDeactivateConfirm({
+  count,
+  onCancel,
+  onConfirm,
+  loading,
+}: {
+  count: number;
+  onCancel: () => void;
+  onConfirm: () => void;
+  loading: boolean;
+}) {
+  const destructiveBtn =
+    "flex items-center justify-center gap-1.5 rounded-lg bg-destructive px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-destructive/90 disabled:cursor-not-allowed disabled:opacity-40";
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 flex items-center justify-center" onClick={onCancel}>
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-md rounded-xl border border-border bg-background p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <p className="mb-1 text-base font-semibold text-foreground">
+          {count} үгийг идэвхгүй болгох уу?
+        </p>
+        <p className="mb-5 text-sm text-muted-foreground">
+          Устгагдахгүй, зөвхөн нуугдана. Дараа нь дахин идэвхжүүлж болно. Сонгосон үгсийн хэлбэрүүд
+          (өөрсдийг нь сонгоогүй бол) хөндөгдөхгүй.
+        </p>
+        <div className="flex justify-end gap-2">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="rounded-lg border border-border bg-card px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted"
+          >
+            Болих
+          </button>
+          <button type="button" disabled={loading} onClick={onConfirm} className={destructiveBtn}>
+            {loading && <Loader2 className="size-4 animate-spin" />}
+            Идэвхгүй болгох
+          </button>
+        </div>
+      </div>
+    </div>,
+    document.body,
+  );
+}
+
 export function WordsTab() {
   const queryClient = useQueryClient();
   const showPageToast = useModalStore((s) => s.showPageToast);
@@ -189,6 +236,10 @@ export function WordsTab() {
   const [confirmDeactivate, setConfirmDeactivate] = useState<WordBankEntry | null>(null);
   const [deactivating, setDeactivating] = useState(false);
 
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [confirmBulk, setConfirmBulk] = useState(false);
+  const [bulkDeactivating, setBulkDeactivating] = useState(false);
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
@@ -197,6 +248,10 @@ export function WordsTab() {
   useEffect(() => {
     setPage(1);
   }, [grade, category, appLevel, activeFilter, hasForms, debouncedSearch]);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [grade, category, appLevel, activeFilter, hasForms, debouncedSearch, page]);
 
   const { data: facets } = useQuery({
     queryKey: ["word-facets"],
@@ -224,6 +279,39 @@ export function WordsTab() {
   const words = data?.words ?? [];
   const total = data?.total ?? 0;
   const editWord = words.find((w) => w.id === editWordId) ?? null;
+
+  const selectableWords = words.filter((w) => w.is_active);
+  const allSelected = selectableWords.length > 0 && selectableWords.every((w) => selectedIds.has(w.id));
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    setSelectedIds(allSelected ? new Set() : new Set(selectableWords.map((w) => w.id)));
+  }
+
+  async function handleBulkDeactivate() {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkDeactivating(true);
+    try {
+      const result = await bulkDeactivateWords(ids);
+      await queryClient.invalidateQueries({ queryKey: ["words"] });
+      showPageToast({ type: "success", message: `${result.deactivated} үг идэвхгүй болгогдлоо` });
+      setSelectedIds(new Set());
+      setConfirmBulk(false);
+    } catch (e) {
+      showPageToast({ type: "error", message: e instanceof Error ? e.message : "Алдаа гарлаа" });
+    } finally {
+      setBulkDeactivating(false);
+    }
+  }
 
   async function handleDeactivateConfirm(mode: "solo" | "detach" | "cascade") {
     if (!confirmDeactivate) return;
@@ -364,12 +452,45 @@ export function WordsTab() {
         </div>
       </div>
 
+      {/* Bulk selection bar */}
+      {selectedIds.size > 0 && (
+        <div className="mb-3 flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 px-4 py-2.5">
+          <span className="text-sm font-medium text-foreground">{selectedIds.size} сонгогдсон</span>
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+            >
+              Цуцлах
+            </button>
+            <button
+              type="button"
+              onClick={() => setConfirmBulk(true)}
+              className="rounded-lg bg-destructive px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-destructive/90"
+            >
+              Идэвхгүй болгох ({selectedIds.size})
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Table card */}
       <div className={tableStyles.wrapper}>
         <div className="overflow-x-auto">
           <table className={tableStyles.table}>
             <thead className={tableStyles.thead}>
               <tr>
+                <th className={tableStyles.th}>
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleSelectAll}
+                    disabled={selectableWords.length === 0}
+                    className="accent-primary"
+                    aria-label="Бүгдийг сонгох"
+                  />
+                </th>
                 <th className={tableStyles.th}>Үг</th>
                 <th className={tableStyles.th}>Анги</th>
                 <th className={tableStyles.th}>Түвшин</th>
@@ -386,10 +507,10 @@ export function WordsTab() {
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading ? (
-                <SkeletonRows count={10} cols={12} />
+                <SkeletonRows count={10} cols={13} />
               ) : words.length === 0 ? (
                 <tr>
-                  <td colSpan={12}>
+                  <td colSpan={13}>
                     <EmptyState
                       message="Үг олдсонгүй"
                       subMessage="Шүүлтүүрийг өөрчлөх эсвэл хайлтаа өөрчлөнө үү"
@@ -405,6 +526,17 @@ export function WordsTab() {
                       !w.is_active && "opacity-50",
                     )}
                   >
+                    <td className={tableStyles.cell}>
+                      {w.is_active && (
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(w.id)}
+                          onChange={() => toggleSelect(w.id)}
+                          className="accent-primary"
+                          aria-label={`"${w.word}" сонгох`}
+                        />
+                      )}
+                    </td>
                     <td className={cn(tableStyles.cell, "font-medium")}>
                       <span className="flex items-center gap-1">
                         {w.word}
@@ -505,6 +637,16 @@ export function WordsTab() {
           onCancel={() => setConfirmDeactivate(null)}
           onConfirm={handleDeactivateConfirm}
           loading={deactivating}
+        />
+      )}
+
+      {/* Bulk deactivate confirm */}
+      {confirmBulk && (
+        <BulkDeactivateConfirm
+          count={selectedIds.size}
+          onCancel={() => setConfirmBulk(false)}
+          onConfirm={handleBulkDeactivate}
+          loading={bulkDeactivating}
         />
       )}
     </div>
