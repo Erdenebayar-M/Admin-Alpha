@@ -129,6 +129,67 @@ export function WordSuggestions({
         <p className="text-xs text-muted-foreground animate-pulse">Ачааллаж байна…</p>
       ) : words.length === 0 ? (
         <p className="text-xs text-muted-foreground">Энэ анги/төрөлд тохирох үг олдсонгүй.</p>
+      ) : showImageAction ? (
+        <div ref={containerRef} className="max-h-80 overflow-y-auto pr-1">
+          <div className="grid grid-cols-3 gap-2">
+            {words.map((w) => {
+              const hasImage = w.image_ok && !!w.image_url;
+              const selected = selectedWordId === w.id;
+              return (
+                <div
+                  key={w.id}
+                  className={cn(
+                    "rounded-md border p-1.5 space-y-1",
+                    selected ? "border-primary ring-1 ring-primary" : "border-border",
+                  )}
+                >
+                  <button
+                    type="button"
+                    onClick={() => onSelectWord(selected ? null : w.id)}
+                    className="block w-full"
+                  >
+                    {hasImage ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={w.image_url!}
+                        alt={w.word}
+                        className="aspect-square w-full rounded object-cover bg-muted"
+                      />
+                    ) : (
+                      <div className="flex aspect-square w-full items-center justify-center rounded bg-muted">
+                        <ImageIcon className="size-5 text-muted-foreground/40" />
+                      </div>
+                    )}
+                    <p
+                      className={cn(
+                        "mt-1 truncate text-center text-xs font-medium",
+                        selected ? "text-primary" : "text-foreground",
+                      )}
+                    >
+                      {w.word}
+                    </p>
+                  </button>
+                  {hasImage && (
+                    <button
+                      type="button"
+                      onClick={() => onUseImage(w)}
+                      className={cn(
+                        "w-full rounded border border-border px-1 py-0.5 text-[10px] font-medium text-muted-foreground",
+                        "hover:border-primary hover:text-foreground transition-colors",
+                      )}
+                    >
+                      энэ зургийг ашиглах
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div ref={sentinelRef} />
+          {isFetchingNextPage && (
+            <p className="mt-2 text-xs text-muted-foreground animate-pulse">Ачааллаж байна…</p>
+          )}
+        </div>
       ) : (
         <div ref={containerRef} className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
           <div className="flex flex-wrap gap-1.5">
@@ -152,18 +213,6 @@ export function WordSuggestions({
                       </span>
                     )}
                   </span>
-                )}
-                {showImageAction && w.image_ok && w.image_url && (
-                  <button
-                    type="button"
-                    onClick={() => onUseImage(w)}
-                    className={cn(
-                      "rounded-md border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground",
-                      "hover:border-primary hover:text-foreground transition-colors",
-                    )}
-                  >
-                    зургийг ашиглах
-                  </button>
                 )}
               </div>
             ))}
