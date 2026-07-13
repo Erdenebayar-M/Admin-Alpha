@@ -14,6 +14,9 @@ interface WordSuggestionsProps {
   gradeBand: string[];
   taskType: string;
   skill?: string;
+  secondarySkill?: string;
+  appLevel?: string;
+  difficulty?: number;
   selectedWordId: string | null;
   onSelectWord: (id: string | null) => void;
   showImageAction: boolean;
@@ -31,6 +34,9 @@ export function WordSuggestions({
   gradeBand,
   taskType,
   skill,
+  secondarySkill,
+  appLevel,
+  difficulty,
   selectedWordId,
   onSelectWord,
   showImageAction,
@@ -46,12 +52,15 @@ export function WordSuggestions({
   }, [searchInput]);
 
   const { data, isLoading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery({
-    queryKey: ["word-suggestions", grade, taskType, skill, q],
+    queryKey: ["word-suggestions", grade, taskType, skill, secondarySkill, appLevel, difficulty, q],
     queryFn: ({ pageParam }) =>
       getWords({
         grade: grade as "G1" | "G2" | "G3" | "G4",
         task_type: taskType,
         skill,
+        secondary_skill: secondarySkill,
+        app_level: appLevel,
+        difficulty,
         q: q || undefined,
         page: pageParam,
         per_page: PER_PAGE,

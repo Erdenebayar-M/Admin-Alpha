@@ -238,6 +238,9 @@ export function CreateTaskPanel({ onClose }: CreateTaskPanelProps) {
                 gradeBand={tf.form.grade_band}
                 taskType={tf.form.task_type}
                 skill={tf.form.primary_skill || undefined}
+                secondarySkill={tf.form.secondary_skill || undefined}
+                appLevel={tf.form.level_target || undefined}
+                difficulty={tf.form.difficulty ? Number(tf.form.difficulty) : undefined}
                 selectedWordId={tf.selectedWordId}
                 onSelectWord={tf.setSelectedWordId}
                 showImageAction={IMAGE_CAPABLE_TASK_TYPES.has(tf.form.task_type)}
