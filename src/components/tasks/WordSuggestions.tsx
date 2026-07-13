@@ -61,23 +61,43 @@ export function WordSuggestions({
     enabled: !!grade && !!taskType,
   });
 
+  const words = data?.pages.flatMap((p) => p.words) ?? [];
+  const total = data?.pages[0]?.meta.total ?? 0;
+
+  // Read the latest hasNextPage/isFetchingNextPage via refs rather than as
+  // effect dependencies, so the observer is created once per scroll
+  // container and never torn down/recreated mid-fetch — recreating it on
+  // every fetch-state change risks dropping a queued intersection callback
+  // and silently stalling after the first auto-load.
+  const hasNextPageRef = useRef(hasNextPage);
+  const isFetchingNextPageRef = useRef(isFetchingNextPage);
+  useEffect(() => {
+    hasNextPageRef.current = hasNextPage;
+    isFetchingNextPageRef.current = isFetchingNextPage;
+  }, [hasNextPage, isFetchingNextPage]);
+
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
   useEffect(() => {
     const el = sentinelRef.current;
     if (!el) return;
-    const observer = new IntersectionObserver((entries) => {
-      if (entries[0]?.isIntersecting && hasNextPage && !isFetchingNextPage) {
-        void fetchNextPage();
-      }
-    });
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting && hasNextPageRef.current && !isFetchingNextPageRef.current) {
+          void fetchNextPage();
+        }
+      },
+      { root: containerRef.current, rootMargin: "80px" },
+    );
     observer.observe(el);
     return () => observer.disconnect();
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage]);
+    // Re-attach whenever the scrollable list (re)mounts — e.g. going from
+    // the empty/loading state to having results — since the sentinel div
+    // doesn't exist yet on earlier renders.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchNextPage, words.length > 0]);
 
   if (!grade || !taskType) return null;
-
-  const words = data?.pages.flatMap((p) => p.words) ?? [];
-  const total = data?.pages[0]?.meta.total ?? 0;
 
   return (
     <div className="rounded-lg border border-dashed p-3 space-y-2">
@@ -101,7 +121,7 @@ export function WordSuggestions({
       ) : words.length === 0 ? (
         <p className="text-xs text-muted-foreground">Энэ анги/төрөлд тохирох үг олдсонгүй.</p>
       ) : (
-        <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
+        <div ref={containerRef} className="max-h-64 overflow-y-auto space-y-1.5 pr-1">
           <div className="flex flex-wrap gap-1.5">
             {words.map((w) => (
               <div key={w.id} className="flex items-center gap-1">
