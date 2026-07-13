@@ -70,12 +70,23 @@ export function useSubmitReview(taskId: string) {
         };
       });
 
-      return { previous };
+      const previousQueues = queryClient.getQueriesData<ReviewItem[]>({
+        queryKey: ["review-queue"],
+      });
+      queryClient.setQueriesData<ReviewItem[]>(
+        { queryKey: ["review-queue"] },
+        (old) => old?.filter((i) => i.id !== taskId),
+      );
+
+      return { previous, previousQueues };
     },
     onError: (_err, _action, context) => {
       if (context?.previous) {
         queryClient.setQueryData(["review-item", taskId], context.previous);
       }
+      context?.previousQueues?.forEach(([key, data]) => {
+        queryClient.setQueryData(key, data);
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["review-queue"] });
