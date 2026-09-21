@@ -1,5 +1,6 @@
 import type { ReviewItem } from "@/lib/types";
 import type { PipelineStage } from "@/components/admin/StatusTrackBar";
+import type { ArticleStatusValue } from "@/lib/article-types";
 
 export type Tone = "neutral" | "info" | "success" | "warning" | "danger";
 
@@ -23,4 +24,9 @@ export const PIPELINE_STAGE_META: Record<PipelineStage, StatusMeta> = {
   pending:  { label: "Хянахыг хүлээж буй",  tone: "warning"  },
   reviewed: { label: "Хянасан",             tone: "danger"   },
   approved: { label: "Баталгаажсан",        tone: "success"  },
+};
+
+export const ARTICLE_STATUS_META: Record<ArticleStatusValue, StatusMeta> = {
+  DRAFT:     { label: "Ноорог",     tone: "neutral" },
+  PUBLISHED: { label: "Нийтэлсэн",  tone: "success" },
 };

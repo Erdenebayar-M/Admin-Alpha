@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: '/admin/review', label: 'Хяналт' },
   { href: '/admin/tasks', label: 'Даалгаврууд' },
   { href: '/admin/words', label: 'Үгийн сан' },
+  { href: '/admin/articles', label: 'Нийтлэл' },
 ];
 
 const StarIcon = () => (

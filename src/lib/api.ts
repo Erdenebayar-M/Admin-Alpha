@@ -3,7 +3,13 @@ import type {
   ActivityStats,
   AdminLearner,
   AdminLearnerDetail,
+  Article,
+  ArticleImageUploadResult,
+  ArticleListResponse,
+  ArticleResponse,
+  ArticleSummary,
   ContentStats,
+  PaginationMeta,
   ReviewAction,
   TaskContent,
   TaskOptions,
@@ -15,6 +21,7 @@ import type {
   WordFacets,
   WordImportResult,
 } from "./types";
+import type { ArticleBlock, ArticleCategoryValue, ArticleStatusValue, ArticleThumbnail } from "./article-types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
 
@@ -553,6 +560,97 @@ export async function importWords(file: File, commit: boolean): Promise<WordImpo
     '/words/import',
     form,
     { headers: { 'Content-Type': 'multipart/form-data' } },
+  );
+  return data.data;
+}
+
+// ─── Articles ───────────────────────────────────────────────────────────────
+
+const articlesClient = axios.create({
+  baseURL: `/api/admin/articles`,
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${ADMIN_TOKEN}`,
+  },
+});
+articlesClient.interceptors.response.use((r) => r, errorInterceptor);
+
+export interface ArticleFilters {
+  status?: ArticleStatusValue;
+  category?: ArticleCategoryValue;
+  q?: string;
+  page?: number;
+  per_page?: number;
+}
+
+export async function getArticles(
+  filters: ArticleFilters = {},
+): Promise<{ articles: ArticleSummary[]; meta: PaginationMeta }> {
+  const { data } = await articlesClient.get<ArticleListResponse>("/", { params: filters });
+  return data.data;
+}
+
+export async function getArticle(id: string): Promise<Article> {
+  const { data } = await articlesClient.get<ArticleResponse>(`/${id}`);
+  return data.data.article;
+}
+
+export interface CreateArticlePayload {
+  title: string;
+  slug: string;
+  category: ArticleCategoryValue;
+  excerpt?: string;
+  body: ArticleBlock[];
+}
+
+export async function createArticle(payload: CreateArticlePayload): Promise<Article> {
+  const { data } = await articlesClient.post<ArticleResponse>("/", payload);
+  return data.data.article;
+}
+
+export interface SaveArticlePayload extends CreateArticlePayload {
+  thumbnail?: ArticleThumbnail | null;
+  version: number;
+}
+
+/** PUT /:id replaces the whole editable Article — guarded by `version`; never touches status or is_featured. */
+export async function saveArticle(id: string, payload: SaveArticlePayload): Promise<Article> {
+  const { data } = await articlesClient.put<ArticleResponse>(`/${id}`, payload);
+  return data.data.article;
+}
+
+export async function deleteArticle(id: string): Promise<void> {
+  await articlesClient.delete(`/${id}`);
+}
+
+export async function publishArticle(id: string): Promise<Article> {
+  const { data } = await articlesClient.post<ArticleResponse>(`/${id}/publish`);
+  return data.data.article;
+}
+
+export async function unpublishArticle(id: string): Promise<Article> {
+  const { data } = await articlesClient.post<ArticleResponse>(`/${id}/unpublish`);
+  return data.data.article;
+}
+
+export async function featureArticle(id: string): Promise<Article> {
+  const { data } = await articlesClient.post<ArticleResponse>(`/${id}/feature`);
+  return data.data.article;
+}
+
+export async function unfeatureArticle(id: string): Promise<Article> {
+  const { data } = await articlesClient.delete<ArticleResponse>(`/${id}/feature`);
+  return data.data.article;
+}
+
+/** Upload a standalone image for an image Block, a link card's image, or the Thumbnail. */
+export async function uploadArticleImage(file: File): Promise<ArticleImageUploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const { data } = await articlesClient.post<{ success: boolean; data: ArticleImageUploadResult }>(
+    "/images",
+    form,
+    { headers: { "Content-Type": "multipart/form-data" } },
   );
   return data.data;
 }

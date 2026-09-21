@@ -1,3 +1,5 @@
+import type { ArticleBlock, ArticleCategoryValue, ArticleStatusValue } from "./article-types";
+
 export interface TaskOptions {
   // choice: choiceOptions
   choices?: Array<{ text: string; is_correct: boolean }>;
@@ -379,4 +381,50 @@ export interface ActivityStats {
     attempts_last_hour: number;
     last_attempt_at: string | null;
   };
+}
+
+// ─── Articles ───────────────────────────────────────────────────────────────
+
+/** Summary row from GET /api/admin/articles — no body, matching the backend's list select. */
+export interface ArticleSummary {
+  id: string;
+  title: string;
+  slug: string;
+  category: ArticleCategoryValue;
+  status: ArticleStatusValue;
+  is_featured: boolean;
+  published_at: string | null;
+  updated_at: string;
+}
+
+/** Full row from GET/POST/PUT /api/admin/articles(/:id) and the publish/unpublish/feature actions. */
+export interface Article extends ArticleSummary {
+  excerpt: string | null;
+  body: ArticleBlock[];
+  thumbnail_url: string | null;
+  thumbnail_alt: string | null;
+  thumbnail_width: number | null;
+  thumbnail_height: number | null;
+  reading_time_minutes: number;
+  version: number;
+  created_at: string;
+  /** True for a Draft that has been Published before (its slug is a live link somewhere). */
+  was_published: boolean;
+}
+
+export interface ArticleListResponse {
+  success: boolean;
+  data: { articles: ArticleSummary[]; meta: PaginationMeta };
+}
+
+export interface ArticleResponse {
+  success: boolean;
+  data: { article: Article };
+}
+
+export interface ArticleImageUploadResult {
+  url: string;
+  width: number;
+  height: number;
+  content_type: string;
 }
