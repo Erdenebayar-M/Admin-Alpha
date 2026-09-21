@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Loader2, RotateCcw, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, Loader2, Pencil, RotateCcw, Save, Trash2 } from "lucide-react";
 import { useArticleEditor } from "@/hooks/useArticleEditor";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { ARTICLE_STATUS_META } from "@/lib/status";
@@ -13,6 +13,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ArticleSettingsPanel } from "./ArticleSettingsPanel";
 import { ArticleCanvas } from "./canvas/ArticleCanvas";
 import { DeleteArticleDialog } from "./DeleteArticleDialog";
+import { ArticlePreview } from "./preview/ArticlePreview";
 
 const UNSAVED_MESSAGE = "Хадгалаагүй өөрчлөлт байна. Хуудсаас гарвал алга болно. Үргэлжлүүлэх үү?";
 
@@ -22,6 +23,16 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
   const editor = useArticleEditor(articleId);
   const { form, article, fieldErrors } = editor;
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [preview, setPreview] = useState(false);
+  // A block-level save error is only ever shown inside the canvas (the outline on the
+  // offending Block) — jump back to Write the moment one appears, so it's never silently
+  // invisible behind Preview. Adjusted during render (not an effect) per the same
+  // previous-value-comparison pattern useArticleEditor.ts's own `applyServer` call uses.
+  const [seenBlockErrors, setSeenBlockErrors] = useState(editor.blockErrors);
+  if (editor.blockErrors !== seenBlockErrors) {
+    setSeenBlockErrors(editor.blockErrors);
+    if (Object.keys(editor.blockErrors).length > 0) setPreview(false);
+  }
 
   useUnsavedChangesGuard(editor.dirty, UNSAVED_MESSAGE);
 
@@ -125,12 +136,46 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
             />
             {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
           </div>
-          <ArticleCanvas
-            key={editor.bodyRevision}
-            initialBody={form.body}
-            onChange={editor.setBody}
-            blockErrors={editor.blockErrors}
-          />
+
+          <div role="tablist" aria-label="Горим" className="inline-flex w-fit gap-0.5 rounded-lg bg-muted p-0.5">
+            <Button
+              type="button"
+              role="tab"
+              aria-selected={!preview}
+              variant="ghost"
+              size="sm"
+              onClick={() => setPreview(false)}
+              className={cn(!preview && "bg-card text-foreground shadow-sm")}
+            >
+              <Pencil /> Бичих
+            </Button>
+            <Button
+              type="button"
+              role="tab"
+              aria-selected={preview}
+              variant="ghost"
+              size="sm"
+              onClick={() => setPreview(true)}
+              className={cn(preview && "bg-card text-foreground shadow-sm")}
+            >
+              <Eye /> Урьдчилан харах
+            </Button>
+          </div>
+
+          {/* Both stay mounted — toggling only hides one — so an in-flight image upload
+              (paste/drop) still lands, and switching back to Write keeps the Tiptap
+              editor's own undo history, cursor and scroll position intact. */}
+          <div className={cn(preview && "hidden")}>
+            <ArticleCanvas
+              key={editor.bodyRevision}
+              initialBody={form.body}
+              onChange={editor.setBody}
+              blockErrors={editor.blockErrors}
+            />
+          </div>
+          <div className={cn(!preview && "hidden")}>
+            <ArticlePreview blocks={form.body} />
+          </div>
         </main>
 
         <ArticleSettingsPanel
