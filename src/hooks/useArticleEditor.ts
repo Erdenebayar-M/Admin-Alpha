@@ -2,7 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createArticle, getArticle, publishArticle, saveArticle, unpublishArticle } from "@/lib/api";
+import {
+  createArticle,
+  featureArticle,
+  getArticle,
+  publishArticle,
+  saveArticle,
+  unfeatureArticle,
+  unpublishArticle,
+} from "@/lib/api";
 import { slugify } from "@/lib/article-slug";
 import {
   articleBodyErrors,
@@ -27,6 +35,8 @@ import type { Article } from "@/lib/types";
 const BLOCKS_MARKED = "Улаанаар тэмдэглэсэн блокуудыг засна уу.";
 const PUBLISH_FAILED = "Нийтэлж чадсангүй";
 const UNPUBLISH_FAILED = "Ноорог болгож чадсангүй";
+const FEATURE_FAILED = "Онцолж чадсангүй";
+const UNFEATURE_FAILED = "Онцлолыг цуцалж чадсангүй";
 
 /**
  * Editor state for one Article: the loaded server row, the local form, dirty
@@ -190,6 +200,28 @@ export function useArticleEditor(initialId: string | undefined) {
     },
   });
 
+  const featureMutation = useMutation({
+    mutationFn: () => featureArticle((server as Article).id),
+    onMutate: () => setErrorBanner(null),
+    onSuccess: applyStatusChange,
+    onError: (err) => {
+      // Covers the backend's race guards (ADR 0002): UNPROCESSABLE when this
+      // Article stopped being Published between the button rendering and the
+      // click, CONFLICT when another Article won the single Featured slot
+      // first — both carry the server's own message.
+      setErrorBanner({ message: err instanceof Error ? err.message : FEATURE_FAILED, details: [] });
+    },
+  });
+
+  const unfeatureMutation = useMutation({
+    mutationFn: () => unfeatureArticle((server as Article).id),
+    onMutate: () => setErrorBanner(null),
+    onSuccess: applyStatusChange,
+    onError: (err) => {
+      setErrorBanner({ message: err instanceof Error ? err.message : UNFEATURE_FAILED, details: [] });
+    },
+  });
+
   // Mirrors the backend's own Publish-readiness rule, recomputed every render straight
   // from the live form — so the checklist and the Publish button stay in sync as-you-type.
   const publishIssues = getArticlePublishIssues({
@@ -241,5 +273,9 @@ export function useArticleEditor(initialId: string | undefined) {
     isPublishing: publishMutation.isPending,
     unpublish: () => unpublishMutation.mutate(),
     isUnpublishing: unpublishMutation.isPending,
+    feature: () => featureMutation.mutate(),
+    isFeaturing: featureMutation.isPending,
+    unfeature: () => unfeatureMutation.mutate(),
+    isUnfeaturing: unfeatureMutation.isPending,
   };
 }

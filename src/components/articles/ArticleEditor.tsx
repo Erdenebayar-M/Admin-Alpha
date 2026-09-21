@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Eye, Globe, Loader2, Pencil, RotateCcw, Save, Trash2, Undo2 } from "lucide-react";
+import { AlertTriangle, Eye, Globe, Loader2, Pencil, RotateCcw, Save, Star, StarOff, Trash2, Undo2 } from "lucide-react";
 import { useArticleEditor } from "@/hooks/useArticleEditor";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { ARTICLE_PUBLISH_FIELD_LABELS, ARTICLE_STATUS_META } from "@/lib/status";
@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { ArticleSettingsPanel } from "./ArticleSettingsPanel";
 import { ArticleCanvas } from "./canvas/ArticleCanvas";
 import { DeleteArticleDialog } from "./DeleteArticleDialog";
+import { FeatureArticleDialog } from "./FeatureArticleDialog";
 import { ArticlePreview } from "./preview/ArticlePreview";
 
 const UNSAVED_MESSAGE = "Хадгалаагүй өөрчлөлт байна. Хуудсаас гарвал алга болно. Үргэлжлүүлэх үү?";
@@ -25,9 +26,16 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
   const { form, article, fieldErrors } = editor;
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [unpublishOpen, setUnpublishOpen] = useState(false);
+  const [featureOpen, setFeatureOpen] = useState(false);
   const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [preview, setPreview] = useState(false);
   const isPublished = article?.status === "PUBLISHED";
+  // Publish, Unpublish, Feature and Unfeature all write `status`/`is_featured` on the
+  // same row, and Save can flip status's dependent fields too — only one may be in
+  // flight at a time, or two racing writes could each overwrite what the other set
+  // (e.g. an Unpublish landing after a Feature would leave a Featured Draft, breaking
+  // ADR 0002's Published-only invariant).
+  const busy = editor.isSaving || editor.isPublishing || editor.isUnpublishing || editor.isFeaturing || editor.isUnfeaturing;
   // Saving a Published Article goes live immediately — confirm first instead of firing on click/Ctrl+S.
   function requestSave() {
     if (isPublished) setConfirmSaveOpen(true);
@@ -100,7 +108,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
                 variant="outline"
                 size="sm"
                 onClick={() => setUnpublishOpen(true)}
-                disabled={editor.isUnpublishing || editor.isSaving || editor.isPublishing}
+                disabled={busy}
               >
                 {editor.isUnpublishing ? <Loader2 className="animate-spin" /> : <Undo2 />}
                 Ноорог болгох
@@ -110,14 +118,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
                 variant="outline"
                 size="sm"
                 onClick={editor.publish}
-                disabled={
-                  !article ||
-                  editor.dirty ||
-                  editor.publishIssues.length > 0 ||
-                  editor.isPublishing ||
-                  editor.isSaving ||
-                  editor.isUnpublishing
-                }
+                disabled={!article || editor.dirty || editor.publishIssues.length > 0 || busy}
                 title={
                   // Publish flips status on the last-*saved* row — an unsaved edit must be
                   // saved first, or Publish would go live on stale content.
@@ -132,10 +133,32 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
                 Нийтлэх
               </Button>
             )}
+            {isPublished &&
+              (article?.is_featured ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={editor.unfeature}
+                  disabled={busy}
+                >
+                  {editor.isUnfeaturing ? <Loader2 className="animate-spin" /> : <StarOff />}
+                  Онцлолыг цуцлах
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFeatureOpen(true)}
+                  disabled={busy}
+                >
+                  {editor.isFeaturing ? <Loader2 className="animate-spin" /> : <Star />}
+                  Онцлох
+                </Button>
+              ))}
             <Button
               size="sm"
               onClick={requestSave}
-              disabled={editor.isSaving || editor.isPublishing || editor.isUnpublishing || (!!article && !editor.dirty)}
+              disabled={busy || (!!article && !editor.dirty)}
               title="Ctrl+S"
             >
               {editor.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
@@ -245,6 +268,16 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
         article={deleteOpen && article ? { id: article.id, title: article.title } : null}
         onOpenChange={setDeleteOpen}
         onDeleted={() => router.replace("/admin/articles")}
+      />
+
+      <FeatureArticleDialog
+        article={featureOpen && article ? { id: article.id, title: article.title } : null}
+        onOpenChange={setFeatureOpen}
+        onConfirm={() => {
+          setFeatureOpen(false);
+          editor.feature();
+        }}
+        isFeaturing={editor.isFeaturing}
       />
 
       <Dialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>

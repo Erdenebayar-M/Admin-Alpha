@@ -647,6 +647,24 @@ export async function unfeatureArticle(id: string): Promise<Article> {
   return data.data.article;
 }
 
+/**
+ * The single currently-Featured Article (ADR 0002), or null if none. There's
+ * no dedicated filter on the admin list route, so this pages through
+ * Published Articles (newest-updated first) looking for the one with
+ * `is_featured` — bounded by however many pages of Published Articles exist,
+ * which in practice is a handful of requests at most.
+ */
+export async function getFeaturedArticle(): Promise<ArticleSummary | null> {
+  let page = 1;
+  for (;;) {
+    const { articles, meta } = await getArticles({ status: "PUBLISHED", page, per_page: 200 });
+    const found = articles.find((a) => a.is_featured);
+    if (found) return found;
+    if (!meta.has_next) return null;
+    page += 1;
+  }
+}
+
 /** Upload a standalone image for an image Block, a link card's image, or the Thumbnail. */
 export async function uploadArticleImage(file: File): Promise<ArticleImageUploadResult> {
   const form = new FormData();
