@@ -55,3 +55,32 @@ export function toSavePayload(form: ArticleFormState, version: number): SaveArti
 export function isSlugLocked(article: Pick<Article, "status" | "was_published"> | undefined): boolean {
   return !!article && (article.status === "PUBLISHED" || article.was_published);
 }
+
+/** The excerpt autofill: the first paragraph's plain text, capped at the excerpt limit — `null` when there's none. */
+export function excerptFromBody(body: ArticleBlock[]): string | null {
+  const first = body.find((b) => b.type === "paragraph");
+  if (!first) return null;
+  return first.content
+    .map((s) => s.text)
+    .join("")
+    .trim()
+    .slice(0, EXCERPT_MAX);
+}
+
+/** JSON with object keys sorted, so equal data serializes identically whatever order its keys arrived in. */
+function canonicalJson(value: unknown): string {
+  return JSON.stringify(value, (_key, v: unknown) =>
+    v && typeof v === "object" && !Array.isArray(v)
+      ? Object.fromEntries(Object.entries(v).sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)))
+      : v,
+  );
+}
+
+/**
+ * Dirty check. Compares by content, not key order: the server's jsonb Body
+ * comes back with keys reordered, while the canvas rebuilds Blocks in its own
+ * order — a plain `JSON.stringify` compare would flag an untouched Article.
+ */
+export function formsEqual(a: ArticleFormState, b: ArticleFormState): boolean {
+  return canonicalJson(a) === canonicalJson(b);
+}

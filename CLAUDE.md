@@ -29,7 +29,7 @@ Admin: Next.js 14 App Router (runs on localhost:3002)
 
 - All components in src/components/, pages in src/app/
 - Use React Query for server state, Zustand for UI state
-- shadcn/ui + Tailwind only — no extra UI libraries
+- shadcn/ui + Tailwind only — no extra UI libraries. Headless editor engines (e.g. Tiptap) are allowed for rich text; their own UI chrome is not used
 - API calls go through src/lib/api.ts client
 - No `any` types
 - Mongolian strings use UTF-8, no special encoding needed

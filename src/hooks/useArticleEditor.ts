@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createArticle, getArticle, saveArticle } from "@/lib/api";
 import { slugify } from "@/lib/article-slug";
 import {
+  articleBodyErrors,
   articleFieldErrors,
   isVersionConflict,
   type ArticleFieldErrors,
@@ -13,21 +14,16 @@ import {
 import {
   EMPTY_ARTICLE_FORM,
   articleToForm,
+  formsEqual,
   isSlugLocked,
   toCreatePayload,
   toSavePayload,
   type ArticleFormState,
 } from "@/lib/article-form";
-import { ApiError } from "@/lib/api-error";
+import type { ArticleBlock } from "@/lib/article-types";
 import type { Article } from "@/lib/types";
 
-function bodyErrors(err: unknown): string[] {
-  if (!(err instanceof ApiError) || !err.details || typeof err.details !== "object") return [];
-  const { body, missing } = err.details as Record<string, unknown>;
-  const messages = Array.isArray(body) ? body.filter((m): m is string => typeof m === "string") : [];
-  if (Array.isArray(missing) && missing.includes("body")) messages.push("Агуулга: дор хаяж нэг блок шаардлагатай");
-  return messages;
-}
+const BLOCKS_MARKED = "Улаанаар тэмдэглэсэн блокуудыг засна уу.";
 
 /**
  * Editor state for one Article: the loaded server row, the local form, dirty
@@ -46,6 +42,9 @@ export function useArticleEditor(initialId: string | undefined) {
   const [fieldErrors, setFieldErrors] = useState<ArticleFieldErrors>({});
   const [errorBanner, setErrorBanner] = useState<{ message: string; details: string[] } | null>(null);
   const [conflict, setConflict] = useState(false);
+  const [blockErrors, setBlockErrors] = useState<Record<string, string>>({});
+  // Bumped whenever server data replaces the form, so the canvas remounts on the new Body.
+  const [bodyRevision, setBodyRevision] = useState(0);
   const mountedRef = useRef(true);
   useEffect(() => {
     mountedRef.current = true;
@@ -72,6 +71,8 @@ export function useArticleEditor(initialId: string | undefined) {
     setFieldErrors({});
     setErrorBanner(null);
     setConflict(false);
+    setBlockErrors({});
+    setBodyRevision((r) => r + 1);
   }
 
   // First load: adopt the fetched Article (state adjusted during render, not in an effect).
@@ -124,16 +125,19 @@ export function useArticleEditor(initialId: string | undefined) {
       setConflict(false);
       setFieldErrors({});
       setErrorBanner(null);
+      setBlockErrors({});
     },
     onSuccess: (article, sent) => afterWrite(article, sent),
-    onError: (err) => {
+    onError: (err, sent) => {
       if (isVersionConflict(err)) {
         setConflict(true);
         return;
       }
       const fields = articleFieldErrors(err);
       setFieldErrors(fields);
-      const details = bodyErrors(err);
+      const body = articleBodyErrors(err, sent.body);
+      setBlockErrors(body.blockErrors);
+      const details = [...(Object.keys(body.blockErrors).length > 0 ? [BLOCKS_MARKED] : []), ...body.unresolved];
       if (Object.keys(fields).length === 0 || details.length > 0) {
         setErrorBanner({ message: err.message, details });
       }
@@ -145,7 +149,7 @@ export function useArticleEditor(initialId: string | undefined) {
     if (data) applyServer(data);
   }
 
-  const dirty = JSON.stringify(form) !== JSON.stringify(baseline);
+  const dirty = !formsEqual(form, baseline);
 
   return {
     articleId,
@@ -162,6 +166,9 @@ export function useArticleEditor(initialId: string | undefined) {
       if (!saveMutation.isPending) saveMutation.mutate(form);
     },
     isSaving: saveMutation.isPending,
+    setBody: (body: ArticleBlock[]) => update("body", body),
+    bodyRevision,
+    blockErrors,
     fieldErrors,
     errorBanner,
     conflict,

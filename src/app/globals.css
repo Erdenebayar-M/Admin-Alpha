@@ -144,3 +144,44 @@
     cursor: not-allowed;
   }
 }
+/* Article canvas (Tiptap) — Tailwind's preflight resets headings/lists, so the
+   writing surface gets its own minimal typography here. */
+@layer components {
+  .article-canvas {
+    @apply text-base leading-7 text-foreground;
+  }
+  .article-canvas > p,
+  .article-canvas > ul,
+  .article-canvas > ol {
+    @apply my-3;
+  }
+  .article-canvas h2 {
+    @apply mt-8 mb-3 text-2xl font-semibold tracking-tight;
+  }
+  .article-canvas h3 {
+    @apply mt-6 mb-2 text-xl font-semibold;
+  }
+  .article-canvas ul {
+    @apply list-disc pl-6;
+  }
+  .article-canvas ol {
+    @apply list-decimal pl-6;
+  }
+  .article-canvas li > p {
+    @apply my-1;
+  }
+  .article-canvas a {
+    @apply text-primary underline underline-offset-2;
+  }
+  .article-canvas hr {
+    @apply my-6 border-t-2 border-border;
+  }
+  .article-canvas hr.ProseMirror-selectednode,
+  .article-canvas [data-preserved-block].ProseMirror-selectednode {
+    @apply outline-2 outline-offset-2 outline-ring;
+  }
+  .article-canvas p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-muted-foreground/60;
+  }
+}

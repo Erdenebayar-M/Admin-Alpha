@@ -11,11 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Lozenge } from "@/components/ui/lozenge";
 import { PageHeader } from "@/components/ui/page-header";
 import { ArticleSettingsPanel } from "./ArticleSettingsPanel";
+import { ArticleCanvas } from "./canvas/ArticleCanvas";
 import { DeleteArticleDialog } from "./DeleteArticleDialog";
 
 const UNSAVED_MESSAGE = "Хадгалаагүй өөрчлөлт байна. Хуудсаас гарвал алга болно. Үргэлжлүүлэх үү?";
 
-/** Create/edit page for one Article: title + (future) canvas on the left, metadata settings on the right. */
+/** Create/edit page for one Article: title + Body canvas on the left, metadata settings on the right. */
 export function ArticleEditor({ articleId }: { articleId?: string }) {
   const router = useRouter();
   const editor = useArticleEditor(articleId);
@@ -124,9 +125,12 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
             />
             {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
           </div>
-          <div className="flex min-h-80 items-center justify-center rounded-xl border border-dashed border-border text-sm text-muted-foreground">
-            Нийтлэлийн агуулгын засварлагч удахгүй нэмэгдэнэ.
-          </div>
+          <ArticleCanvas
+            key={editor.bodyRevision}
+            initialBody={form.body}
+            onChange={editor.setBody}
+            blockErrors={editor.blockErrors}
+          />
         </main>
 
         <ArticleSettingsPanel

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./api-error";
-import { articleFieldErrors, isVersionConflict } from "./article-errors";
+import { articleBodyErrors, articleFieldErrors, isVersionConflict } from "./article-errors";
+import type { ArticleBlock } from "./article-types";
 
 describe("articleFieldErrors", () => {
   it("attaches VALIDATION_ERROR details to the metadata field they concern", () => {
@@ -58,5 +59,43 @@ describe("isVersionConflict", () => {
     expect(isVersionConflict(new ApiError("stale", { status: 409, code: "CONFLICT" }))).toBe(true);
     expect(isVersionConflict(new ApiError("bad", { status: 400 }))).toBe(false);
     expect(isVersionConflict(new Error("boom"))).toBe(false);
+  });
+});
+
+describe("articleBodyErrors", () => {
+  const sent: ArticleBlock[] = [
+    { id: "p1", type: "paragraph", content: [{ text: "a" }] },
+    { id: "k1", type: "link_card", url: "ftp://x", title: "x" },
+  ];
+  const validation = (body: string[]) =>
+    new ApiError("Invalid body", { status: 400, code: "VALIDATION_ERROR", details: { body } });
+
+  it("resolves 'Block <position>: <message>' to the id of the Block that was sent at that position", () => {
+    expect(articleBodyErrors(validation(["Block 1: url must be an http(s) link"]), sent)).toEqual({
+      blockErrors: { k1: "url must be an http(s) link" },
+      unresolved: [],
+    });
+  });
+
+  it("keeps the first message per Block", () => {
+    expect(articleBodyErrors(validation(["Block 0: first", "Block 0: second"]), sent).blockErrors).toEqual({ p1: "first" });
+  });
+
+  it("leaves messages it can't place — unknown position, out of range, no position — for the banner", () => {
+    expect(
+      articleBodyErrors(validation(["Block ?: Unknown block type", "Block 7: nope", "Body cannot have more than 200 Blocks"]), sent),
+    ).toEqual({
+      blockErrors: {},
+      unresolved: ["Block ?: Unknown block type", "Block 7: nope", "Body cannot have more than 200 Blocks"],
+    });
+  });
+
+  it("reports a Published save's missing Body as a banner message", () => {
+    const err = new ApiError("Not publishable", { status: 422, details: { missing: ["body"] } });
+    expect(articleBodyErrors(err, [])).toEqual({ blockErrors: {}, unresolved: ["Агуулга: дор хаяж нэг блок шаардлагатай"] });
+  });
+
+  it("is empty for anything that isn't an ApiError with details", () => {
+    expect(articleBodyErrors(new Error("x"), sent)).toEqual({ blockErrors: {}, unresolved: [] });
   });
 });

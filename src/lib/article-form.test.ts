@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { articleToForm, isSlugLocked, toCreatePayload, toSavePayload, type ArticleFormState } from "./article-form";
+import {
+  EXCERPT_MAX,
+  articleToForm,
+  excerptFromBody,
+  formsEqual,
+  isSlugLocked,
+  toCreatePayload,
+  toSavePayload,
+  type ArticleFormState,
+} from "./article-form";
 import type { Article } from "./types";
 
 const form: ArticleFormState = {
@@ -91,5 +100,40 @@ describe("isSlugLocked", () => {
     expect(isSlugLocked(article)).toBe(false);
     expect(isSlugLocked({ ...article, status: "PUBLISHED" })).toBe(true);
     expect(isSlugLocked({ ...article, was_published: true })).toBe(true);
+  });
+});
+
+describe("excerptFromBody", () => {
+  it("copies the first paragraph's text, skipping other Blocks before it", () => {
+    expect(
+      excerptFromBody([
+        { id: "h", type: "heading", level: 2, text: "Гарчиг" },
+        { id: "p1", type: "paragraph", content: [{ text: "Эхний " }, { text: "догол", bold: true }, { text: " мөр." }] },
+        { id: "p2", type: "paragraph", content: [{ text: "Хоёр дахь" }] },
+      ]),
+    ).toBe("Эхний догол мөр.");
+  });
+
+  it("caps the text at the excerpt limit", () => {
+    expect(excerptFromBody([{ id: "p", type: "paragraph", content: [{ text: "а".repeat(EXCERPT_MAX + 20) }] }])).toHaveLength(
+      EXCERPT_MAX,
+    );
+  });
+
+  it("is null when there's no paragraph", () => {
+    expect(excerptFromBody([{ id: "d", type: "divider" }])).toBeNull();
+  });
+});
+
+describe("formsEqual", () => {
+  it("ignores key order, which jsonb doesn't preserve", () => {
+    const fromServer = JSON.parse('{"id":"h","text":"Гарчиг","type":"heading","level":2}');
+    const fromCanvas = { id: "h", type: "heading" as const, level: 2 as const, text: "Гарчиг" };
+    expect(formsEqual({ ...form, body: [fromServer] }, { ...form, body: [fromCanvas] })).toBe(true);
+  });
+
+  it("still sees a real change", () => {
+    expect(formsEqual(form, { ...form, body: [{ id: "d", type: "divider" }] })).toBe(false);
+    expect(formsEqual(form, { ...form, title: "x" })).toBe(false);
   });
 });

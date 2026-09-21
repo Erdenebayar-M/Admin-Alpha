@@ -22,6 +22,23 @@ export type ArticleStatusValue = (typeof ARTICLE_STATUSES)[number];
 
 export const SLUG_RE = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 
+// ── Inline href allowlist ────────────────────────────────────────────────
+// https:, http:, mailto:, or a same-origin path starting with "/" — the
+// `inlineHrefSchema` rule. A path is resolved against a placeholder origin
+// and checked that it stays on it, so "//host" or "/\host" (which browsers
+// treat as protocol-relative) are rejected despite starting with "/".
+
+export function isAllowedHref(href: string): boolean {
+  if (href.startsWith("https:") || href.startsWith("http:") || href.startsWith("mailto:")) return true;
+  if (!href.startsWith("/")) return false;
+  try {
+    const placeholder = "https://placeholder.invalid";
+    return new URL(href, placeholder).origin === placeholder;
+  } catch {
+    return false;
+  }
+}
+
 // ── Blocks ────────────────────────────────────────────────────────────────
 
 export interface InlineSpan {
