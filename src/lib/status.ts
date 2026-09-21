@@ -1,6 +1,6 @@
 import type { ReviewItem } from "@/lib/types";
 import type { PipelineStage } from "@/components/admin/StatusTrackBar";
-import type { ArticleCategoryValue, ArticleStatusValue } from "@/lib/article-types";
+import type { ArticleCategoryValue, ArticlePublishField, ArticleStatusValue } from "@/lib/article-types";
 
 export type Tone = "neutral" | "info" | "success" | "warning" | "danger";
 
@@ -35,4 +35,13 @@ export const ARTICLE_CATEGORY_LABELS: Record<ArticleCategoryValue, string> = {
   READING:     "Унших",
   ORTHOGRAPHY: "Зөв бичих",
   SPELLING:    "Үсэглэх",
+};
+
+/** Same field names/order as `ARTICLE_PUBLISH_FIELDS` — the Publish checklist and its labels. */
+export const ARTICLE_PUBLISH_FIELD_LABELS: Record<ArticlePublishField, string> = {
+  title:     "Гарчиг",
+  slug:      "URL (slug)",
+  excerpt:   "Товч агуулга",
+  thumbnail: "Нүүр зураг",
+  body:      "Агуулга (дор хаяж нэг блок)",
 };

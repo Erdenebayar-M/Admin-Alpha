@@ -2,12 +2,13 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Eye, Loader2, Pencil, RotateCcw, Save, Trash2 } from "lucide-react";
+import { AlertTriangle, Eye, Globe, Loader2, Pencil, RotateCcw, Save, Trash2, Undo2 } from "lucide-react";
 import { useArticleEditor } from "@/hooks/useArticleEditor";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import { ARTICLE_STATUS_META } from "@/lib/status";
+import { ARTICLE_PUBLISH_FIELD_LABELS, ARTICLE_STATUS_META } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Lozenge } from "@/components/ui/lozenge";
 import { PageHeader } from "@/components/ui/page-header";
 import { ArticleSettingsPanel } from "./ArticleSettingsPanel";
@@ -23,7 +24,15 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
   const editor = useArticleEditor(articleId);
   const { form, article, fieldErrors } = editor;
   const [deleteOpen, setDeleteOpen] = useState(false);
+  const [unpublishOpen, setUnpublishOpen] = useState(false);
+  const [confirmSaveOpen, setConfirmSaveOpen] = useState(false);
   const [preview, setPreview] = useState(false);
+  const isPublished = article?.status === "PUBLISHED";
+  // Saving a Published Article goes live immediately — confirm first instead of firing on click/Ctrl+S.
+  function requestSave() {
+    if (isPublished) setConfirmSaveOpen(true);
+    else editor.save();
+  }
   // A block-level save error is only ever shown inside the canvas (the outline on the
   // offending Block) — jump back to Write the moment one appears, so it's never silently
   // invisible behind Preview. Adjusted during render (not an effect) per the same
@@ -37,9 +46,9 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
   useUnsavedChangesGuard(editor.dirty, UNSAVED_MESSAGE);
 
   // Ctrl/⌘+S saves from anywhere on the page — including while typing in a field.
-  const saveRef = useRef(editor.save);
+  const saveRef = useRef(requestSave);
   useEffect(() => {
-    saveRef.current = editor.save;
+    saveRef.current = requestSave;
   });
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
@@ -86,9 +95,51 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
                 <Trash2 /> Устгах
               </Button>
             )}
-            <Button size="sm" onClick={editor.save} disabled={editor.isSaving || (!!article && !editor.dirty)} title="Ctrl+S">
+            {isPublished ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setUnpublishOpen(true)}
+                disabled={editor.isUnpublishing || editor.isSaving || editor.isPublishing}
+              >
+                {editor.isUnpublishing ? <Loader2 className="animate-spin" /> : <Undo2 />}
+                Ноорог болгох
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={editor.publish}
+                disabled={
+                  !article ||
+                  editor.dirty ||
+                  editor.publishIssues.length > 0 ||
+                  editor.isPublishing ||
+                  editor.isSaving ||
+                  editor.isUnpublishing
+                }
+                title={
+                  // Publish flips status on the last-*saved* row — an unsaved edit must be
+                  // saved first, or Publish would go live on stale content.
+                  editor.dirty
+                    ? "Эхлээд хадгална уу"
+                    : editor.publishIssues.length > 0
+                      ? `Дутуу байгаа: ${editor.publishIssues.map((f) => ARTICLE_PUBLISH_FIELD_LABELS[f]).join(", ")}`
+                      : undefined
+                }
+              >
+                {editor.isPublishing ? <Loader2 className="animate-spin" /> : <Globe />}
+                Нийтлэх
+              </Button>
+            )}
+            <Button
+              size="sm"
+              onClick={requestSave}
+              disabled={editor.isSaving || editor.isPublishing || editor.isUnpublishing || (!!article && !editor.dirty)}
+              title="Ctrl+S"
+            >
               {editor.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
-              Хадгалах
+              {isPublished ? "Шинэчлэх (шууд харагдана)" : "Хадгалах"}
             </Button>
           </>
         }
@@ -182,6 +233,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
           form={form}
           slugLocked={editor.slugLocked}
           errors={fieldErrors}
+          publishIssues={editor.publishIssues}
           onSlugChange={editor.setSlug}
           onCategoryChange={(v) => editor.update("category", v)}
           onExcerptChange={(v) => editor.update("excerpt", v)}
@@ -194,6 +246,61 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
         onOpenChange={setDeleteOpen}
         onDeleted={() => router.replace("/admin/articles")}
       />
+
+      <Dialog open={confirmSaveOpen} onOpenChange={setConfirmSaveOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Нийтэлсэн нийтлэлийг шинэчлэх үү?</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="space-y-4 px-6 py-5">
+            <p className="text-sm text-foreground">
+              Энэ нийтлэл нийтлэгдсэн тул хадгалсны дараа өөрчлөлт сайт дээр шууд харагдана.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setConfirmSaveOpen(false)}>
+                Болих
+              </Button>
+              <Button
+                onClick={() => {
+                  setConfirmSaveOpen(false);
+                  editor.save();
+                }}
+              >
+                Шинэчлэх
+              </Button>
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={unpublishOpen} onOpenChange={setUnpublishOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Нийтлэлийг ноорог болгох уу?</DialogTitle>
+          </DialogHeader>
+          <DialogBody className="space-y-4 px-6 py-5">
+            <p className="text-sm text-foreground">
+              «{article?.title || "Гарчиггүй"}» нийтлэл сайтаас шууд арилна. Дараа нь дахин нийтлэх боломжтой хэвээр
+              байна.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setUnpublishOpen(false)} disabled={editor.isUnpublishing}>
+                Болих
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  editor.unpublish();
+                  setUnpublishOpen(false);
+                }}
+                disabled={editor.isUnpublishing}
+              >
+                Ноорог болгох
+              </Button>
+            </div>
+          </DialogBody>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

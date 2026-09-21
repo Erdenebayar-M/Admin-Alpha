@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createArticle, getArticle, saveArticle } from "@/lib/api";
+import { createArticle, getArticle, publishArticle, saveArticle, unpublishArticle } from "@/lib/api";
 import { slugify } from "@/lib/article-slug";
 import {
   articleBodyErrors,
@@ -21,10 +21,12 @@ import {
   toSavePayload,
   type ArticleFormState,
 } from "@/lib/article-form";
-import type { ArticleBlock } from "@/lib/article-types";
+import { getArticlePublishIssues, type ArticleBlock } from "@/lib/article-types";
 import type { Article } from "@/lib/types";
 
 const BLOCKS_MARKED = "Улаанаар тэмдэглэсэн блокуудыг засна уу.";
+const PUBLISH_FAILED = "Нийтэлж чадсангүй";
+const UNPUBLISH_FAILED = "Ноорог болгож чадсангүй";
 
 /**
  * Editor state for one Article: the loaded server row, the local form, dirty
@@ -98,11 +100,15 @@ export function useArticleEditor(initialId: string | undefined) {
     update("slug", slug);
   }
 
+  function syncServerCache(article: Article) {
+    queryClient.setQueryData(["article", article.id], article);
+    queryClient.invalidateQueries({ queryKey: ["articles"] });
+  }
+
   function afterWrite(article: Article, sent: ArticleFormState) {
     setServer(article);
     setBaseline(sent);
-    queryClient.setQueryData(["article", article.id], article);
-    queryClient.invalidateQueries({ queryKey: ["articles"] });
+    syncServerCache(article);
   }
 
   const saveMutation = useMutation({
@@ -150,6 +156,50 @@ export function useArticleEditor(initialId: string | undefined) {
     if (data) applyServer(data);
   }
 
+  // Publish/Unpublish only flip status (+ published_at/version) — the form's own
+  // fields are untouched, so unlike `afterWrite` the baseline never moves.
+  function applyStatusChange(article: Article) {
+    setServer(article);
+    syncServerCache(article);
+  }
+
+  const publishMutation = useMutation({
+    mutationFn: () => publishArticle((server as Article).id),
+    onMutate: () => {
+      setErrorBanner(null);
+      setFieldErrors({});
+    },
+    onSuccess: applyStatusChange,
+    onError: (err) => {
+      // The same 422 `{ missing: [...] }` shape the Publish checklist mirrors client-side —
+      // e.g. a race where another save cleared a required field moments earlier.
+      setFieldErrors(articleFieldErrors(err));
+      setErrorBanner({ message: err instanceof Error ? err.message : PUBLISH_FAILED, details: [] });
+    },
+  });
+
+  const unpublishMutation = useMutation({
+    mutationFn: () => unpublishArticle((server as Article).id),
+    onMutate: () => {
+      setErrorBanner(null);
+      setFieldErrors({});
+    },
+    onSuccess: applyStatusChange,
+    onError: (err) => {
+      setErrorBanner({ message: err instanceof Error ? err.message : UNPUBLISH_FAILED, details: [] });
+    },
+  });
+
+  // Mirrors the backend's own Publish-readiness rule, recomputed every render straight
+  // from the live form — so the checklist and the Publish button stay in sync as-you-type.
+  const publishIssues = getArticlePublishIssues({
+    title: form.title,
+    slug: form.slug,
+    excerpt: form.excerpt,
+    thumbnail_url: form.thumbnail?.url ?? null,
+    body: form.body,
+  });
+
   const dirty = !formsEqual(form, baseline);
 
   return {
@@ -186,5 +236,10 @@ export function useArticleEditor(initialId: string | undefined) {
     conflict,
     reloadLatest,
     isReloading: query.isFetching,
+    publishIssues,
+    publish: () => publishMutation.mutate(),
+    isPublishing: publishMutation.isPending,
+    unpublish: () => unpublishMutation.mutate(),
+    isUnpublishing: unpublishMutation.isPending,
   };
 }

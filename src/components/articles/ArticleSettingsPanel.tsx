@@ -1,10 +1,16 @@
 "use client";
 
-import { Lock, WandSparkles } from "lucide-react";
-import { ARTICLE_CATEGORIES, type ArticleCategoryValue, type ArticleThumbnail } from "@/lib/article-types";
+import { CheckCircle2, Circle, Lock, WandSparkles } from "lucide-react";
+import {
+  ARTICLE_CATEGORIES,
+  ARTICLE_PUBLISH_FIELDS,
+  type ArticleCategoryValue,
+  type ArticlePublishField,
+  type ArticleThumbnail,
+} from "@/lib/article-types";
 import { EXCERPT_MAX, excerptFromBody, type ArticleFormState } from "@/lib/article-form";
 import type { ArticleFieldErrors } from "@/lib/article-errors";
-import { ARTICLE_CATEGORY_LABELS } from "@/lib/status";
+import { ARTICLE_CATEGORY_LABELS, ARTICLE_PUBLISH_FIELD_LABELS } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +23,7 @@ interface ArticleSettingsPanelProps {
   form: ArticleFormState;
   slugLocked: boolean;
   errors: ArticleFieldErrors;
+  publishIssues: ArticlePublishField[];
   onSlugChange: (slug: string) => void;
   onCategoryChange: (category: ArticleCategoryValue) => void;
   onExcerptChange: (excerpt: string) => void;
@@ -27,10 +34,38 @@ function FieldError({ message }: { message?: string }) {
   return message ? <p className="text-xs text-destructive">{message}</p> : null;
 }
 
+/** Mirrors the backend's own Publish-readiness rule (`getArticlePublishIssues`) live, as-you-type. */
+function PublishChecklist({ issues }: { issues: ArticlePublishField[] }) {
+  return (
+    <div className="space-y-2 rounded-lg border border-border bg-muted/40 p-3">
+      <p className="text-xs font-medium text-foreground">Нийтлэхэд бэлэн байдал</p>
+      <ul className="space-y-1.5">
+        {ARTICLE_PUBLISH_FIELDS.map((field) => {
+          const missing = issues.includes(field);
+          return (
+            <li
+              key={field}
+              className={cn("flex items-center gap-2 text-xs", missing ? "text-muted-foreground" : "text-foreground")}
+            >
+              {missing ? (
+                <Circle className="size-3.5 shrink-0" />
+              ) : (
+                <CheckCircle2 className="size-3.5 shrink-0 text-emerald-600" />
+              )}
+              {ARTICLE_PUBLISH_FIELD_LABELS[field]}
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
 export function ArticleSettingsPanel({
   form,
   slugLocked,
   errors,
+  publishIssues,
   onSlugChange,
   onCategoryChange,
   onExcerptChange,
@@ -118,6 +153,8 @@ export function ArticleSettingsPanel({
         error={errors.thumbnail}
         bodyImages={form.body.filter((b) => b.type === "image")}
       />
+
+      <PublishChecklist issues={publishIssues} />
     </aside>
   );
 }
