@@ -10,6 +10,8 @@ import Suggestion, { exitSuggestion } from "@tiptap/suggestion";
 import { DOC_NODE, generateBlockId, type PreservedBlock } from "@/lib/article-body";
 import { isAllowedHref } from "@/lib/article-types";
 import { filterBlockCommands, type BlockCommand } from "./block-commands";
+import { MediaBlockView } from "./MediaBlockView";
+import type { MediaDialogStore } from "./media-dialog-store";
 import { QuoteView } from "./QuoteView";
 import type { SlashMenuStore } from "./slash-menu-store";
 
@@ -193,15 +195,24 @@ function preservedLabel(block: PreservedBlock | null): string {
 }
 
 /**
- * Image, video and link card Blocks this canvas can't edit yet: kept as
- * opaque atoms carrying the Block itself, so opening and saving an Article
- * that has them never drops or alters them.
+ * Image, video and link card Blocks: one atom node carrying the whole Block
+ * as an attr, rendered by `MediaBlockView` (a preview + click-to-edit),
+ * configured with the `mediaDialog` store that view opens for both editing
+ * an existing one and — via `block-commands.ts`'s insert commands — creating
+ * a new one, so opening and saving an Article that has them never drops or
+ * alters the parts the canvas doesn't render inline.
  */
-const PreservedBlockNode = Node.create({
+const PreservedBlockNode = Node.create<{ mediaDialog: MediaDialogStore | null }>({
   name: DOC_NODE.preserved,
   group: "block",
   atom: true,
   selectable: true,
+  addOptions() {
+    return { mediaDialog: null };
+  },
+  addStorage() {
+    return { mediaDialog: this.options.mediaDialog };
+  },
   addAttributes() {
     return {
       block: {
@@ -229,6 +240,9 @@ const PreservedBlockNode = Node.create({
       }),
       preservedLabel(node.attrs.block as PreservedBlock | null),
     ];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(MediaBlockView);
   },
 });
 
@@ -281,7 +295,7 @@ const SlashCommand = Extension.create<{ store: SlashMenuStore | null }>({
 
 // ── Assembly ──────────────────────────────────────────────────────────────
 
-export function articleCanvasExtensions(slashMenu: SlashMenuStore): Extensions {
+export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: MediaDialogStore): Extensions {
   return [
     StarterKit.configure({
       blockquote: false,
@@ -308,7 +322,7 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore): Extensions {
     ListItem.extend({ content: DOC_NODE.paragraph }),
     Quote,
     Callout,
-    PreservedBlockNode,
+    PreservedBlockNode.configure({ mediaDialog }),
     BlockIds,
     BlockErrors,
     SlashCommand.configure({ store: slashMenu }),

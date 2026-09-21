@@ -36,7 +36,12 @@ export const DOC_NODE = {
 
 export const DOC_MARK = { bold: "bold", italic: "italic", link: "link" } as const;
 
-/** Block kinds the canvas can't edit yet; carried through untouched as opaque atoms. */
+/**
+ * Image, video and link card Blocks — modeled as one atom node carrying the
+ * whole Block as an attr (see `MediaBlockView`/`media-dialog-store.ts` for
+ * how the canvas renders and edits them), so the round trip below never has
+ * to know their internal shape.
+ */
 export type PreservedBlock = ImageBlock | VideoBlock | LinkCardBlock;
 
 // ── Blocks → document ───────────────────────────────────────────────────

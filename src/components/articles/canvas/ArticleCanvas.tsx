@@ -1,18 +1,23 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Info } from "lucide-react";
-import { blocksToDoc, docToBlocks, DOC_MARK } from "@/lib/article-body";
+import { uploadArticleImage } from "@/lib/api";
+import { blocksToDoc, docToBlocks, DOC_MARK, DOC_NODE, generateBlockId } from "@/lib/article-body";
 import { cleanPastedContent } from "@/lib/article-paste";
-import type { ArticleBlock } from "@/lib/article-types";
+import type { ArticleBlock, ImageBlock } from "@/lib/article-types";
 import { articleCanvasExtensions, blockErrorsKey } from "./extensions";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { LinkDialog } from "./LinkDialog";
+import { createMediaDialogStore } from "./media-dialog-store";
+import { MediaDialogs } from "./MediaDialogs";
 import { SlashMenu } from "./SlashMenu";
 import { createSlashMenuStore } from "./slash-menu-store";
 
 const PASTE_NOTICE_MS = 6000;
+const MEDIA_ERROR_MS = 6000;
 
 interface ArticleCanvasProps {
   /** Read once on mount — remount (via `key`) to load a different Body. */
@@ -29,12 +34,30 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
     onChangeRef.current = onChange;
   });
   const [slashMenu] = useState(createSlashMenuStore);
+  const [mediaDialog] = useState(createMediaDialogStore);
   const [pasteNotice, setPasteNotice] = useState(false);
   const [linkHref, setLinkHref] = useState<string | null>(null);
+  const [mediaError, setMediaError] = useState<string | null>(null);
+  const editorRef = useRef<Editor | null>(null);
+
+  /** Uploads immediately and inserts an image Block with empty alt (flagged in the canvas until described) — the paste/drag-drop path never opens a dialog first. */
+  function insertUploadedImage(file: File, pos?: number) {
+    uploadArticleImage(file)
+      .then((result) => {
+        const editor = editorRef.current;
+        if (!editor || editor.isDestroyed) return;
+        const block: ImageBlock = { id: generateBlockId(), type: "image", url: result.url, alt: "", width: result.width, height: result.height };
+        // `insertContentAt`, not `insertContent`: a plain insert at a position, never a
+        // replacement of whatever's currently selected (which could be another media Block atom).
+        const at = pos ?? editor.state.selection.to;
+        editor.chain().focus().insertContentAt(at, { type: DOC_NODE.preserved, attrs: { block } }).run();
+      })
+      .catch((err: unknown) => setMediaError(err instanceof Error ? err.message : "Зураг байршуулж чадсангүй"));
+  }
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: articleCanvasExtensions(slashMenu),
+    extensions: articleCanvasExtensions(slashMenu, mediaDialog),
     content: blocksToDoc(initialBody),
     editorProps: {
       attributes: {
@@ -46,15 +69,40 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
         if (cleaned.changed) setPasteNotice(true);
         return cleaned.html;
       },
+      handlePaste: (_view, event) => {
+        const files = Array.from(event.clipboardData?.files ?? []).filter((f) => f.type.startsWith("image/"));
+        if (files.length === 0) return false;
+        event.preventDefault();
+        files.forEach((file) => insertUploadedImage(file));
+        return true;
+      },
+      handleDrop: (view, event) => {
+        const files = Array.from(event.dataTransfer?.files ?? []).filter((f) => f.type.startsWith("image/"));
+        if (files.length === 0) return false;
+        event.preventDefault();
+        const pos = view.posAtCoords({ left: event.clientX, top: event.clientY })?.pos ?? view.state.selection.from;
+        files.forEach((file) => insertUploadedImage(file, pos));
+        return true;
+      },
     },
     onUpdate: ({ editor: e }) => onChangeRef.current(docToBlocks({ ...e.getJSON(), type: "doc" })),
   });
+
+  useEffect(() => {
+    editorRef.current = editor ?? null;
+  }, [editor]);
 
   useEffect(() => {
     if (!pasteNotice) return;
     const timer = setTimeout(() => setPasteNotice(false), PASTE_NOTICE_MS);
     return () => clearTimeout(timer);
   }, [pasteNotice]);
+
+  useEffect(() => {
+    if (!mediaError) return;
+    const timer = setTimeout(() => setMediaError(null), MEDIA_ERROR_MS);
+    return () => clearTimeout(timer);
+  }, [mediaError]);
 
   useEffect(() => {
     if (!editor || editor.isDestroyed) return;
@@ -103,6 +151,15 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
           Зарим формат хасагдлаа
         </div>
       )}
+      {mediaError && (
+        <div
+          role="alert"
+          className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+        >
+          <Info className="size-3.5 shrink-0" />
+          {mediaError}
+        </div>
+      )}
       <EditorContent editor={editor} />
       <SlashMenu store={slashMenu} />
       <LinkDialog
@@ -111,6 +168,7 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
         onSubmit={applyLink}
         onRemove={removeLink}
       />
+      <MediaDialogs store={mediaDialog} />
     </div>
   );
 }

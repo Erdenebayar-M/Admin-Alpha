@@ -69,7 +69,7 @@ export function CanvasToolbar({ editor, onLink }: { editor: Editor; onLink: () =
       </ToolbarButton>
       {BLOCK_COMMANDS.map((command, i) => (
         <span key={command.key} className="contents">
-          {(i === 0 || command.key === "bullet" || command.key === "quote") && <Separator />}
+          {(i === 0 || command.key === "bullet" || command.key === "quote" || command.key === "image") && <Separator />}
           <ToolbarButton label={command.label} active={!!active.blocks[command.key]} onClick={() => command.run(editor)}>
             <command.icon />
           </ToolbarButton>

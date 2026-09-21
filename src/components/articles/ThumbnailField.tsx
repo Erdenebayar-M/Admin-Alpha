@@ -4,7 +4,7 @@ import { useRef, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { ImagePlus, Loader2, X } from "lucide-react";
 import { uploadArticleImage } from "@/lib/api";
-import type { ArticleThumbnail } from "@/lib/article-types";
+import type { ArticleThumbnail, ImageBlock } from "@/lib/article-types";
 import type { ArticleImageUploadResult } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,8 @@ interface ThumbnailFieldProps {
   value: ArticleThumbnail | null;
   onChange: (thumbnail: ArticleThumbnail | null) => void;
   error?: string;
+  /** Image Blocks already in the Body, offered as a "use this instead of uploading again" shortcut. */
+  bodyImages: ImageBlock[];
 }
 
 /**
@@ -22,10 +24,14 @@ interface ThumbnailFieldProps {
  * the Article) until alt text is entered, so a Thumbnail can never be attached
  * without one. Width/height come from the upload response, not the file.
  */
-export function ThumbnailField({ value, onChange, error }: ThumbnailFieldProps) {
+export function ThumbnailField({ value, onChange, error, bodyImages }: ThumbnailFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [pending, setPending] = useState<ArticleImageUploadResult | null>(null);
   const [alt, setAlt] = useState("");
+  // Alt text required too, same as an upload here: a Thumbnail can never be attached without one.
+  const usableBodyImages = bodyImages.filter(
+    (img): img is ImageBlock & { width: number; height: number } => !!img.width && !!img.height && !!img.alt.trim(),
+  );
 
   const upload = useMutation({
     mutationFn: uploadArticleImage,
@@ -88,6 +94,26 @@ export function ThumbnailField({ value, onChange, error }: ThumbnailFieldProps) 
           {upload.isPending ? <Loader2 className="size-5 animate-spin" /> : <ImagePlus className="size-5" />}
           {upload.isPending ? "Байршуулж байна…" : "Зураг байршуулах"}
         </button>
+      )}
+
+      {!shown && usableBodyImages.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-xs text-muted-foreground">Эсвэл агуулгад орсон зургаас сонгох:</p>
+          <div className="flex gap-1.5 overflow-x-auto">
+            {usableBodyImages.map((img) => (
+              <button
+                key={img.id}
+                type="button"
+                onClick={() => onChange({ url: img.url, alt: img.alt, width: img.width, height: img.height })}
+                title={img.alt}
+                className="size-12 shrink-0 overflow-hidden rounded-md border border-border hover:border-ring"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element -- R2 asset of arbitrary origin/size */}
+                <img src={img.url} alt={img.alt} className="size-full object-cover" />
+              </button>
+            ))}
+          </div>
+        </div>
       )}
 
       {pending ? (

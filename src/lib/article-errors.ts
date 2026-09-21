@@ -67,3 +67,20 @@ export function articleBodyErrors(err: unknown, sent: ArticleBlock[]): ArticleBo
   if (Array.isArray(missing) && missing.includes("body")) result.unresolved.push(MISSING_BODY);
   return result;
 }
+
+export const MISSING_ALT = "Alt тайлбар оруулна уу.";
+
+/**
+ * Every image Block in the Body missing alt text, keyed by Block id — a
+ * client-side pre-flight check the same shape as a server body error, so it
+ * reuses the canvas's outline-and-message decoration. Checked before a save
+ * request is even sent (the backend has no alt-specific rule of its own to
+ * catch this).
+ */
+export function missingImageAltErrors(body: ArticleBlock[]): Record<string, string> {
+  const errors: Record<string, string> = {};
+  for (const block of body) {
+    if (block.type === "image" && !block.alt.trim()) errors[block.id] = MISSING_ALT;
+  }
+  return errors;
+}

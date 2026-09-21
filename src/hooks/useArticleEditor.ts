@@ -8,6 +8,7 @@ import {
   articleBodyErrors,
   articleFieldErrors,
   isVersionConflict,
+  missingImageAltErrors,
   type ArticleFieldErrors,
   type ArticleMetadataField,
 } from "@/lib/article-errors";
@@ -163,7 +164,18 @@ export function useArticleEditor(initialId: string | undefined) {
     slugLocked,
     dirty,
     save: () => {
-      if (!saveMutation.isPending) saveMutation.mutate(form);
+      if (saveMutation.isPending) return;
+      // Client-side pre-flight the backend has no rule of its own for: an
+      // image Block missing alt text is flagged (reusing the same
+      // outline-and-message decoration a server Block error gets) and the
+      // request is never sent.
+      const altErrors = missingImageAltErrors(form.body);
+      if (Object.keys(altErrors).length > 0) {
+        setBlockErrors(altErrors);
+        setErrorBanner({ message: BLOCKS_MARKED, details: [] });
+        return;
+      }
+      saveMutation.mutate(form);
     },
     isSaving: saveMutation.isPending,
     setBody: (body: ArticleBlock[]) => update("body", body),

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./api-error";
-import { articleBodyErrors, articleFieldErrors, isVersionConflict } from "./article-errors";
+import { articleBodyErrors, articleFieldErrors, isVersionConflict, missingImageAltErrors } from "./article-errors";
 import type { ArticleBlock } from "./article-types";
 
 describe("articleFieldErrors", () => {
@@ -97,5 +97,25 @@ describe("articleBodyErrors", () => {
 
   it("is empty for anything that isn't an ApiError with details", () => {
     expect(articleBodyErrors(new Error("x"), sent)).toEqual({ blockErrors: {}, unresolved: [] });
+  });
+});
+
+describe("missingImageAltErrors", () => {
+  it("flags every image Block whose alt is blank or whitespace-only", () => {
+    const body: ArticleBlock[] = [
+      { id: "i1", type: "image", url: "https://x/a.jpg", alt: "" },
+      { id: "i2", type: "image", url: "https://x/b.jpg", alt: "  " },
+      { id: "i3", type: "image", url: "https://x/c.jpg", alt: "Зураг" },
+      { id: "p1", type: "paragraph", content: [{ text: "text" }] },
+    ];
+    expect(missingImageAltErrors(body)).toEqual({
+      i1: "Alt тайлбар оруулна уу.",
+      i2: "Alt тайлбар оруулна уу.",
+    });
+  });
+
+  it("is empty when there are no image Blocks, or every one has alt text", () => {
+    expect(missingImageAltErrors([{ id: "d1", type: "divider" }])).toEqual({});
+    expect(missingImageAltErrors([{ id: "i1", type: "image", url: "https://x/a.jpg", alt: "Зураг" }])).toEqual({});
   });
 });

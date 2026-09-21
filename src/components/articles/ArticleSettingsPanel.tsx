@@ -112,7 +112,12 @@ export function ArticleSettingsPanel({
         <FieldError message={errors.excerpt} />
       </div>
 
-      <ThumbnailField value={form.thumbnail} onChange={onThumbnailChange} error={errors.thumbnail} />
+      <ThumbnailField
+        value={form.thumbnail}
+        onChange={onThumbnailChange}
+        error={errors.thumbnail}
+        bodyImages={form.body.filter((b) => b.type === "image")}
+      />
     </aside>
   );
 }

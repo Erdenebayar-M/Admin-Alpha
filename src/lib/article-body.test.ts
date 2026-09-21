@@ -70,12 +70,43 @@ describe("blocksToDoc / docToBlocks round trip", () => {
     expect(roundTrip(blocks)).toEqual(blocks);
   });
 
-  it("keeps media Blocks it can't edit yet untouched", () => {
+  it("keeps an image Block's data exactly, with a caption", () => {
     const blocks: ArticleBlock[] = [
       { id: "i1", type: "image", url: "https://cdn.example.com/a.jpg", alt: "Зураг", caption: "Тайлбар", width: 800, height: 600 },
+    ];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps an image Block's data exactly, without a caption", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "i2", type: "image", url: "https://cdn.example.com/b.jpg", alt: "Зураг 2", width: 400, height: 300 },
+    ];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps a video Block for both providers", () => {
+    const blocks: ArticleBlock[] = [
       { id: "v1", type: "video", provider: "youtube", video_id: "dQw4w9WgXcQ" },
       { id: "v2", type: "video", provider: "vimeo", video_id: "76979871" },
-      { id: "k1", type: "link_card", url: "https://example.com", title: "Холбоос" },
+    ];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps a link card Block, without an image", () => {
+    const blocks: ArticleBlock[] = [{ id: "k1", type: "link_card", url: "https://example.com", title: "Холбоос" }];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps a link card Block, with an image", () => {
+    const blocks: ArticleBlock[] = [
+      {
+        id: "k2",
+        type: "link_card",
+        url: "https://example.com/article",
+        title: "Холбоос",
+        description: "Товч тайлбар",
+        image: { url: "https://cdn.example.com/c.jpg", alt: "Карт зураг", width: 200, height: 150 },
+      },
     ];
     expect(roundTrip(blocks)).toEqual(blocks);
   });

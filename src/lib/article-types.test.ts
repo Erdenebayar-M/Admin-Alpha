@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getArticlePublishIssues, isAllowedHref } from "./article-types";
+import { getArticlePublishIssues, isAllowedHref, isHttpUrl, parseVideoUrl } from "./article-types";
 
 describe("getArticlePublishIssues", () => {
   it("reports every missing field for a blank Article", () => {
@@ -32,4 +32,36 @@ describe("isAllowedHref", () => {
       expect(isAllowedHref(href)).toBe(false);
     },
   );
+});
+
+describe("parseVideoUrl", () => {
+  it.each([
+    ["https://www.youtube.com/watch?v=dQw4w9WgXcQ", { provider: "youtube", video_id: "dQw4w9WgXcQ" }],
+    ["https://youtu.be/dQw4w9WgXcQ", { provider: "youtube", video_id: "dQw4w9WgXcQ" }],
+    ["https://www.youtube.com/embed/dQw4w9WgXcQ", { provider: "youtube", video_id: "dQw4w9WgXcQ" }],
+    ["https://www.youtube.com/shorts/dQw4w9WgXcQ", { provider: "youtube", video_id: "dQw4w9WgXcQ" }],
+    ["https://vimeo.com/76979871", { provider: "vimeo", video_id: "76979871" }],
+    ["https://player.vimeo.com/video/76979871", { provider: "vimeo", video_id: "76979871" }],
+    ["https://vimeo.com/album/2222/video/1111", { provider: "vimeo", video_id: "1111" }],
+    ["https://vimeo.com/channels/staffpicks/76979871", { provider: "vimeo", video_id: "76979871" }],
+  ])("parses %s", (url, expected) => {
+    expect(parseVideoUrl(url)).toEqual(expected);
+  });
+
+  it.each(["https://vimeo.com/not-a-video", "https://example.com/watch?v=x", "not a url", ""])(
+    "rejects %s",
+    (url) => {
+      expect(parseVideoUrl(url)).toBeNull();
+    },
+  );
+});
+
+describe("isHttpUrl", () => {
+  it.each(["https://a.mn", "http://a.mn/x?y=1"])("allows %s", (url) => {
+    expect(isHttpUrl(url)).toBe(true);
+  });
+
+  it.each(["mailto:a@b.mn", "ftp://a.mn", "/articles/x", "not a url", ""])("rejects %s", (url) => {
+    expect(isHttpUrl(url)).toBe(false);
+  });
 });

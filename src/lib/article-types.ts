@@ -113,6 +113,81 @@ export interface VideoBlock {
   video_id: string;
 }
 
+export interface ParsedVideoLink {
+  provider: VideoProvider;
+  video_id: string;
+}
+
+// Mirrors the backend's `parseVideoUrl` exactly (same host/id rules), so a
+// pasted link can be parsed and previewed client-side before it's ever sent —
+// the server re-parses the same url itself, this is UX only.
+const YOUTUBE_HOSTS = new Set(["youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be"]);
+const VIMEO_HOSTS = new Set(["vimeo.com", "www.vimeo.com", "player.vimeo.com"]);
+const YOUTUBE_ID_RE = /^[A-Za-z0-9_-]{6,}$/;
+const VIMEO_ID_RE = /^\d+$/;
+
+/** Parse a pasted YouTube or Vimeo url into `{ provider, video_id }`, or `null` for any other host. */
+export function parseVideoUrl(raw: string): ParsedVideoLink | null {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+  const host = url.hostname.toLowerCase();
+
+  if (YOUTUBE_HOSTS.has(host)) {
+    if (host === "youtu.be") {
+      const id = url.pathname.slice(1).split("/")[0] ?? "";
+      return YOUTUBE_ID_RE.test(id) ? { provider: "youtube", video_id: id } : null;
+    }
+    if (url.pathname === "/watch") {
+      const id = url.searchParams.get("v") ?? "";
+      return YOUTUBE_ID_RE.test(id) ? { provider: "youtube", video_id: id } : null;
+    }
+    const embedMatch = /^\/embed\/([^/?]+)/.exec(url.pathname);
+    if (embedMatch && YOUTUBE_ID_RE.test(embedMatch[1])) {
+      return { provider: "youtube", video_id: embedMatch[1] };
+    }
+    const shortsMatch = /^\/shorts\/([^/?]+)/.exec(url.pathname);
+    if (shortsMatch && YOUTUBE_ID_RE.test(shortsMatch[1])) {
+      return { provider: "youtube", video_id: shortsMatch[1] };
+    }
+    return null;
+  }
+
+  if (VIMEO_HOSTS.has(host)) {
+    const segments = url.pathname.split("/").filter(Boolean);
+    // `/album/2222/video/1111` and `player.vimeo.com/video/1111` both name the
+    // actual video id right after a literal "video" segment — checked first,
+    // since the *first* numeric segment in an album/showcase link is the
+    // album id, not the video.
+    const videoIdx = segments.indexOf("video");
+    if (videoIdx !== -1 && VIMEO_ID_RE.test(segments[videoIdx + 1] ?? "")) {
+      return { provider: "vimeo", video_id: segments[videoIdx + 1] };
+    }
+    // Otherwise (`/76979871`, `/channels/staffpicks/76979871`) the video id is
+    // the last numeric segment, not the first.
+    const numeric = segments.filter((segment) => VIMEO_ID_RE.test(segment));
+    const id = numeric[numeric.length - 1];
+    return id ? { provider: "vimeo", video_id: id } : null;
+  }
+
+  return null;
+}
+
+// Mirrors `httpUrlSchema` — a link card's url must be an http(s) link (the
+// server never fetches it, so this is display validation only).
+export function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export interface LinkCardImage {
   url: string;
   alt: string;
