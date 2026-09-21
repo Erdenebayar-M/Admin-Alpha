@@ -1,4 +1,5 @@
 import axios from "axios";
+import { ApiError } from "./api-error";
 import type {
   ActivityStats,
   AdminLearner,
@@ -26,16 +27,19 @@ import type { ArticleBlock, ArticleCategoryValue, ArticleStatusValue, ArticleThu
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
 
 const errorInterceptor = (err: unknown): Promise<never> => {
-  const e = err as { response?: { data?: unknown }; message?: string };
+  const e = err as { response?: { status?: number; data?: unknown }; message?: string };
   const data = e.response?.data as
-    | { message?: string; error?: string | { message?: string } }
+    | { message?: string; error?: string | { message?: string; code?: string; details?: unknown } }
     | undefined;
+  const envelope = typeof data?.error === "object" ? data.error : undefined;
   const msg =
     data?.message ??
-    (typeof data?.error === "string" ? data.error : data?.error?.message) ??
+    (typeof data?.error === "string" ? data.error : envelope?.message) ??
     e.message ??
     "Request failed";
-  return Promise.reject(new Error(msg));
+  return Promise.reject(
+    new ApiError(msg, { status: e.response?.status, code: envelope?.code, details: envelope?.details }),
+  );
 };
 
 const client = axios.create({

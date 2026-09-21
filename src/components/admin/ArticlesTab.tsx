@@ -4,15 +4,16 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Search, Star } from "lucide-react";
+import { Plus, Search, Star, Trash2 } from "lucide-react";
 import { getArticles, type ArticleFilters } from "@/lib/api";
 import { ARTICLE_CATEGORIES, ARTICLE_STATUSES, type ArticleCategoryValue, type ArticleStatusValue } from "@/lib/article-types";
-import { ARTICLE_STATUS_META } from "@/lib/status";
+import { ARTICLE_CATEGORY_LABELS, ARTICLE_STATUS_META } from "@/lib/status";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lozenge } from "@/components/ui/lozenge";
 import { EmptyState } from "@/components/ui/empty-state";
+import { DeleteArticleDialog } from "@/components/articles/DeleteArticleDialog";
 import { tableStyles, TableToolbar, TableFooter, SkeletonRows } from "@/components/admin/data-table";
 import {
   Select,
@@ -24,12 +25,6 @@ import {
 
 const PER_PAGE = 20;
 const ALL_VALUE = "all";
-
-const CATEGORY_LABELS: Record<ArticleCategoryValue, string> = {
-  READING: "Унших",
-  ORTHOGRAPHY: "Зөв бичих",
-  SPELLING: "Үсэглэх",
-};
 
 function fmtDate(iso: string | null) {
   if (!iso) return "—";
@@ -74,6 +69,7 @@ export function ArticlesTab() {
   const [status, setStatus] = useState<ArticleStatusValue | "all">("all");
   const [category, setCategory] = useState<ArticleCategoryValue | "all">("all");
   const [page, setPage] = useState(1);
+  const [toDelete, setToDelete] = useState<{ id: string; title: string } | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -150,7 +146,7 @@ export function ArticlesTab() {
                   <SelectItem value={ALL_VALUE}>Бүх ангилал</SelectItem>
                   {ARTICLE_CATEGORIES.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {CATEGORY_LABELS[c]}
+                      {ARTICLE_CATEGORY_LABELS[c]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -177,11 +173,14 @@ export function ArticlesTab() {
                 <th className={tableStyles.thCenter}>★</th>
                 <th className={tableStyles.th}>Нийтэлсэн</th>
                 <th className={tableStyles.th}>Шинэчилсэн</th>
+                <th className={tableStyles.th}>
+                  <span className="sr-only">Үйлдэл</span>
+                </th>
               </tr>
             </thead>
             <tbody className={tableStyles.tbody}>
               {isLoading && !isPlaceholderData ? (
-                <SkeletonRows count={8} cols={6} />
+                <SkeletonRows count={8} cols={7} />
               ) : (
                 articles.map((article) => (
                   <tr
@@ -190,7 +189,7 @@ export function ArticlesTab() {
                     onClick={() => router.push(`/admin/articles/${article.id}`)}
                   >
                     <td className={cn(tableStyles.cell, "font-medium text-foreground")}>{article.title}</td>
-                    <td className={tableStyles.cell}>{CATEGORY_LABELS[article.category]}</td>
+                    <td className={tableStyles.cell}>{ARTICLE_CATEGORY_LABELS[article.category]}</td>
                     <td className={tableStyles.cell}>
                       <Lozenge tone={ARTICLE_STATUS_META[article.status].tone}>
                         {ARTICLE_STATUS_META[article.status].label}
@@ -201,6 +200,22 @@ export function ArticlesTab() {
                     </td>
                     <td className={tableStyles.cellMuted}>{fmtDate(article.published_at)}</td>
                     <td className={tableStyles.cellMuted}>{fmtDate(article.updated_at)}</td>
+                    <td className={cn(tableStyles.cell, "w-px text-right")}>
+                      {article.status === "DRAFT" && (
+                        <Button
+                          variant="ghost"
+                          size="icon-sm"
+                          aria-label="Ноорог устгах"
+                          className="text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setToDelete({ id: article.id, title: article.title });
+                          }}
+                        >
+                          <Trash2 />
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 ))
               )}
@@ -218,6 +233,8 @@ export function ArticlesTab() {
           <TableFooter count={total} label="нийт нийтлэл" />
         )}
       </div>
+
+      <DeleteArticleDialog article={toDelete} onOpenChange={(open) => !open && setToDelete(null)} />
     </div>
   );
 }
