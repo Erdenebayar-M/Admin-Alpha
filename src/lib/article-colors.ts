@@ -66,7 +66,10 @@ export function usedCustomColors(blocks: ArticleBlock[]): string[] {
         if (block.color && isCustomColor(block.color)) seen.add(block.color);
         break;
       case "list":
-        for (const item of block.items) collectSpanColors(item, seen);
+        for (const item of block.items) {
+          collectSpanColors(item.spans, seen);
+          if (item.markerColor && isCustomColor(item.markerColor)) seen.add(item.markerColor);
+        }
         break;
       default:
         break;

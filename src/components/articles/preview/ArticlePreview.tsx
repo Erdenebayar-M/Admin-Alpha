@@ -99,14 +99,22 @@ function Heading({ block }: { block: HeadingBlock }) {
   );
 }
 
+// A List's Marker (ADR 0005) is rendered by us, not the browser's native
+// `::marker` — its glyph/number is always computed from position, never
+// stored. Rendering it as ordinary inline content ahead of the item's text
+// (instead of a `::marker` box) is also what makes it move with `alignment`.
+function markerGlyph(style: ListBlock["style"], index: number, startsAt: number | undefined): string {
+  return style === "bullet" ? "•" : `${(startsAt ?? 1) + index}.`;
+}
+
 function List({ block }: { block: ListBlock }) {
   const Tag = block.style === "ordered" ? "ol" : "ul";
   return (
     <Tag
+      start={block.startsAt}
       className={cn(
         BODY_TEXT_CLASS,
-        "flex flex-col gap-2 pl-6",
-        block.style === "ordered" ? "list-decimal" : "list-disc",
+        "flex flex-col gap-2 pl-6 list-none",
         alignmentClass(block.alignment),
         block.background && "rounded-2xl px-4 py-3",
       )}
@@ -114,7 +122,13 @@ function List({ block }: { block: ListBlock }) {
     >
       {block.items.map((item, index) => (
         <li key={index}>
-          <InlineSpans spans={item} />
+          <span
+            className="mr-2 select-none"
+            style={item.markerColor ? { color: colorCss(item.markerColor) } : undefined}
+          >
+            {markerGlyph(block.style, index, block.startsAt)}
+          </span>
+          <InlineSpans spans={item.spans} />
         </li>
       ))}
     </Tag>

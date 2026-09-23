@@ -37,15 +37,60 @@ describe("blocksToDoc / docToBlocks round trip", () => {
 
   it("keeps bullet and ordered lists with several items", () => {
     const blocks: ArticleBlock[] = [
-      { id: "l1", type: "list", style: "bullet", items: [[{ text: "нэг" }], [{ text: "хоёр", bold: true }]] },
+      {
+        id: "l1",
+        type: "list",
+        style: "bullet",
+        items: [{ spans: [{ text: "нэг" }] }, { spans: [{ text: "хоёр", bold: true }] }],
+      },
       {
         id: "l2",
         type: "list",
         style: "ordered",
-        items: [[{ text: "эхний " }, { text: "алхам", italic: true }], [{ text: "дараагийн" }], [{ text: "сүүлийн" }]],
+        items: [
+          { spans: [{ text: "эхний " }, { text: "алхам", italic: true }] },
+          { spans: [{ text: "дараагийн" }] },
+          { spans: [{ text: "сүүлийн" }] },
+        ],
       },
     ];
     expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps a list item's marker colour, independent of the item's text colour", () => {
+    const blocks: ArticleBlock[] = [
+      {
+        id: "l1",
+        type: "list",
+        style: "bullet",
+        items: [
+          { spans: [{ text: "улаан үгтэй", color: "red" }], markerColor: "brand-blue" },
+          { spans: [{ text: "энгийн" }] },
+          { spans: [{ text: "захиалгат тэмдэг" }], markerColor: "#a1b2c3" },
+        ],
+      },
+    ];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps an ordered list's startsAt, continuing a split list's numbering", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "l1", type: "list", style: "ordered", items: [{ spans: [{ text: "гуравдугаар" }] }], startsAt: 3 },
+    ];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps a list with no marker colour and no startsAt round-tripping with those fields still absent", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "l1", type: "list", style: "bullet", items: [{ spans: [{ text: "нэг" }] }] },
+      { id: "l2", type: "list", style: "ordered", items: [{ spans: [{ text: "хоёр" }] }] },
+    ];
+    const result = roundTrip(blocks);
+    expect(result).toEqual(blocks);
+    for (const block of result) {
+      expect(block).not.toHaveProperty("startsAt");
+      if (block.type === "list") for (const item of block.items) expect(item).not.toHaveProperty("markerColor");
+    }
   });
 
   it("keeps a quote with an attribution", () => {
@@ -126,7 +171,7 @@ describe("blocksToDoc / docToBlocks round trip", () => {
         background: "gray",
       },
       { id: "h1", type: "heading", level: 2, text: "Өнгөт гарчиг", color: "brand-blue", background: "#112233" },
-      { id: "l1", type: "list", style: "bullet", items: [[{ text: "нэг", highlight: "#ffcc00" }]], background: "brown" },
+      { id: "l1", type: "list", style: "bullet", items: [{ spans: [{ text: "нэг", highlight: "#ffcc00" }] }], background: "brown" },
       { id: "q1", type: "quote", content: [{ text: "ишлэл", color: "purple" }], background: "pink" },
       { id: "c1", type: "callout", content: [{ text: "анхаар", highlight: "orange" }], background: "#000000" },
     ];
@@ -137,7 +182,7 @@ describe("blocksToDoc / docToBlocks round trip", () => {
     const blocks: ArticleBlock[] = [
       { id: "p1", type: "paragraph", content: [{ text: "төвд" }], alignment: "center" },
       { id: "h1", type: "heading", level: 2, text: "баруунд", alignment: "right" },
-      { id: "l1", type: "list", style: "bullet", items: [[{ text: "нэг" }]], alignment: "center" },
+      { id: "l1", type: "list", style: "bullet", items: [{ spans: [{ text: "нэг" }] }], alignment: "center" },
       { id: "q1", type: "quote", content: [{ text: "ишлэл" }], alignment: "right" },
       { id: "c1", type: "callout", content: [{ text: "анхаар" }], alignment: "center" },
     ];
@@ -148,7 +193,7 @@ describe("blocksToDoc / docToBlocks round trip", () => {
     const blocks: ArticleBlock[] = [
       { id: "p1", type: "paragraph", content: [{ text: "текст" }] },
       { id: "h1", type: "heading", level: 2, text: "гарчиг" },
-      { id: "l1", type: "list", style: "bullet", items: [[{ text: "нэг" }]] },
+      { id: "l1", type: "list", style: "bullet", items: [{ spans: [{ text: "нэг" }] }] },
       { id: "q1", type: "quote", content: [{ text: "ишлэл" }] },
       { id: "c1", type: "callout", content: [{ text: "анхаар" }] },
     ];
@@ -262,7 +307,7 @@ describe("blocksToDoc / docToBlocks round trip", () => {
     const blocks: ArticleBlock[] = [
       { id: "a", type: "heading", level: 2, text: "Гарчиг" },
       { id: "b", type: "paragraph", content: [{ text: "Текст" }] },
-      { id: "c", type: "list", style: "bullet", items: [[{ text: "x" }]] },
+      { id: "c", type: "list", style: "bullet", items: [{ spans: [{ text: "x" }] }] },
       { id: "d", type: "divider" },
       { id: "e", type: "quote", content: [{ text: "q" }], attribution: "Би" },
       { id: "f", type: "callout", content: [{ text: "c" }] },
@@ -274,6 +319,31 @@ describe("blocksToDoc / docToBlocks round trip", () => {
 describe("blocksToDoc", () => {
   it("gives an empty Body one empty paragraph to type into", () => {
     expect(blocksToDoc([])).toEqual({ type: "doc", content: [{ type: "paragraph", attrs: { blockId: null } }] });
+  });
+
+  it("gives every list item a listMarker node as the first child of its paragraph, carrying its markerColor", () => {
+    const doc = blocksToDoc([
+      {
+        id: "l1",
+        type: "list",
+        style: "ordered",
+        items: [
+          { spans: [{ text: "нэг" }], markerColor: "brand-blue" },
+          { spans: [{ text: "хоёр" }] },
+        ],
+      },
+    ]);
+    const list = doc.content?.[0];
+    const [item1, item2] = list?.content ?? [];
+    expect(item1?.content?.[0]?.content?.[0]).toEqual({ type: "listMarker", attrs: { color: "brand-blue" } });
+    expect(item2?.content?.[0]?.content?.[0]).toEqual({ type: "listMarker", attrs: { color: null } });
+  });
+
+  it("sets an orderedList/bulletList node's start attr from startsAt, defaulting to 1", () => {
+    const withStart = blocksToDoc([{ id: "l1", type: "list", style: "ordered", items: [{ spans: [{ text: "x" }] }], startsAt: 4 }]);
+    expect(withStart.content?.[0]?.attrs?.start).toBe(4);
+    const withoutStart = blocksToDoc([{ id: "l2", type: "list", style: "ordered", items: [{ spans: [{ text: "x" }] }] }]);
+    expect(withoutStart.content?.[0]?.attrs?.start).toBe(1);
   });
 });
 
@@ -313,7 +383,57 @@ describe("docToBlocks", () => {
         { type: "orderedList", attrs: { blockId: "l2" }, content: [{ type: "listItem", content: [{ type: "paragraph" }] }] },
       ],
     };
-    expect(docToBlocks(doc)).toEqual([{ id: "l", type: "list", style: "bullet", items: [[{ text: "a" }]] }]);
+    expect(docToBlocks(doc)).toEqual([{ id: "l", type: "list", style: "bullet", items: [{ spans: [{ text: "a" }] }] }]);
+  });
+
+  it("reads a listMarker node's color attr back into markerColor, per item", () => {
+    const doc: TiptapDocument = {
+      type: "doc",
+      content: [
+        {
+          type: "orderedList",
+          attrs: { blockId: "l" },
+          content: [
+            {
+              type: "listItem",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [{ type: "listMarker", attrs: { color: "red" } }, { type: "text", text: "нэг" }],
+                },
+              ],
+            },
+            {
+              type: "listItem",
+              content: [
+                {
+                  type: "paragraph",
+                  content: [{ type: "listMarker", attrs: { color: null } }, { type: "text", text: "хоёр" }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    expect(docToBlocks(doc)).toEqual([
+      {
+        id: "l",
+        type: "list",
+        style: "ordered",
+        items: [{ spans: [{ text: "нэг" }], markerColor: "red" }, { spans: [{ text: "хоёр" }] }],
+      },
+    ]);
+  });
+
+  it("reads an orderedList's start attr back into startsAt, only when it isn't the default 1", () => {
+    const listNode = (start: number) => ({
+      type: "orderedList" as const,
+      attrs: { blockId: "l", start },
+      content: [{ type: "listItem", content: [{ type: "paragraph", content: [{ type: "text", text: "x" }] }] }],
+    });
+    expect(docToBlocks({ type: "doc", content: [listNode(3)] })[0]).toHaveProperty("startsAt", 3);
+    expect(docToBlocks({ type: "doc", content: [listNode(1)] })[0]).not.toHaveProperty("startsAt");
   });
 
   it("gives a Block without an id, or with a repeated id, a fresh one", () => {

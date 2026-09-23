@@ -124,12 +124,21 @@ export function ColorMenu({ editor, scope, usedColors, onClose }: ColorMenuProps
     selector: ({ editor: e }) => {
       const backgroundType = activeBackgroundNode(e);
       const heading = isHeadingActive(e);
+      // A NodeSelection on a Marker (ADR 0005) shows its own colour, the same
+      // way a heading shows its whole-heading colour instead of a mark's —
+      // both are node attrs, not marks, so `getAttributes(DOC_MARK.color)`
+      // (mark-based) would find nothing for either.
+      const markerActive = e.isActive(DOC_NODE.listMarker);
       return {
         onlyLink: isSelectionOnlyLink(e),
         hasSelection: !e.state.selection.empty,
         heading,
         backgroundType,
-        textColor: (heading ? e.getAttributes(DOC_NODE.heading).color : e.getAttributes(DOC_MARK.color).color) as ColorValue | undefined,
+        textColor: (heading
+          ? e.getAttributes(DOC_NODE.heading).color
+          : markerActive
+            ? e.getAttributes(DOC_NODE.listMarker).color
+            : e.getAttributes(DOC_MARK.color).color) as ColorValue | undefined,
         highlightColor: e.getAttributes(DOC_MARK.highlight).color as ColorValue | undefined,
         backgroundColor: (backgroundType ? e.getAttributes(backgroundType).background : undefined) as ColorValue | undefined,
       };

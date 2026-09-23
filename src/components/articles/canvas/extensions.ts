@@ -3,6 +3,7 @@ import { Heading } from "@tiptap/extension-heading";
 import { BulletList, ListItem, OrderedList } from "@tiptap/extension-list";
 import { Paragraph } from "@tiptap/extension-paragraph";
 import { Placeholder } from "@tiptap/extensions";
+import { liftListItem } from "@tiptap/pm/schema-list";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { ReactNodeViewRenderer } from "@tiptap/react";
@@ -14,6 +15,7 @@ import { BACKGROUND_NODES, DOC_MARK, DOC_NODE, generateBlockId, type PreservedBl
 import { isAllowedHref, isColorValue } from "@/lib/article-types";
 import { filterBlockCommands, type BlockCommand } from "./block-commands";
 import { COLOR_MENU_STORAGE_KEY, type ColorMenuStore } from "./color/color-menu-store";
+import { ListMarkerView } from "./ListMarkerView";
 import { MediaBlockView } from "./MediaBlockView";
 import type { MediaDialogStore } from "./media-dialog-store";
 import { QuoteView } from "./QuoteView";
@@ -345,6 +347,179 @@ const PreservedBlockNode = Node.create<{ mediaDialog: MediaDialogStore | null }>
   },
 });
 
+// ── List markers (ADR 0005) ──────────────────────────────────────────────
+// The bullet/number at the start of a list item's line, previously the
+// browser's native `::marker` — CSS, not part of the document, so it could
+// never be selected or coloured, and `alignment`'s `text-align` (set on the
+// list node) never moved it. Replaced with a real, atomic, inline node: the
+// first child of every list item's paragraph, colourable via the same
+// `colorAttribute()` pattern as everything else, whose glyph/number
+// `ListMarkerView` computes from its own position, never stored.
+
+/**
+ * A List item's Marker: read-only text (`ListMarkerView` computes the
+ * glyph), but its `color` is an ordinary author-editable attribute — mirrors
+ * `Heading`'s node-attr colour (one indivisible unit, not a run of text) more
+ * than a mark, since `atom: true` is what makes it a single, unsplittable
+ * selection in the first place; a mark could straddle only part of it.
+ */
+const ListMarker = Node.create({
+  name: DOC_NODE.listMarker,
+  group: "inline",
+  inline: true,
+  atom: true,
+  selectable: true,
+  marks: "",
+  addAttributes() {
+    return { ...colorAttribute("color", "data-marker-color", "color") };
+  },
+  parseHTML() {
+    return [{ tag: "span[data-list-marker]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["span", mergeAttributes(HTMLAttributes, { "data-list-marker": "" })];
+  },
+  addNodeView() {
+    return ReactNodeViewRenderer(ListMarkerView);
+  },
+});
+
+/**
+ * Guarantees a `listMarker` is always the first child of a list item's
+ * paragraph, and only there — inserting one (uncoloured) whenever a list
+ * item's paragraph is missing it, and removing one from any paragraph that
+ * *isn't* (any more) a list item's, such as the plain paragraph
+ * `ListItemExit` lifts out of a list. Covers every way a listItem can come
+ * to exist without a marker: `toggleBulletList`/`toggleOrderedList` (stock
+ * Tiptap commands, no marker awareness) and a pasted list (external HTML has
+ * no `data-list-marker`) — and doubles as the author's inability to delete
+ * the marker itself: a Backspace that removes it gets a fresh one reinserted
+ * on the very next transaction.
+ */
+const ListMarkerIntegrity = Extension.create({
+  name: "listMarkerIntegrity",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("listMarkerIntegrity"),
+        appendTransaction(transactions, _old, state) {
+          if (!transactions.some((t) => t.docChanged)) return null;
+          const tr = state.tr;
+          let changed = false;
+          state.doc.descendants((node, pos, parent) => {
+            if (node.type.name !== DOC_NODE.paragraph) return true;
+            const inListItem = parent?.type.name === DOC_NODE.listItem;
+            const hasMarker = node.firstChild?.type.name === DOC_NODE.listMarker;
+            if (inListItem && !hasMarker) {
+              const marker = state.schema.nodes[DOC_NODE.listMarker].create({ color: null });
+              tr.insert(tr.mapping.map(pos + 1), marker);
+              changed = true;
+            } else if (!inListItem && hasMarker) {
+              const from = tr.mapping.map(pos + 1);
+              tr.delete(from, from + node.firstChild!.nodeSize);
+              changed = true;
+            }
+            return false;
+          });
+          return changed ? tr : null;
+        },
+      }),
+    ];
+  },
+});
+
+/** Meta key `ListItemExit` tags its own transaction with, so `ListSplitDefaults` can tell an actual split from two lists that merely ended up adjacent. */
+const listSplitMetaKey = "listSplit";
+
+/**
+ * Enter on a list item whose paragraph holds nothing but its Marker lifts it
+ * out into a plain paragraph — the split point requirement 3 needs, and
+ * (at the first/last item) the usual "empty item exits the list" behaviour.
+ * Overrides `ListItem`'s own Enter binding (`splitListItem`, from
+ * `@tiptap/extension-list`): that command's own "is this item empty"
+ * check requires `content.size === 0`, which is never true anymore now that
+ * every item always carries a Marker — so it always took the *split*
+ * branch (duplicating the item) instead of ever reaching the lift. Must be
+ * listed after `ListItem` in `articleCanvasExtensions()`'s returned array —
+ * Tiptap resolves same-key shortcuts across extensions in *reverse* array
+ * order, so a later entry gets first refusal and can fall through (`return
+ * false`) to let `ListItem`'s own binding run for a genuinely non-empty item.
+ */
+const ListItemExit = Extension.create({
+  name: "listItemExit",
+  addKeyboardShortcuts() {
+    return {
+      Enter: () => {
+        const { state, view } = this.editor;
+        const { $from, empty } = state.selection;
+        if (!empty) return false;
+        const paragraph = $from.parent;
+        if (paragraph.type.name !== DOC_NODE.paragraph) return false;
+        const onlyMarker = paragraph.childCount === 1 && paragraph.firstChild?.type.name === DOC_NODE.listMarker;
+        if (!onlyMarker || $from.parentOffset !== paragraph.content.size) return false;
+        if ($from.node(-1)?.type.name !== DOC_NODE.listItem) return false;
+        const itemType = state.schema.nodes[DOC_NODE.listItem];
+        // Tag the transaction `liftListItem` builds internally (intercepting its own
+        // `dispatch` callback) rather than dispatching it and tagging after the fact —
+        // by the time it's dispatched it's already applied, too late to attach meta.
+        return liftListItem(itemType)(state, (tr) => view.dispatch(tr.setMeta(listSplitMetaKey, true)));
+      },
+    };
+  },
+});
+
+/**
+ * What a list keeps, and doesn't, the moment `ListItemExit` splits it in
+ * two: an ordered list's numbering continues from the half before it (the
+ * only thing ADR 0005 says should carry over), while `background`/
+ * `alignment` — and, via `liftListItem`'s plain node `.copy()`, would
+ * otherwise also carry over unchanged — are reset, so a deliberately
+ * coloured/aligned list doesn't silently paint content the author inserted
+ * afterwards. Gated on `listSplitMetaKey`, not just "this list is freshly
+ * created and sits next to one of the same kind" — two lists an author
+ * happens to create back-to-back in separate actions (with or without
+ * something between them) are common enough that adjacency alone would be a
+ * false positive; only a transaction that actually came from `ListItemExit`
+ * counts. Fires once, at creation — later edits never re-trigger it.
+ */
+const ListSplitDefaults = Extension.create({
+  name: "listSplitDefaults",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("listSplitDefaults"),
+        appendTransaction(transactions, oldState, state) {
+          if (!transactions.some((t) => t.getMeta(listSplitMetaKey))) return null;
+          const oldIds = new Set<string>();
+          oldState.doc.forEach((node) => {
+            if (typeof node.attrs.blockId === "string") oldIds.add(node.attrs.blockId);
+          });
+          const tr = state.tr;
+          let changed = false;
+          let precedingList: typeof state.doc.firstChild = null;
+          state.doc.forEach((node, offset) => {
+            const isList = node.type.name === DOC_NODE.bulletList || node.type.name === DOC_NODE.orderedList;
+            if (!isList) return;
+            const id = node.attrs.blockId as string | null;
+            const isFresh = typeof id === "string" && !oldIds.has(id);
+            if (isFresh && precedingList?.type.name === node.type.name) {
+              if (node.attrs.background !== null) tr.setNodeAttribute(offset, "background", null);
+              if (node.attrs.alignment !== null) tr.setNodeAttribute(offset, "alignment", null);
+              if (node.type.name === DOC_NODE.orderedList) {
+                const start = (typeof precedingList.attrs.start === "number" ? precedingList.attrs.start : 1) + precedingList.childCount;
+                tr.setNodeAttribute(offset, "start", start);
+              }
+              changed = true;
+            }
+            precedingList = node;
+          });
+          return changed ? tr : null;
+        },
+      }),
+    ];
+  },
+});
+
 /** A scheme-less "example.com" or "a@b.mn", as autolink sees a typed word before it adds the scheme. */
 function isBareLinkTarget(url: string): boolean {
   return !/^[a-z][a-z0-9+.-]*:/i.test(url) && !url.startsWith("/") && /^[^\s/]+\.[^\s]+$/.test(url);
@@ -475,9 +650,17 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
     }),
     // One level only: a list item is a single paragraph, never another list.
     ListItem.extend({ content: DOC_NODE.paragraph }),
+    ListMarker,
+    ListItemExit,
     Quote,
     Callout,
     PreservedBlockNode.configure({ mediaDialog }),
+    // `ListSplitDefaults` reads the `blockId` `BlockIds` assigns, to tell a
+    // freshly-split-off list from an untouched one — Tiptap resolves same-
+    // pass `appendTransaction` hooks in *reverse* extension-array order, so
+    // it must be listed before `BlockIds` here to run after it each pass.
+    ListMarkerIntegrity,
+    ListSplitDefaults,
     BlockIds,
     BlockBackground,
     TextColorMark,

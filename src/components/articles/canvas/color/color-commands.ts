@@ -49,15 +49,29 @@ export function activeBackgroundNode(editor: Editor): (typeof BACKGROUND_NODES)[
   return BACKGROUND_NODE_NAMES.includes(topLevelType) ? (topLevelType as (typeof BACKGROUND_NODES)[number]) : null;
 }
 
-/** Sets or clears (`null`) a mark across the selection, skipping any text that carries the link mark and removing `otherMark` from the text it does apply to (color/highlight are mutually exclusive). */
+/**
+ * Sets or clears (`null`) a mark across the selection, skipping any text that
+ * carries the link mark and removing `otherMark` from the text it does apply
+ * to (color/highlight are mutually exclusive). When colouring text (not
+ * highlighting — a Marker has no highlight, per ADR 0005/CONTEXT.md's
+ * Colour entry), any List Marker the same selection includes gets the exact
+ * same colour set as a node attr, not a mark (`ListMarker`'s `marks: ""`
+ * forbids marks entirely) — one selection, one swatch click, one colour
+ * applied to everything it touches in a single transaction.
+ */
 function applyMark(editor: Editor, markName: string, otherMarkName: string, color: ColorValue | null): void {
   const { state, view } = editor;
   const { from, to, empty } = state.selection;
   if (empty) return;
   const markType = state.schema.marks[markName];
   const otherType = state.schema.marks[otherMarkName];
+  const affectsMarker = markName === DOC_MARK.color;
   const tr = state.tr;
   state.doc.nodesBetween(from, to, (node, pos) => {
+    if (affectsMarker && node.type.name === DOC_NODE.listMarker) {
+      tr.setNodeAttribute(pos, "color", color);
+      return;
+    }
     if (!node.isText) return;
     const start = Math.max(pos, from);
     const end = Math.min(pos + node.nodeSize, to);

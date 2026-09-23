@@ -8,6 +8,7 @@ import {
   type ImageBlock,
   type InlineSpan,
   type LinkCardBlock,
+  type ListItem,
   type TextAlignment,
   type VideoBlock,
 } from "./article-types";
@@ -31,6 +32,7 @@ export const DOC_NODE = {
   bulletList: "bulletList",
   orderedList: "orderedList",
   listItem: "listItem",
+  listMarker: "listMarker",
   quote: "quote",
   callout: "callout",
   divider: "horizontalRule",
@@ -79,6 +81,15 @@ function spansToNodes(spans: InlineSpan[]): JSONContent[] | undefined {
   return nodes.length ? nodes : undefined;
 }
 
+// A List item's Marker (ADR 0005) is a real, atomic node — always the first
+// inline child of the item's paragraph, never omitted even when the item's
+// own text is empty. Its glyph/number is never stored (the canvas computes it
+// from position at render time); only an optional colour round-trips here.
+function listItemParagraphContent(item: ListItem): JSONContent[] {
+  const marker: JSONContent = { type: DOC_NODE.listMarker, attrs: { color: item.markerColor ?? null } };
+  return [marker, ...(spansToNodes(item.spans) ?? [])];
+}
+
 function backgroundAttrs(background: ColorValue | undefined): { background: ColorValue | null } {
   return { background: background ?? null };
 }
@@ -116,10 +127,10 @@ function blockToNode(block: ArticleBlock): JSONContent {
     case "list":
       return {
         type: block.style === "ordered" ? DOC_NODE.orderedList : DOC_NODE.bulletList,
-        attrs: { blockId, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment) },
+        attrs: { blockId, start: block.startsAt ?? 1, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment) },
         content: block.items.map((item) => ({
           type: DOC_NODE.listItem,
-          content: [withContent({ type: DOC_NODE.paragraph }, spansToNodes(item))],
+          content: [{ type: DOC_NODE.paragraph, content: listItemParagraphContent(item) }],
         })),
       };
     case "quote":
@@ -191,12 +202,14 @@ function nodeToSpans(node: JSONContent): InlineSpan[] | null {
 
 const plainText = (spans: InlineSpan[]) => spans.map((s) => s.text).join("");
 
-function listItems(list: JSONContent): InlineSpan[][] {
-  const items: InlineSpan[][] = [];
+function listItems(list: JSONContent): ListItem[] {
+  const items: ListItem[] = [];
   for (const item of list.content ?? []) {
     const paragraph = item.content?.find((c) => c.type === DOC_NODE.paragraph);
     const spans = paragraph && nodeToSpans(paragraph);
-    if (spans) items.push(spans);
+    if (!spans) continue;
+    const markerColor = paragraph?.content?.find((c) => c.type === DOC_NODE.listMarker)?.attrs?.color;
+    items.push({ spans, ...(isColorValue(markerColor) ? { markerColor } : {}) });
   }
   return items;
 }
@@ -239,10 +252,12 @@ function nodeToBlock(node: JSONContent): BlockWithoutId | null {
     case DOC_NODE.orderedList: {
       const items = listItems(node);
       if (!items.length) return null;
+      const start = node.attrs?.start;
       return {
         type: "list",
         style: node.type === DOC_NODE.orderedList ? "ordered" : "bullet",
         items,
+        ...(typeof start === "number" && start !== 1 ? { startsAt: start } : {}),
         ...backgroundFromNode(node),
         ...alignmentFromNode(node),
       };

@@ -199,10 +199,10 @@
     @apply mt-6 mb-2 text-xl font-semibold;
   }
   .article-canvas ul {
-    @apply list-disc pl-6;
+    @apply list-none pl-6;
   }
   .article-canvas ol {
-    @apply list-decimal pl-6;
+    @apply list-none pl-6;
   }
   .article-canvas li > p {
     @apply my-1;

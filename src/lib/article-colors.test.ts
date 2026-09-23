@@ -27,10 +27,17 @@ describe("usedCustomColors", () => {
     const blocks: ArticleBlock[] = [
       { id: "p1", type: "paragraph", content: [{ text: "a", color: "#111111" }, { text: "b", highlight: "#222222" }], background: "#111111" },
       { id: "h1", type: "heading", level: 2, text: "H", color: "#333333" },
-      { id: "l1", type: "list", style: "bullet", items: [[{ text: "x", color: "#222222" }]] },
+      { id: "l1", type: "list", style: "bullet", items: [{ spans: [{ text: "x", color: "#222222" }] }] },
       { id: "d1", type: "divider" },
     ];
     expect(usedCustomColors(blocks)).toEqual(["#111111", "#222222", "#333333"]);
+  });
+
+  it("collects a custom marker colour", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "l1", type: "list", style: "bullet", items: [{ spans: [{ text: "x" }], markerColor: "#444444" }] },
+    ];
+    expect(usedCustomColors(blocks)).toEqual(["#444444"]);
   });
 
   it("ignores Palette names", () => {

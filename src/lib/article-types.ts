@@ -130,11 +130,21 @@ export interface HeadingBlock {
 export const LIST_STYLES = ["bullet", "ordered"] as const;
 export type ListStyle = (typeof LIST_STYLES)[number];
 
+// A List item's Marker (ADR 0005) may carry its own colour, independent of
+// any colour on the item's text — parallels InlineSpan.color's grain, since
+// colouring is always a selection touching one marker at a time.
+export interface ListItem {
+  spans: InlineSpan[];
+  markerColor?: ColorValue;
+}
+
 export interface ListBlock {
   id: string;
   type: "list";
   style: ListStyle;
-  items: InlineSpan[][];
+  items: ListItem[];
+  /** Set only when this List continues an ordered List split apart by an inserted Block (ADR 0005); absent means "starts at 1". */
+  startsAt?: number;
   background?: ColorValue;
   alignment?: TextAlignment;
 }
