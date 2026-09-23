@@ -1,6 +1,7 @@
 import { Extension, Mark, Node, mergeAttributes, type Extensions } from "@tiptap/core";
 import { Heading } from "@tiptap/extension-heading";
-import { ListItem } from "@tiptap/extension-list";
+import { BulletList, ListItem, OrderedList } from "@tiptap/extension-list";
+import { Paragraph } from "@tiptap/extension-paragraph";
 import { Placeholder } from "@tiptap/extensions";
 import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
@@ -147,6 +148,28 @@ const BlockBackground = Extension.create({
   },
 });
 
+// ── Text alignment (Admin-Alpha#10) ─────────────────────────────────────────
+// Scoped identically to `background` (ADR 0004): the same five Block kinds
+// carry it. Unlike `background`, this isn't a global attribute across those
+// types — each node adds it individually via `addAttributes()`, the same way
+// Quote already carries `attribution`, so divider/image/video/link_card never
+// gain it even by accident.
+
+/** A `data-alignment` attribute rendered as both a round-trippable marker and a `text-align` style. `center`/`right` only — left is never written (ADR 0004). */
+function alignmentAttribute() {
+  return {
+    alignment: {
+      default: null,
+      parseHTML: (el: HTMLElement) => el.getAttribute("data-alignment"),
+      renderHTML: (attrs: Record<string, unknown>) => {
+        const value = attrs.alignment;
+        if (value !== "center" && value !== "right") return {};
+        return { "data-alignment": value, style: `text-align: ${value}` };
+      },
+    },
+  };
+}
+
 // ── Server-side Block errors ──────────────────────────────────────────────
 
 export const blockErrorsKey = new PluginKey<Record<string, string>>("blockErrors");
@@ -212,6 +235,7 @@ const Quote = Node.create({
         parseHTML: (el) => el.getAttribute("data-attribution"),
         renderHTML: (attrs) => (attrs.attribution ? { "data-attribution": attrs.attribution } : {}),
       },
+      ...alignmentAttribute(),
     };
   },
   parseHTML() {
@@ -231,6 +255,9 @@ const Callout = Node.create({
   group: "block",
   content: "inline*",
   defining: true,
+  addAttributes() {
+    return { ...alignmentAttribute() };
+  },
   parseHTML() {
     return [{ tag: "aside[data-callout]" }];
   },
@@ -375,11 +402,14 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
   return [
     StarterKit.configure({
       blockquote: false,
+      bulletList: false,
       code: false,
       codeBlock: false,
       hardBreak: false,
       heading: false,
       listItem: false,
+      orderedList: false,
+      paragraph: false,
       strike: false,
       underline: false,
       link: {
@@ -397,9 +427,24 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
     Heading.extend({
       marks: "",
       addAttributes() {
-        return { ...this.parent?.(), ...colorAttribute("color", "data-color", "color") };
+        return { ...this.parent?.(), ...colorAttribute("color", "data-color", "color"), ...alignmentAttribute() };
       },
     }).configure({ levels: [2, 3] }),
+    Paragraph.extend({
+      addAttributes() {
+        return { ...this.parent?.(), ...alignmentAttribute() };
+      },
+    }),
+    BulletList.extend({
+      addAttributes() {
+        return { ...this.parent?.(), ...alignmentAttribute() };
+      },
+    }),
+    OrderedList.extend({
+      addAttributes() {
+        return { ...this.parent?.(), ...alignmentAttribute() };
+      },
+    }),
     // One level only: a list item is a single paragraph, never another list.
     ListItem.extend({ content: DOC_NODE.paragraph }),
     Quote,

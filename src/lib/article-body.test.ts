@@ -133,6 +133,43 @@ describe("blocksToDoc / docToBlocks round trip", () => {
     expect(roundTrip(blocks)).toEqual(blocks);
   });
 
+  it("keeps a center or right alignment on each of the five text Block kinds", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "p1", type: "paragraph", content: [{ text: "төвд" }], alignment: "center" },
+      { id: "h1", type: "heading", level: 2, text: "баруунд", alignment: "right" },
+      { id: "l1", type: "list", style: "bullet", items: [[{ text: "нэг" }]], alignment: "center" },
+      { id: "q1", type: "quote", content: [{ text: "ишлэл" }], alignment: "right" },
+      { id: "c1", type: "callout", content: [{ text: "анхаар" }], alignment: "center" },
+    ];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("keeps a Block with no alignment field round-tripping with the field still absent", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "p1", type: "paragraph", content: [{ text: "текст" }] },
+      { id: "h1", type: "heading", level: 2, text: "гарчиг" },
+      { id: "l1", type: "list", style: "bullet", items: [[{ text: "нэг" }]] },
+      { id: "q1", type: "quote", content: [{ text: "ишлэл" }] },
+      { id: "c1", type: "callout", content: [{ text: "анхаар" }] },
+    ];
+    const result = roundTrip(blocks);
+    expect(result).toEqual(blocks);
+    for (const block of result) expect(block).not.toHaveProperty("alignment");
+  });
+
+  it("sends no alignment for an image, video, link card or divider Block", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "i1", type: "image", url: "https://cdn.example.com/a.jpg", alt: "a" },
+      { id: "v1", type: "video", provider: "youtube", video_id: "dQw4w9WgXcQ" },
+      { id: "k1", type: "link_card", url: "https://example.com", title: "t" },
+      { id: "d1", type: "divider" },
+    ];
+    for (const block of blocks) {
+      const node = blocksToDoc([block]).content?.[0];
+      expect(node?.attrs).not.toHaveProperty("alignment");
+    }
+  });
+
   it("never puts both color and highlight on one span", () => {
     const doc: TiptapDocument = {
       type: "doc",

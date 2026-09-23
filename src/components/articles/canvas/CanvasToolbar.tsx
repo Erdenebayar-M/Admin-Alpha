@@ -3,11 +3,13 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
 import { useEditorState } from "@tiptap/react";
-import { Bold, Italic, Link2, Palette } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Link2, Palette } from "lucide-react";
 import { DOC_MARK } from "@/lib/article-body";
+import type { TextAlignment } from "@/lib/article-types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BLOCK_COMMANDS } from "./block-commands";
+import { activeBackgroundNode, applyBlockAttrs } from "./color/color-commands";
 import { ColorMenu } from "./color/ColorMenu";
 import type { ColorMenuStore } from "./color/color-menu-store";
 
@@ -16,11 +18,13 @@ const noColorMenu = () => null;
 function ToolbarButton({
   label,
   active,
+  disabled,
   onClick,
   children,
 }: {
   label: string;
   active: boolean;
+  disabled?: boolean;
   onClick: () => void;
   children: ReactNode;
 }) {
@@ -32,6 +36,7 @@ function ToolbarButton({
       title={label}
       aria-label={label}
       aria-pressed={active}
+      disabled={disabled}
       // Keep the editor's selection: a click must not move focus off the canvas first.
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
@@ -40,6 +45,22 @@ function ToolbarButton({
       {children}
     </Button>
   );
+}
+
+/**
+ * Text alignment (Admin-Alpha#10), scoped identically to Colour's background
+ * (ADR 0004): reuses `activeBackgroundNode` to find the same five Block
+ * kinds' top-level node, since divider/image/video/link_card must never gain
+ * an `alignment` attr either.
+ */
+const ALIGNMENT_BUTTONS: { value: TextAlignment | "left"; label: string; icon: typeof AlignLeft }[] = [
+  { value: "left", label: "Зүүн зэрэгцүүлэх", icon: AlignLeft },
+  { value: "center", label: "Голлуулах", icon: AlignCenter },
+  { value: "right", label: "Баруун зэрэгцүүлэх", icon: AlignRight },
+];
+
+function applyAlignment(editor: Editor, alignment: TextAlignment | "left"): void {
+  applyBlockAttrs(editor, { alignment: alignment === "left" ? null : alignment });
 }
 
 const Separator = () => <span className="mx-1 h-5 w-px bg-border" aria-hidden />;
@@ -70,12 +91,22 @@ export function CanvasToolbar({
 
   const active = useEditorState({
     editor,
-    selector: ({ editor: e }) => ({
-      bold: e.isActive(DOC_MARK.bold),
-      italic: e.isActive(DOC_MARK.italic),
-      link: e.isActive(DOC_MARK.link),
-      blocks: Object.fromEntries(BLOCK_COMMANDS.map((c) => [c.key, c.isActive(e)])),
-    }),
+    selector: ({ editor: e }) => {
+      const alignmentNode = activeBackgroundNode(e);
+      const rawAlignment = alignmentNode ? e.getAttributes(alignmentNode).alignment : null;
+      return {
+        bold: e.isActive(DOC_MARK.bold),
+        italic: e.isActive(DOC_MARK.italic),
+        link: e.isActive(DOC_MARK.link),
+        blocks: Object.fromEntries(BLOCK_COMMANDS.map((c) => [c.key, c.isActive(e)])),
+        alignmentNode,
+        // `null` (no button lit) when the selection isn't in an alignment-eligible Block at
+        // all — not "left", which would light the Left button while every button is disabled.
+        alignment: alignmentNode
+          ? ((rawAlignment === "center" || rawAlignment === "right" ? rawAlignment : "left") as TextAlignment | "left")
+          : null,
+      };
+    },
   });
 
   return (
@@ -107,6 +138,18 @@ export function CanvasToolbar({
           </div>
         )}
       </div>
+      <Separator />
+      {ALIGNMENT_BUTTONS.map(({ value, label, icon: Icon }) => (
+        <ToolbarButton
+          key={value}
+          label={label}
+          active={active.alignment === value}
+          disabled={!active.alignmentNode}
+          onClick={() => applyAlignment(editor, value)}
+        >
+          <Icon />
+        </ToolbarButton>
+      ))}
       {BLOCK_COMMANDS.map((command, i) => (
         <span key={command.key} className="contents">
           {(i === 0 || command.key === "bullet" || command.key === "quote" || command.key === "image") && <Separator />}

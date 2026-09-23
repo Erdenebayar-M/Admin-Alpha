@@ -2,11 +2,13 @@ import type { JSONContent } from "@tiptap/core";
 import {
   isAllowedHref,
   isColorValue,
+  isTextAlignment,
   type ArticleBlock,
   type ColorValue,
   type ImageBlock,
   type InlineSpan,
   type LinkCardBlock,
+  type TextAlignment,
   type VideoBlock,
 } from "./article-types";
 
@@ -81,6 +83,10 @@ function backgroundAttrs(background: ColorValue | undefined): { background: Colo
   return { background: background ?? null };
 }
 
+function alignmentAttrs(alignment: TextAlignment | undefined): { alignment: TextAlignment | null } {
+  return { alignment: alignment ?? null };
+}
+
 function withContent(node: JSONContent, content: JSONContent[] | undefined): JSONContent {
   return content ? { ...node, content } : node;
 }
@@ -90,18 +96,27 @@ function blockToNode(block: ArticleBlock): JSONContent {
   switch (block.type) {
     case "paragraph":
       return withContent(
-        { type: DOC_NODE.paragraph, attrs: { blockId, ...backgroundAttrs(block.background) } },
+        { type: DOC_NODE.paragraph, attrs: { blockId, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment) } },
         spansToNodes(block.content),
       );
     case "heading":
       return withContent(
-        { type: DOC_NODE.heading, attrs: { blockId, level: block.level, color: block.color ?? null, ...backgroundAttrs(block.background) } },
+        {
+          type: DOC_NODE.heading,
+          attrs: {
+            blockId,
+            level: block.level,
+            color: block.color ?? null,
+            ...backgroundAttrs(block.background),
+            ...alignmentAttrs(block.alignment),
+          },
+        },
         spansToNodes([{ text: block.text }]),
       );
     case "list":
       return {
         type: block.style === "ordered" ? DOC_NODE.orderedList : DOC_NODE.bulletList,
-        attrs: { blockId, ...backgroundAttrs(block.background) },
+        attrs: { blockId, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment) },
         content: block.items.map((item) => ({
           type: DOC_NODE.listItem,
           content: [withContent({ type: DOC_NODE.paragraph }, spansToNodes(item))],
@@ -109,12 +124,15 @@ function blockToNode(block: ArticleBlock): JSONContent {
       };
     case "quote":
       return withContent(
-        { type: DOC_NODE.quote, attrs: { blockId, attribution: block.attribution ?? null, ...backgroundAttrs(block.background) } },
+        {
+          type: DOC_NODE.quote,
+          attrs: { blockId, attribution: block.attribution ?? null, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment) },
+        },
         spansToNodes(block.content),
       );
     case "callout":
       return withContent(
-        { type: DOC_NODE.callout, attrs: { blockId, ...backgroundAttrs(block.background) } },
+        { type: DOC_NODE.callout, attrs: { blockId, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment) } },
         spansToNodes(block.content),
       );
     case "divider":
@@ -191,12 +209,18 @@ function backgroundFromNode(node: JSONContent): { background?: ColorValue } {
   return isColorValue(background) ? { background } : {};
 }
 
+/** `{ alignment }` when the node's `alignment` attr is `center`/`right`, else `{}` — spread onto the Block. */
+function alignmentFromNode(node: JSONContent): { alignment?: TextAlignment } {
+  const alignment = node.attrs?.alignment;
+  return isTextAlignment(alignment) ? { alignment } : {};
+}
+
 /** The Block a top-level node stands for, or `null` when it's empty and must not be sent. */
 function nodeToBlock(node: JSONContent): BlockWithoutId | null {
   switch (node.type) {
     case DOC_NODE.paragraph: {
       const content = nodeToSpans(node);
-      return content && { type: "paragraph", content, ...backgroundFromNode(node) };
+      return content && { type: "paragraph", content, ...backgroundFromNode(node), ...alignmentFromNode(node) };
     }
     case DOC_NODE.heading: {
       const spans = nodeToSpans(node);
@@ -208,24 +232,31 @@ function nodeToBlock(node: JSONContent): BlockWithoutId | null {
         text: plainText(spans),
         ...(isColorValue(color) ? { color } : {}),
         ...backgroundFromNode(node),
+        ...alignmentFromNode(node),
       };
     }
     case DOC_NODE.bulletList:
     case DOC_NODE.orderedList: {
       const items = listItems(node);
       if (!items.length) return null;
-      return { type: "list", style: node.type === DOC_NODE.orderedList ? "ordered" : "bullet", items, ...backgroundFromNode(node) };
+      return {
+        type: "list",
+        style: node.type === DOC_NODE.orderedList ? "ordered" : "bullet",
+        items,
+        ...backgroundFromNode(node),
+        ...alignmentFromNode(node),
+      };
     }
     case DOC_NODE.quote: {
       const content = nodeToSpans(node);
       if (!content) return null;
       const raw = node.attrs?.attribution;
       const attribution = typeof raw === "string" ? raw.trim() : "";
-      return { type: "quote", content, ...(attribution ? { attribution } : {}), ...backgroundFromNode(node) };
+      return { type: "quote", content, ...(attribution ? { attribution } : {}), ...backgroundFromNode(node), ...alignmentFromNode(node) };
     }
     case DOC_NODE.callout: {
       const content = nodeToSpans(node);
-      return content && { type: "callout", content, ...backgroundFromNode(node) };
+      return content && { type: "callout", content, ...backgroundFromNode(node), ...alignmentFromNode(node) };
     }
     case DOC_NODE.divider:
       return { type: "divider" };

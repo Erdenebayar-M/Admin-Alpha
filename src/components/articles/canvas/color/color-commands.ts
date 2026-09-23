@@ -85,9 +85,19 @@ export function applyHighlight(editor: Editor, color: ColorValue | null): void {
   applyMark(editor, DOC_MARK.highlight, DOC_MARK.color, color);
 }
 
-/** Sets or clears the current Block's background. No-op when the selection isn't inside a Block kind that can carry one. */
-export function applyBackground(editor: Editor, color: ColorValue | null): void {
+/**
+ * Sets attrs on the current selection's top-level Block node (one of the
+ * five `activeBackgroundNode` kinds). No-op when the selection isn't inside
+ * one. Shared by `applyBackground` below and `CanvasToolbar`'s alignment
+ * buttons (Admin-Alpha#10) — both act on the same Block kinds (ADR 0004).
+ */
+export function applyBlockAttrs(editor: Editor, attrs: Record<string, unknown>): void {
   const type = activeBackgroundNode(editor);
   if (!type) return;
-  editor.chain().focus().updateAttributes(type, { background: color }).run();
+  editor.chain().focus().updateAttributes(type, attrs).run();
+}
+
+/** Sets or clears the current Block's background. No-op when the selection isn't inside a Block kind that can carry one. */
+export function applyBackground(editor: Editor, color: ColorValue | null): void {
+  applyBlockAttrs(editor, { background: color });
 }

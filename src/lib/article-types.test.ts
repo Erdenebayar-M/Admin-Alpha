@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getArticlePublishIssues, isAllowedHref, isColorValue, isCustomColor, isHttpUrl, isPaletteColor, parseVideoUrl } from "./article-types";
+import { getArticlePublishIssues, isAllowedHref, isColorValue, isCustomColor, isHttpUrl, isPaletteColor, isTextAlignment, parseVideoUrl } from "./article-types";
 
 describe("getArticlePublishIssues", () => {
   it("reports every missing field for a blank Article", () => {
@@ -86,6 +86,16 @@ describe("isColorValue", () => {
 
   it.each([undefined, null, 1, "#FFFFFF", "not-a-colour"])("rejects %s", (value) => {
     expect(isColorValue(value)).toBe(false);
+  });
+});
+
+describe("isTextAlignment", () => {
+  it.each(["center", "right"])("accepts %s", (value) => {
+    expect(isTextAlignment(value)).toBe(true);
+  });
+
+  it.each(["left", "Center", "", "justify", 1, null, undefined])("rejects %s", (value) => {
+    expect(isTextAlignment(value)).toBe(false);
   });
 });
 

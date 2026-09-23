@@ -42,4 +42,20 @@ describe("articleCanvasExtensions schema", () => {
     expect(paragraph.attrs.background).toBe("#112233");
     expect(paragraph.firstChild?.marks[0].attrs.color).toBe("red");
   });
+
+  it("gives every Block kind that can carry one an alignment attr, and none to divider/preserved (Admin-Alpha#10)", () => {
+    const s = schema();
+    for (const type of [DOC_NODE.paragraph, DOC_NODE.heading, DOC_NODE.bulletList, DOC_NODE.orderedList, DOC_NODE.quote, DOC_NODE.callout]) {
+      expect(s.nodes[type].spec.attrs).toHaveProperty("alignment");
+    }
+    for (const type of [DOC_NODE.divider, DOC_NODE.preserved]) {
+      expect(s.nodes[type].spec.attrs).not.toHaveProperty("alignment");
+    }
+  });
+
+  it("builds a paragraph node carrying a center alignment without throwing", () => {
+    const s = schema();
+    const paragraph = s.nodes[DOC_NODE.paragraph].create({ alignment: "center" }, s.text("төвд"));
+    expect(paragraph.attrs.alignment).toBe("center");
+  });
 });

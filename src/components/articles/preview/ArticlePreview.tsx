@@ -3,6 +3,7 @@ import { Link2 } from "lucide-react";
 import { colorCss, tintCss } from "@/lib/article-colors";
 import { cn } from "@/lib/utils";
 import type { ArticleBlock, CalloutBlock, ColorValue, HeadingBlock, ImageBlock, InlineSpan, LinkCardBlock, ListBlock, ParagraphBlock, QuoteBlock, VideoBlock } from "@/lib/article-types";
+import { alignmentClass } from "./alignment";
 
 // Same font + subsets as `Alpha/web/app/layout.tsx` — full Cyrillic Extended
 // coverage so Өө/Үү render correctly. Loaded only here (not the admin app's
@@ -72,7 +73,10 @@ function InlineSpans({ spans }: { spans: InlineSpan[] }) {
 
 function Paragraph({ block }: { block: ParagraphBlock }) {
   return (
-    <p className={cn(BODY_TEXT_CLASS, block.background && "rounded-2xl px-4 py-3")} style={backgroundStyle(block.background)}>
+    <p
+      className={cn(BODY_TEXT_CLASS, alignmentClass(block.alignment), block.background && "rounded-2xl px-4 py-3")}
+      style={backgroundStyle(block.background)}
+    >
       <InlineSpans spans={block.content} />
     </p>
   );
@@ -82,7 +86,12 @@ function Heading({ block }: { block: HeadingBlock }) {
   const Tag = block.level === 2 ? "h2" : "h3";
   return (
     <Tag
-      className={cn(HEADING_TEXT_CLASS, block.level === 2 ? "text-2xl" : "text-xl", block.background && "rounded-2xl px-4 py-3")}
+      className={cn(
+        HEADING_TEXT_CLASS,
+        block.level === 2 ? "text-2xl" : "text-xl",
+        alignmentClass(block.alignment),
+        block.background && "rounded-2xl px-4 py-3",
+      )}
       style={{ ...(block.color ? { color: colorCss(block.color) } : {}), ...backgroundStyle(block.background) }}
     >
       {block.text}
@@ -98,6 +107,7 @@ function List({ block }: { block: ListBlock }) {
         BODY_TEXT_CLASS,
         "flex flex-col gap-2 pl-6",
         block.style === "ordered" ? "list-decimal" : "list-disc",
+        alignmentClass(block.alignment),
         block.background && "rounded-2xl px-4 py-3",
       )}
       style={backgroundStyle(block.background)}
@@ -114,7 +124,12 @@ function List({ block }: { block: ListBlock }) {
 function Quote({ block }: { block: QuoteBlock }) {
   return (
     <blockquote
-      className={cn(BODY_TEXT_CLASS, "border-l-4 border-[#e4e7ec] pl-4 italic", block.background && "rounded-2xl py-3 pr-4")}
+      className={cn(
+        BODY_TEXT_CLASS,
+        "border-l-4 border-[#e4e7ec] pl-4 italic",
+        alignmentClass(block.alignment),
+        block.background && "rounded-2xl py-3 pr-4",
+      )}
       style={backgroundStyle(block.background)}
     >
       <p>
@@ -129,7 +144,7 @@ function Callout({ block }: { block: CalloutBlock }) {
   return (
     <div
       role="note"
-      className={cn(BODY_TEXT_CLASS, "rounded-2xl border border-[#e8eef7] px-5 py-4")}
+      className={cn(BODY_TEXT_CLASS, "rounded-2xl border border-[#e8eef7] px-5 py-4", alignmentClass(block.alignment))}
       style={backgroundStyle(block.background) ?? { backgroundColor: "#f7f9fc" }}
     >
       <InlineSpans spans={block.content} />

@@ -80,6 +80,20 @@ export function isColorValue(value: unknown): value is ColorValue {
   return typeof value === "string" && (isPaletteColor(value) || isCustomColor(value));
 }
 
+// ── Text alignment (issue #110 / Admin-Alpha#10) ────────────────────────────
+// A second author-controlled appearance choice, scoped identically to
+// `background`: the same five text Block kinds may carry it. Left is the
+// default and is never stored — only `center`/`right` are recorded (ADR 0004).
+
+export const TEXT_ALIGNMENTS = ["center", "right"] as const;
+export type TextAlignment = (typeof TEXT_ALIGNMENTS)[number];
+
+const TEXT_ALIGNMENT_SET = new Set<string>(TEXT_ALIGNMENTS);
+
+export function isTextAlignment(value: unknown): value is TextAlignment {
+  return typeof value === "string" && TEXT_ALIGNMENT_SET.has(value);
+}
+
 // ── Blocks ────────────────────────────────────────────────────────────────
 
 export interface InlineSpan {
@@ -98,6 +112,7 @@ export interface ParagraphBlock {
   type: "paragraph";
   content: InlineSpan[];
   background?: ColorValue;
+  alignment?: TextAlignment;
 }
 
 export interface HeadingBlock {
@@ -108,6 +123,7 @@ export interface HeadingBlock {
   /** Text colour of the whole subheading. */
   color?: ColorValue;
   background?: ColorValue;
+  alignment?: TextAlignment;
 }
 
 // One level only: an item is an array of inline spans, never another list.
@@ -120,6 +136,7 @@ export interface ListBlock {
   style: ListStyle;
   items: InlineSpan[][];
   background?: ColorValue;
+  alignment?: TextAlignment;
 }
 
 export interface QuoteBlock {
@@ -128,6 +145,7 @@ export interface QuoteBlock {
   content: InlineSpan[];
   attribution?: string;
   background?: ColorValue;
+  alignment?: TextAlignment;
 }
 
 export interface CalloutBlock {
@@ -135,6 +153,7 @@ export interface CalloutBlock {
   type: "callout";
   content: InlineSpan[];
   background?: ColorValue;
+  alignment?: TextAlignment;
 }
 
 export interface DividerBlock {
