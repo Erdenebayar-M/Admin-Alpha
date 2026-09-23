@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore, type ReactNode } from "react";
+import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
 import { useEditorState } from "@tiptap/react";
 import { Bold, Italic, Link2, Palette } from "lucide-react";
@@ -57,6 +57,17 @@ export function CanvasToolbar({
   usedColors: string[];
 }) {
   const colorRequest = useSyncExternalStore(colorMenu.subscribe, colorMenu.getSnapshot, noColorMenu);
+  const colorContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!colorRequest) return;
+    const handlePointerDown = (e: MouseEvent) => {
+      if (!colorContainerRef.current?.contains(e.target as Node)) colorMenu.close();
+    };
+    document.addEventListener("mousedown", handlePointerDown);
+    return () => document.removeEventListener("mousedown", handlePointerDown);
+  }, [colorRequest, colorMenu]);
+
   const active = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -82,7 +93,7 @@ export function CanvasToolbar({
       <ToolbarButton label="Холбоос" active={active.link} onClick={onLink}>
         <Link2 />
       </ToolbarButton>
-      <div className="relative">
+      <div className="relative" ref={colorContainerRef}>
         <ToolbarButton
           label="Өнгө"
           active={!!colorRequest}
