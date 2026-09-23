@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { DOC_NODE, type PreservedBlock } from "@/lib/article-body";
 import { getColorMenu } from "./color/color-menu-store";
+import { toggleList } from "./list-commands";
 import { getMediaDialog, type MediaBlockKind } from "./media-dialog-store";
 
 /**
@@ -71,7 +72,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     label: "Цэгтэй жагсаалт",
     icon: List,
     keywords: ["list", "bullet", "ul", "жагсаалт"],
-    run: (e) => e.chain().focus().toggleBulletList().run(),
+    run: (e) => toggleList(e, DOC_NODE.bulletList),
     isActive: (e) => e.isActive(DOC_NODE.bulletList),
   },
   {
@@ -79,7 +80,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
     label: "Дугаартай жагсаалт",
     icon: ListOrdered,
     keywords: ["list", "ordered", "number", "ol", "жагсаалт", "дугаар"],
-    run: (e) => e.chain().focus().toggleOrderedList().run(),
+    run: (e) => toggleList(e, DOC_NODE.orderedList),
     isActive: (e) => e.isActive(DOC_NODE.orderedList),
   },
   {
