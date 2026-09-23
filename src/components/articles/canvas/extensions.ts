@@ -7,7 +7,8 @@ import { Plugin, PluginKey } from "@tiptap/pm/state";
 import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
-import Suggestion, { exitSuggestion } from "@tiptap/suggestion";
+import Suggestion, { exitSuggestion, type SuggestionProps } from "@tiptap/suggestion";
+import { shift, size } from "@floating-ui/dom";
 import { colorCss, tintCss } from "@/lib/article-colors";
 import { BACKGROUND_NODES, DOC_MARK, DOC_NODE, generateBlockId, type PreservedBlock } from "@/lib/article-body";
 import { isAllowedHref, isColorValue } from "@/lib/article-types";
@@ -366,13 +367,34 @@ const SlashCommand = Extension.create<{ store: SlashMenuStore | null }>({
         pluginKey: slashKey,
         char: "/",
         items: ({ query }) => filterBlockCommands(query),
+        // `flip` (default true) picks above/below the caret; `shift`/`size` here clamp the
+        // menu horizontally and cap its height (with scroll) when neither side has room —
+        // Suggestion appends these after its own offset()/flip() middleware.
+        floatingUi: {
+          strategy: "fixed",
+          middleware: [
+            shift({ padding: 8 }),
+            size({
+              padding: 8,
+              apply: ({ availableHeight, elements }) => {
+                elements.floating.style.maxHeight = `${Math.max(160, availableHeight)}px`;
+              },
+            }),
+          ],
+        },
         command: ({ editor, range, props }) => {
           editor.chain().focus().deleteRange(range).run();
           props.run(editor);
         },
         render: () => {
-          const emit = (p: { items: BlockCommand[]; command: (item: BlockCommand) => void; clientRect?: (() => DOMRect | null) | null }) =>
-            store?.open({ items: p.items, select: p.command, rect: p.clientRect?.() ?? null });
+          const emit = (p: SuggestionProps<BlockCommand, BlockCommand>) =>
+            store?.open({
+              items: p.items,
+              select: p.command,
+              getRect: () => p.clientRect?.() ?? null,
+              contextElement: p.editor.view.dom,
+              floatingUi: p.floatingUi,
+            });
           return {
             onStart: emit,
             onUpdate: emit,

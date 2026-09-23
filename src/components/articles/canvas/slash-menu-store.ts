@@ -1,9 +1,15 @@
+import type { SuggestionFloatingUiConfig } from "@tiptap/suggestion";
 import type { BlockCommand } from "./block-commands";
 
 export interface SlashMenuSnapshot {
   items: BlockCommand[];
   select: (item: BlockCommand) => void;
-  rect: DOMRect | null;
+  /** Re-read on every position pass — Tiptap recomputes this from the live `/` position, not a frozen snapshot. */
+  getRect: () => DOMRect | null;
+  /** The editor's DOM node — lets Floating UI find scrollable ancestors around a virtual (rect-only) reference. */
+  contextElement: Element | null;
+  /** Placement/strategy/middleware resolved by `@tiptap/suggestion` from the extension's `flip`/`offset`/`floatingUi` options. */
+  floatingUi: SuggestionFloatingUiConfig;
   selected: number;
 }
 
