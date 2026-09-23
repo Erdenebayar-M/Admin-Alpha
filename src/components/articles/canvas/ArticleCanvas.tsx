@@ -50,7 +50,15 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
       .then((result) => {
         const editor = editorRef.current;
         if (!editor || editor.isDestroyed) return;
-        const block: ImageBlock = { id: generateBlockId(), type: "image", url: result.url, alt: "", width: result.width, height: result.height };
+        const block: ImageBlock = {
+          id: generateBlockId(),
+          type: "image",
+          source: "upload",
+          url: result.url,
+          alt: "",
+          width: result.width,
+          height: result.height,
+        };
         // `insertContentAt`, not `insertContent`: a plain insert at a position, never a
         // replacement of whatever's currently selected (which could be another media Block atom).
         const at = pos ?? editor.state.selection.to;

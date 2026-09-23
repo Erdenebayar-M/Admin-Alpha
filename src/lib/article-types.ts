@@ -161,9 +161,21 @@ export interface DividerBlock {
   type: "divider";
 }
 
+// ── Image source (Alpha ADR 0001 addendum, 2026-09-23) ──────────────────────
+// `upload` (R2-hosted, via POST /api/admin/articles/images) is the original
+// behaviour and stays the default; `link` is an arbitrary http(s) url the
+// server never fetches. Optional here (unlike the backend's zod default)
+// since this repo hand-mirrors the shape rather than importing it — a Block
+// read back without the field (older stored data) is treated as `upload`
+// everywhere in the admin UI.
+
+export const IMAGE_SOURCES = ["upload", "link"] as const;
+export type ImageSource = (typeof IMAGE_SOURCES)[number];
+
 export interface ImageBlock {
   id: string;
   type: "image";
+  source?: ImageSource;
   url: string;
   alt: string;
   caption?: string;
