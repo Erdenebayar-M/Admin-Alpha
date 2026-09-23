@@ -111,6 +111,116 @@ describe("blocksToDoc / docToBlocks round trip", () => {
     expect(roundTrip(blocks)).toEqual(blocks);
   });
 
+  it("keeps a text colour, a highlight, a subheading colour and a Block background — Palette and custom", () => {
+    const blocks: ArticleBlock[] = [
+      {
+        id: "p1",
+        type: "paragraph",
+        content: [
+          { text: "улаан", color: "red" },
+          { text: " ба " },
+          { text: "захиалгат", color: "#a1b2c3" },
+          { text: " ба " },
+          { text: "тодруулсан", highlight: "yellow" },
+        ],
+        background: "gray",
+      },
+      { id: "h1", type: "heading", level: 2, text: "Өнгөт гарчиг", color: "brand-blue", background: "#112233" },
+      { id: "l1", type: "list", style: "bullet", items: [[{ text: "нэг", highlight: "#ffcc00" }]], background: "brown" },
+      { id: "q1", type: "quote", content: [{ text: "ишлэл", color: "purple" }], background: "pink" },
+      { id: "c1", type: "callout", content: [{ text: "анхаар", highlight: "orange" }], background: "#000000" },
+    ];
+    expect(roundTrip(blocks)).toEqual(blocks);
+  });
+
+  it("never puts both color and highlight on one span", () => {
+    const doc: TiptapDocument = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { blockId: "p" },
+          content: [
+            {
+              type: "text",
+              text: "хоёул",
+              marks: [
+                { type: "textColor", attrs: { color: "red" } },
+                { type: "highlightColor", attrs: { color: "yellow" } },
+              ],
+            },
+          ],
+        },
+      ],
+    };
+    const [block] = docToBlocks(doc);
+    expect(block).toEqual({ id: "p", type: "paragraph", content: [{ text: "хоёул", color: "red" }] });
+  });
+
+  it("sends a link span uncoloured even when a colour mark is present", () => {
+    const doc: TiptapDocument = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { blockId: "p" },
+          content: [
+            {
+              type: "text",
+              text: "холбоос",
+              marks: [{ type: "link", attrs: { href: "https://a.mn" } }, { type: "textColor", attrs: { color: "red" } }],
+            },
+          ],
+        },
+      ],
+    };
+    expect(docToBlocks(doc)).toEqual([{ id: "p", type: "paragraph", content: [{ text: "холбоос", href: "https://a.mn" }] }]);
+  });
+
+  it("sends no background for an image, video, link card or divider Block", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "i1", type: "image", url: "https://cdn.example.com/a.jpg", alt: "a" },
+      { id: "v1", type: "video", provider: "youtube", video_id: "dQw4w9WgXcQ" },
+      { id: "k1", type: "link_card", url: "https://example.com", title: "t" },
+      { id: "d1", type: "divider" },
+    ];
+    for (const block of blocks) {
+      const node = blocksToDoc([block]).content?.[0];
+      expect(node?.attrs).not.toHaveProperty("background");
+    }
+  });
+
+  it("merges adjacent spans only when colour and highlight also match", () => {
+    const doc: TiptapDocument = {
+      type: "doc",
+      content: [
+        {
+          type: "paragraph",
+          attrs: { blockId: "p" },
+          content: [
+            { type: "text", text: "a", marks: [{ type: "textColor", attrs: { color: "red" } }] },
+            { type: "text", text: "b", marks: [{ type: "textColor", attrs: { color: "red" } }] },
+            { type: "text", text: "c", marks: [{ type: "textColor", attrs: { color: "brand-blue" } }] },
+            { type: "text", text: "d", marks: [{ type: "highlightColor", attrs: { color: "brand-blue" } }] },
+            { type: "text", text: "e" },
+          ],
+        },
+      ],
+    };
+    expect(docToBlocks(doc)).toEqual([
+      {
+        id: "p",
+        type: "paragraph",
+        content: [
+          { text: "ab", color: "red" },
+          { text: "c", color: "brand-blue" },
+          { text: "d", highlight: "brand-blue" },
+          { text: "e" },
+        ],
+      },
+    ]);
+  });
+
   it("keeps every kind together, in order", () => {
     const blocks: ArticleBlock[] = [
       { id: "a", type: "heading", level: 2, text: "Гарчиг" },

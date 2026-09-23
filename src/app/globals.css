@@ -91,6 +91,43 @@
   --sidebar-ring: oklch(0.47 0.205 258);
 }
 
+/* --- Article Body author Colours (Admin-Alpha#9, mirrors Alpha/web/app/globals.css) ---
+ * Plain :root custom properties, deliberately outside @theme (see that
+ * file's own comment: a var()-only reference doesn't count as "used" for
+ * Tailwind's @theme content-scan, which would otherwise prune every token
+ * here from the build). Values are copied by hand from Alpha's tokens —
+ * literal hex/rgba, not this admin theme's own oklch palette, so the canvas
+ * and preview show the site's actual shades regardless of the admin's own
+ * light/dark theme. No dark-mode override, matching the site (these Colours
+ * don't change with theme there either). */
+:root {
+  --color-palette-brand-blue: #2f5be4;
+  --color-palette-brand-indigo: #4f6ef7;
+  --color-palette-brand-green: #a4dc6a;
+  --color-palette-brand-navy: #24428f;
+  --color-palette-brand-violet: #6155f5;
+  --color-palette-gray: #4b5563;
+  --color-palette-brown: #8a5a2c;
+  --color-palette-orange: #c2410c;
+  --color-palette-yellow: #a16207;
+  --color-palette-purple: #7e22ce;
+  --color-palette-pink: #be185d;
+  --color-palette-red: #b91c1c;
+
+  --color-palette-brand-blue-tint: rgba(47, 91, 228, 0.16);
+  --color-palette-brand-indigo-tint: rgba(79, 110, 247, 0.16);
+  --color-palette-brand-green-tint: rgba(164, 220, 106, 0.28);
+  --color-palette-brand-navy-tint: rgba(36, 66, 143, 0.14);
+  --color-palette-brand-violet-tint: rgba(97, 85, 245, 0.14);
+  --color-palette-gray-tint: rgba(75, 85, 99, 0.14);
+  --color-palette-brown-tint: rgba(138, 90, 44, 0.18);
+  --color-palette-orange-tint: rgba(194, 65, 12, 0.16);
+  --color-palette-yellow-tint: rgba(161, 98, 7, 0.2);
+  --color-palette-purple-tint: rgba(126, 34, 206, 0.14);
+  --color-palette-pink-tint: rgba(190, 24, 93, 0.16);
+  --color-palette-red-tint: rgba(185, 28, 28, 0.14);
+}
+
 .dark {
   --background: oklch(0.20 0.008 250);
   --foreground: oklch(0.965 0.005 255);
@@ -175,6 +212,12 @@
   }
   .article-canvas hr {
     @apply my-6 border-t-2 border-border;
+  }
+  .article-canvas [data-background] {
+    @apply rounded-lg px-4 py-3;
+  }
+  .article-canvas [data-highlight] {
+    @apply rounded px-0.5;
   }
   .article-canvas hr.ProseMirror-selectednode,
   .article-canvas [data-preserved-block].ProseMirror-selectednode {

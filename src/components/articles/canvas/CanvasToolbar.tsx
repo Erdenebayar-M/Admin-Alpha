@@ -1,13 +1,17 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
 import { useEditorState } from "@tiptap/react";
-import { Bold, Italic, Link2 } from "lucide-react";
+import { Bold, Italic, Link2, Palette } from "lucide-react";
 import { DOC_MARK } from "@/lib/article-body";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BLOCK_COMMANDS } from "./block-commands";
+import { ColorMenu } from "./color/ColorMenu";
+import type { ColorMenuStore } from "./color/color-menu-store";
+
+const noColorMenu = () => null;
 
 function ToolbarButton({
   label,
@@ -41,7 +45,18 @@ function ToolbarButton({
 const Separator = () => <span className="mx-1 h-5 w-px bg-border" aria-hidden />;
 
 /** Formatting + Block-kind buttons. Offers only what the Article Body can hold. */
-export function CanvasToolbar({ editor, onLink }: { editor: Editor; onLink: () => void }) {
+export function CanvasToolbar({
+  editor,
+  onLink,
+  colorMenu,
+  usedColors,
+}: {
+  editor: Editor;
+  onLink: () => void;
+  colorMenu: ColorMenuStore;
+  usedColors: string[];
+}) {
+  const colorRequest = useSyncExternalStore(colorMenu.subscribe, colorMenu.getSnapshot, noColorMenu);
   const active = useEditorState({
     editor,
     selector: ({ editor: e }) => ({
@@ -67,6 +82,20 @@ export function CanvasToolbar({ editor, onLink }: { editor: Editor; onLink: () =
       <ToolbarButton label="Холбоос" active={active.link} onClick={onLink}>
         <Link2 />
       </ToolbarButton>
+      <div className="relative">
+        <ToolbarButton
+          label="Өнгө"
+          active={!!colorRequest}
+          onClick={() => (colorRequest ? colorMenu.close() : colorMenu.open({ scope: "all" }))}
+        >
+          <Palette />
+        </ToolbarButton>
+        {colorRequest && (
+          <div className="absolute left-0 top-full z-20 mt-1 rounded-lg border border-border bg-popover text-popover-foreground shadow-lg">
+            <ColorMenu editor={editor} scope={colorRequest.scope} usedColors={usedColors} onClose={colorMenu.close} />
+          </div>
+        )}
+      </div>
       {BLOCK_COMMANDS.map((command, i) => (
         <span key={command.key} className="contents">
           {(i === 0 || command.key === "bullet" || command.key === "quote" || command.key === "image") && <Separator />}

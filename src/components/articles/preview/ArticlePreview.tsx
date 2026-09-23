@@ -1,7 +1,8 @@
 import { Nunito } from "next/font/google";
 import { Link2 } from "lucide-react";
+import { colorCss, tintCss } from "@/lib/article-colors";
 import { cn } from "@/lib/utils";
-import type { ArticleBlock, CalloutBlock, HeadingBlock, ImageBlock, InlineSpan, LinkCardBlock, ListBlock, ParagraphBlock, QuoteBlock, VideoBlock } from "@/lib/article-types";
+import type { ArticleBlock, CalloutBlock, ColorValue, HeadingBlock, ImageBlock, InlineSpan, LinkCardBlock, ListBlock, ParagraphBlock, QuoteBlock, VideoBlock } from "@/lib/article-types";
 
 // Same font + subsets as `Alpha/web/app/layout.tsx` — full Cyrillic Extended
 // coverage so Өө/Үү render correctly. Loaded only here (not the admin app's
@@ -42,7 +43,21 @@ function Span({ span }: { span: InlineSpan }) {
       </a>
     );
   }
-  return weight ? <span className={weight}>{span.text}</span> : <>{span.text}</>;
+  const style: { color?: string; backgroundColor?: string } = {};
+  if (span.color) style.color = colorCss(span.color);
+  if (span.highlight) style.backgroundColor = tintCss(span.highlight);
+  if (weight || span.color || span.highlight) {
+    return (
+      <span className={cn(weight, span.highlight && "rounded px-0.5")} style={style}>
+        {span.text}
+      </span>
+    );
+  }
+  return <>{span.text}</>;
+}
+
+function backgroundStyle(background: ColorValue | undefined): { backgroundColor: string } | undefined {
+  return background ? { backgroundColor: tintCss(background) } : undefined;
 }
 
 function InlineSpans({ spans }: { spans: InlineSpan[] }) {
@@ -57,7 +72,7 @@ function InlineSpans({ spans }: { spans: InlineSpan[] }) {
 
 function Paragraph({ block }: { block: ParagraphBlock }) {
   return (
-    <p className={BODY_TEXT_CLASS}>
+    <p className={cn(BODY_TEXT_CLASS, block.background && "rounded-2xl px-4 py-3")} style={backgroundStyle(block.background)}>
       <InlineSpans spans={block.content} />
     </p>
   );
@@ -65,13 +80,28 @@ function Paragraph({ block }: { block: ParagraphBlock }) {
 
 function Heading({ block }: { block: HeadingBlock }) {
   const Tag = block.level === 2 ? "h2" : "h3";
-  return <Tag className={cn(HEADING_TEXT_CLASS, block.level === 2 ? "text-2xl" : "text-xl")}>{block.text}</Tag>;
+  return (
+    <Tag
+      className={cn(HEADING_TEXT_CLASS, block.level === 2 ? "text-2xl" : "text-xl", block.background && "rounded-2xl px-4 py-3")}
+      style={{ ...(block.color ? { color: colorCss(block.color) } : {}), ...backgroundStyle(block.background) }}
+    >
+      {block.text}
+    </Tag>
+  );
 }
 
 function List({ block }: { block: ListBlock }) {
   const Tag = block.style === "ordered" ? "ol" : "ul";
   return (
-    <Tag className={cn(BODY_TEXT_CLASS, "flex flex-col gap-2 pl-6", block.style === "ordered" ? "list-decimal" : "list-disc")}>
+    <Tag
+      className={cn(
+        BODY_TEXT_CLASS,
+        "flex flex-col gap-2 pl-6",
+        block.style === "ordered" ? "list-decimal" : "list-disc",
+        block.background && "rounded-2xl px-4 py-3",
+      )}
+      style={backgroundStyle(block.background)}
+    >
       {block.items.map((item, index) => (
         <li key={index}>
           <InlineSpans spans={item} />
@@ -83,7 +113,10 @@ function List({ block }: { block: ListBlock }) {
 
 function Quote({ block }: { block: QuoteBlock }) {
   return (
-    <blockquote className={cn(BODY_TEXT_CLASS, "border-l-4 border-[#e4e7ec] pl-4 italic")}>
+    <blockquote
+      className={cn(BODY_TEXT_CLASS, "border-l-4 border-[#e4e7ec] pl-4 italic", block.background && "rounded-2xl py-3 pr-4")}
+      style={backgroundStyle(block.background)}
+    >
       <p>
         <InlineSpans spans={block.content} />
       </p>
@@ -94,7 +127,11 @@ function Quote({ block }: { block: QuoteBlock }) {
 
 function Callout({ block }: { block: CalloutBlock }) {
   return (
-    <div role="note" className={cn(BODY_TEXT_CLASS, "rounded-2xl border border-[#e8eef7] bg-[#f7f9fc] px-5 py-4")}>
+    <div
+      role="note"
+      className={cn(BODY_TEXT_CLASS, "rounded-2xl border border-[#e8eef7] px-5 py-4")}
+      style={backgroundStyle(block.background) ?? { backgroundColor: "#f7f9fc" }}
+    >
       <InlineSpans spans={block.content} />
     </div>
   );

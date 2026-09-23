@@ -8,11 +8,13 @@ import {
   List,
   ListOrdered,
   Minus,
+  Palette,
   Quote,
   Video as VideoIcon,
   type LucideIcon,
 } from "lucide-react";
 import { DOC_NODE, type PreservedBlock } from "@/lib/article-body";
+import { getColorMenu } from "./color/color-menu-store";
 import { getMediaDialog, type MediaBlockKind } from "./media-dialog-store";
 
 /**
@@ -130,10 +132,26 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
   },
 ];
 
+/**
+ * Slash-menu-only actions: not an insertable Block kind, so the toolbar
+ * offers this through its own dedicated colour button instead of the
+ * per-kind icon row `BLOCK_COMMANDS` drives — kept out of that list so the
+ * two stay in sync as a set of Block kinds.
+ */
+const SLASH_ONLY_COMMANDS: BlockCommand[] = [
+  {
+    key: "background",
+    label: "Өнгө",
+    icon: Palette,
+    keywords: ["color", "colour", "background", "өнгө", "дэвсгэр"],
+    run: (e) => getColorMenu(e)?.open({ scope: "background" }),
+    isActive: () => false,
+  },
+];
+
 export function filterBlockCommands(query: string): BlockCommand[] {
+  const all = [...BLOCK_COMMANDS, ...SLASH_ONLY_COMMANDS];
   const q = query.trim().toLowerCase();
-  if (!q) return BLOCK_COMMANDS;
-  return BLOCK_COMMANDS.filter(
-    (c) => c.label.toLowerCase().includes(q) || c.keywords.some((k) => k.toLowerCase().startsWith(q)),
-  );
+  if (!q) return all;
+  return all.filter((c) => c.label.toLowerCase().includes(q) || c.keywords.some((k) => k.toLowerCase().startsWith(q)));
 }

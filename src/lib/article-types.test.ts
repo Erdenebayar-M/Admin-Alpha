@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getArticlePublishIssues, isAllowedHref, isHttpUrl, parseVideoUrl } from "./article-types";
+import { getArticlePublishIssues, isAllowedHref, isColorValue, isCustomColor, isHttpUrl, isPaletteColor, parseVideoUrl } from "./article-types";
 
 describe("getArticlePublishIssues", () => {
   it("reports every missing field for a blank Article", () => {
@@ -54,6 +54,39 @@ describe("parseVideoUrl", () => {
       expect(parseVideoUrl(url)).toBeNull();
     },
   );
+});
+
+describe("isPaletteColor", () => {
+  it.each(["brand-blue", "brand-indigo", "brand-green", "brand-navy", "brand-violet", "gray", "brown", "orange", "yellow", "purple", "pink", "red"])(
+    "accepts %s",
+    (name) => {
+      expect(isPaletteColor(name)).toBe(true);
+    },
+  );
+
+  it.each(["blue", "Red", "brand-Blue", "", "#2f5be4"])("rejects %s", (name) => {
+    expect(isPaletteColor(name)).toBe(false);
+  });
+});
+
+describe("isCustomColor", () => {
+  it.each(["#2f5be4", "#000000", "#ffffff", "#a1b2c3"])("accepts %s", (hex) => {
+    expect(isCustomColor(hex)).toBe(true);
+  });
+
+  it.each(["#fff", "#FFFFFF", "rgb(0,0,0)", "red ", "2f5be4", "#gggggg"])("rejects %s", (hex) => {
+    expect(isCustomColor(hex)).toBe(false);
+  });
+});
+
+describe("isColorValue", () => {
+  it.each(["red", "#2f5be4"])("accepts %s", (value) => {
+    expect(isColorValue(value)).toBe(true);
+  });
+
+  it.each([undefined, null, 1, "#FFFFFF", "not-a-colour"])("rejects %s", (value) => {
+    expect(isColorValue(value)).toBe(false);
+  });
 });
 
 describe("isHttpUrl", () => {

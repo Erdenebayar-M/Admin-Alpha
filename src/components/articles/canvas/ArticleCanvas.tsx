@@ -6,10 +6,12 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { Info } from "lucide-react";
 import { uploadArticleImage } from "@/lib/api";
 import { blocksToDoc, docToBlocks, DOC_MARK, DOC_NODE, generateBlockId } from "@/lib/article-body";
+import { usedCustomColors } from "@/lib/article-colors";
 import { cleanPastedContent } from "@/lib/article-paste";
 import type { ArticleBlock, ImageBlock } from "@/lib/article-types";
 import { articleCanvasExtensions, blockErrorsKey } from "./extensions";
 import { CanvasToolbar } from "./CanvasToolbar";
+import { createColorMenuStore } from "./color/color-menu-store";
 import { LinkDialog } from "./LinkDialog";
 import { createMediaDialogStore } from "./media-dialog-store";
 import { MediaDialogs } from "./MediaDialogs";
@@ -35,9 +37,11 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
   });
   const [slashMenu] = useState(createSlashMenuStore);
   const [mediaDialog] = useState(createMediaDialogStore);
+  const [colorMenu] = useState(createColorMenuStore);
   const [pasteNotice, setPasteNotice] = useState(false);
   const [linkHref, setLinkHref] = useState<string | null>(null);
   const [mediaError, setMediaError] = useState<string | null>(null);
+  const [usedColors, setUsedColors] = useState<string[]>(() => usedCustomColors(initialBody));
   const editorRef = useRef<Editor | null>(null);
 
   /** Uploads immediately and inserts an image Block with empty alt (flagged in the canvas until described) — the paste/drag-drop path never opens a dialog first. */
@@ -57,7 +61,7 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
 
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: articleCanvasExtensions(slashMenu, mediaDialog),
+    extensions: articleCanvasExtensions(slashMenu, mediaDialog, colorMenu),
     content: blocksToDoc(initialBody),
     editorProps: {
       attributes: {
@@ -85,7 +89,11 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
         return true;
       },
     },
-    onUpdate: ({ editor: e }) => onChangeRef.current(docToBlocks({ ...e.getJSON(), type: "doc" })),
+    onUpdate: ({ editor: e }) => {
+      const blocks = docToBlocks({ ...e.getJSON(), type: "doc" });
+      onChangeRef.current(blocks);
+      setUsedColors(usedCustomColors(blocks));
+    },
   });
 
   useEffect(() => {
@@ -130,7 +138,10 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
         .unsetMark(DOC_MARK.link)
         .run();
     } else {
-      chain.setLink({ href }).run();
+      // A link is never coloured (the converter sends a link span uncoloured regardless) —
+      // strip any colour/highlight already on the selection so the canvas doesn't keep
+      // showing a colour the next save would drop.
+      chain.unsetMark(DOC_MARK.color).unsetMark(DOC_MARK.highlight).setLink({ href }).run();
     }
   }
 
@@ -141,7 +152,7 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
 
   return (
     <div className="relative rounded-xl border border-border bg-card">
-      {editor && <CanvasToolbar editor={editor} onLink={openLinkDialog} />}
+      {editor && <CanvasToolbar editor={editor} onLink={openLinkDialog} colorMenu={colorMenu} usedColors={usedColors} />}
       {pasteNotice && (
         <div
           role="status"

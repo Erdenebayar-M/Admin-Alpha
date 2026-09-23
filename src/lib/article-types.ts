@@ -39,6 +39,47 @@ export function isAllowedHref(href: string): boolean {
   }
 }
 
+// ── Colours (issue #108 / Admin-Alpha#9) ────────────────────────────────────
+// A Colour is either a Palette name — stored by name so the site can retune
+// the shade later, per Alpha's ADR 0003 — or a custom hex the author picked
+// freely, stored exactly as given. Lowercase-only hex keeps stored values
+// canonical (`#FFFFFF`/`#fff` are rejected, not normalized).
+
+export const PALETTE_COLORS = [
+  "brand-blue",
+  "brand-indigo",
+  "brand-green",
+  "brand-navy",
+  "brand-violet",
+  "gray",
+  "brown",
+  "orange",
+  "yellow",
+  "purple",
+  "pink",
+  "red",
+] as const;
+export type PaletteColor = (typeof PALETTE_COLORS)[number];
+
+const PALETTE_COLOR_SET = new Set<string>(PALETTE_COLORS);
+
+export const HEX_COLOR_RE = /^#[0-9a-f]{6}$/;
+
+/** A Palette name or a custom `#rrggbb` hex string. */
+export type ColorValue = PaletteColor | string;
+
+export function isPaletteColor(value: string): value is PaletteColor {
+  return PALETTE_COLOR_SET.has(value);
+}
+
+export function isCustomColor(value: string): boolean {
+  return HEX_COLOR_RE.test(value);
+}
+
+export function isColorValue(value: unknown): value is ColorValue {
+  return typeof value === "string" && (isPaletteColor(value) || isCustomColor(value));
+}
+
 // ── Blocks ────────────────────────────────────────────────────────────────
 
 export interface InlineSpan {
@@ -46,12 +87,17 @@ export interface InlineSpan {
   bold?: boolean;
   italic?: boolean;
   href?: string;
+  /** Text colour of the words. Mutually exclusive with `highlight`, and never set alongside `href`. */
+  color?: ColorValue;
+  /** Background behind the words. Mutually exclusive with `color`, and never set alongside `href`. */
+  highlight?: ColorValue;
 }
 
 export interface ParagraphBlock {
   id: string;
   type: "paragraph";
   content: InlineSpan[];
+  background?: ColorValue;
 }
 
 export interface HeadingBlock {
@@ -59,6 +105,9 @@ export interface HeadingBlock {
   type: "heading";
   level: 2 | 3;
   text: string;
+  /** Text colour of the whole subheading. */
+  color?: ColorValue;
+  background?: ColorValue;
 }
 
 // One level only: an item is an array of inline spans, never another list.
@@ -70,6 +119,7 @@ export interface ListBlock {
   type: "list";
   style: ListStyle;
   items: InlineSpan[][];
+  background?: ColorValue;
 }
 
 export interface QuoteBlock {
@@ -77,12 +127,14 @@ export interface QuoteBlock {
   type: "quote";
   content: InlineSpan[];
   attribution?: string;
+  background?: ColorValue;
 }
 
 export interface CalloutBlock {
   id: string;
   type: "callout";
   content: InlineSpan[];
+  background?: ColorValue;
 }
 
 export interface DividerBlock {

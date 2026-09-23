@@ -1,4 +1,4 @@
-import { Extension, Node, mergeAttributes, type Extensions } from "@tiptap/core";
+import { Extension, Mark, Node, mergeAttributes, type Extensions } from "@tiptap/core";
 import { Heading } from "@tiptap/extension-heading";
 import { ListItem } from "@tiptap/extension-list";
 import { Placeholder } from "@tiptap/extensions";
@@ -7,9 +7,11 @@ import { Decoration, DecorationSet } from "@tiptap/pm/view";
 import { ReactNodeViewRenderer } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Suggestion, { exitSuggestion } from "@tiptap/suggestion";
-import { DOC_NODE, generateBlockId, type PreservedBlock } from "@/lib/article-body";
-import { isAllowedHref } from "@/lib/article-types";
+import { colorCss, tintCss } from "@/lib/article-colors";
+import { BACKGROUND_NODES, DOC_MARK, DOC_NODE, generateBlockId, type PreservedBlock } from "@/lib/article-body";
+import { isAllowedHref, isColorValue } from "@/lib/article-types";
 import { filterBlockCommands, type BlockCommand } from "./block-commands";
+import { COLOR_MENU_STORAGE_KEY, type ColorMenuStore } from "./color/color-menu-store";
 import { MediaBlockView } from "./MediaBlockView";
 import type { MediaDialogStore } from "./media-dialog-store";
 import { QuoteView } from "./QuoteView";
@@ -78,6 +80,69 @@ const BlockIds = Extension.create({
           return tr.docChanged ? tr : null;
         },
       }),
+    ];
+  },
+});
+
+// ── Colours (Admin-Alpha#9) ──────────────────────────────────────────────
+// Text colour and highlight are marks on inline text; a whole-Block
+// background is a node attr on the Block kinds that can carry one
+// (`BACKGROUND_NODES`, mirroring `article-body.ts`'s Block <-> node mapping).
+// A subheading's colour is a node attr too (`HeadingBlock.color` applies to
+// the whole heading, not a run of words), added directly on the Heading
+// extension below rather than through a mark.
+
+/** A `{ [attrName]: ColorValue }` attribute rendered as both a `data-*` marker (round-trippable via `parseHTML`) and an inline CSS style. */
+function colorAttribute(attrName: string, dataAttr: string, cssProp: "color" | "background-color") {
+  return {
+    [attrName]: {
+      default: null,
+      parseHTML: (el: HTMLElement) => el.getAttribute(dataAttr),
+      renderHTML: (attrs: Record<string, unknown>) => {
+        const value = attrs[attrName];
+        if (!isColorValue(value)) return {};
+        const css = cssProp === "color" ? colorCss(value) : tintCss(value);
+        return { [dataAttr]: value, style: `${cssProp}: ${css}` };
+      },
+    },
+  };
+}
+
+const TextColorMark = Mark.create({
+  name: DOC_MARK.color,
+  addAttributes() {
+    return colorAttribute("color", "data-color", "color");
+  },
+  parseHTML() {
+    return [{ tag: "span[data-color]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["span", HTMLAttributes, 0];
+  },
+});
+
+const HighlightMark = Mark.create({
+  name: DOC_MARK.highlight,
+  addAttributes() {
+    return colorAttribute("color", "data-highlight", "background-color");
+  },
+  parseHTML() {
+    return [{ tag: "span[data-highlight]" }];
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ["span", HTMLAttributes, 0];
+  },
+});
+
+/** Global `background` attr on every Block kind that can carry one (paragraph, heading, list, quote, callout). */
+const BlockBackground = Extension.create({
+  name: "blockBackground",
+  addGlobalAttributes() {
+    return [
+      {
+        types: [...BACKGROUND_NODES],
+        attributes: colorAttribute("background", "data-background", "background-color"),
+      },
     ];
   },
 });
@@ -293,9 +358,20 @@ const SlashCommand = Extension.create<{ store: SlashMenuStore | null }>({
   },
 });
 
+/** Exposes the `colorMenuStore` on `editor.storage` so `block-commands.ts`'s "Өнгө" slash command can open the same menu the toolbar button does, without prop-drilling. */
+const ColorMenuAccess = Extension.create<{ store: ColorMenuStore | null }>({
+  name: COLOR_MENU_STORAGE_KEY,
+  addOptions() {
+    return { store: null };
+  },
+  addStorage() {
+    return { store: this.options.store };
+  },
+});
+
 // ── Assembly ──────────────────────────────────────────────────────────────
 
-export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: MediaDialogStore): Extensions {
+export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: MediaDialogStore, colorMenu: ColorMenuStore): Extensions {
   return [
     StarterKit.configure({
       blockquote: false,
@@ -317,15 +393,25 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
       },
     }),
     // Headings hold plain text only (HeadingBlock.text), at levels 2 and 3.
-    Heading.extend({ marks: "" }).configure({ levels: [2, 3] }),
+    // `color` is a node attr, not a mark: it applies to the whole heading (HeadingBlock.color), never a run of words.
+    Heading.extend({
+      marks: "",
+      addAttributes() {
+        return { ...this.parent?.(), ...colorAttribute("color", "data-color", "color") };
+      },
+    }).configure({ levels: [2, 3] }),
     // One level only: a list item is a single paragraph, never another list.
     ListItem.extend({ content: DOC_NODE.paragraph }),
     Quote,
     Callout,
     PreservedBlockNode.configure({ mediaDialog }),
     BlockIds,
+    BlockBackground,
+    TextColorMark,
+    HighlightMark,
     BlockErrors,
     SlashCommand.configure({ store: slashMenu }),
+    ColorMenuAccess.configure({ store: colorMenu }),
     Placeholder.configure({ placeholder: "Бичиж эхлэх, эсвэл «/» дарж блок нэмэх…" }),
   ];
 }
