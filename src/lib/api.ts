@@ -22,7 +22,7 @@ import type {
   WordFacets,
   WordImportResult,
 } from "./types";
-import type { ArticleBlock, ArticleCategoryValue, ArticleStatusValue, ArticleThumbnail } from "./article-types";
+import type { ArticleBlock, ArticleCategoryValue, ArticleStatusValue, ArticleThumbnail, InlineSpan, ListItem } from "./article-types";
 
 const ADMIN_TOKEN = process.env.NEXT_PUBLIC_ADMIN_TOKEN ?? "";
 
@@ -594,9 +594,26 @@ export async function getArticles(
   return data.data;
 }
 
+/**
+ * Pre-ADR-0005 list Blocks stored an item as `InlineSpan[]` directly (no
+ * Marker colour). Articles saved before that change still come back from the
+ * backend in that shape — normalize on read so the canvas/colour-menu code,
+ * written against the current `ListItem[]` shape, never sees it.
+ */
+function normalizeListItem(item: ListItem | InlineSpan[]): ListItem {
+  return Array.isArray(item) ? { spans: item } : item;
+}
+
+export function normalizeArticle(article: Article): Article {
+  const body = article.body.map((block) =>
+    block.type === "list" ? { ...block, items: block.items.map(normalizeListItem) } : block,
+  );
+  return { ...article, body };
+}
+
 export async function getArticle(id: string): Promise<Article> {
   const { data } = await articlesClient.get<ArticleResponse>(`/${id}`);
-  return data.data.article;
+  return normalizeArticle(data.data.article);
 }
 
 export interface CreateArticlePayload {
@@ -609,7 +626,7 @@ export interface CreateArticlePayload {
 
 export async function createArticle(payload: CreateArticlePayload): Promise<Article> {
   const { data } = await articlesClient.post<ArticleResponse>("/", payload);
-  return data.data.article;
+  return normalizeArticle(data.data.article);
 }
 
 export interface SaveArticlePayload extends CreateArticlePayload {
@@ -620,7 +637,7 @@ export interface SaveArticlePayload extends CreateArticlePayload {
 /** PUT /:id replaces the whole editable Article — guarded by `version`; never touches status or is_featured. */
 export async function saveArticle(id: string, payload: SaveArticlePayload): Promise<Article> {
   const { data } = await articlesClient.put<ArticleResponse>(`/${id}`, payload);
-  return data.data.article;
+  return normalizeArticle(data.data.article);
 }
 
 export async function deleteArticle(id: string): Promise<void> {
@@ -629,22 +646,22 @@ export async function deleteArticle(id: string): Promise<void> {
 
 export async function publishArticle(id: string): Promise<Article> {
   const { data } = await articlesClient.post<ArticleResponse>(`/${id}/publish`);
-  return data.data.article;
+  return normalizeArticle(data.data.article);
 }
 
 export async function unpublishArticle(id: string): Promise<Article> {
   const { data } = await articlesClient.post<ArticleResponse>(`/${id}/unpublish`);
-  return data.data.article;
+  return normalizeArticle(data.data.article);
 }
 
 export async function featureArticle(id: string): Promise<Article> {
   const { data } = await articlesClient.post<ArticleResponse>(`/${id}/feature`);
-  return data.data.article;
+  return normalizeArticle(data.data.article);
 }
 
 export async function unfeatureArticle(id: string): Promise<Article> {
   const { data } = await articlesClient.delete<ArticleResponse>(`/${id}/feature`);
-  return data.data.article;
+  return normalizeArticle(data.data.article);
 }
 
 /**
