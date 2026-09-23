@@ -44,3 +44,17 @@ Keep modules focused; do not let these grow back into "god files". Each entry po
 - `components/review/TaskPreview.tsx` — display/edit orchestrator; per-type display sections in `task-preview/sections.tsx`, presentational helpers in `task-preview/helpers.tsx`.
 
 Adding a task type: add data to `task-types.ts`, a form component to the matching `forms/*` file, one line to `TYPE_CONTENT_MAP`, and (if needed) a display section in `task-preview/sections.tsx`. No edits to the orchestrators' logic.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as GitHub issues on `Erdenebayar-M/Admin-Alpha` (via `gh` CLI). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles (`needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`). See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Cross-repo: canonical `CONTEXT.md` and ADRs live in the sibling `Alpha` repo, not here. See `docs/agents/domain.md`.
