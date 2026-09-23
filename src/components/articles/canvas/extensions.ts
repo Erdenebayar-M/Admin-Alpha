@@ -464,6 +464,21 @@ const ListItemExit = Extension.create({
         // by the time it's dispatched it's already applied, too late to attach meta.
         return liftListItem(itemType)(state, (tr) => view.dispatch(tr.setMeta(listSplitMetaKey, true)));
       },
+      // Backspace right after an item's Marker takes the item (text kept) out of the list,
+      // exactly like Enter on an empty item — otherwise `ListMarkerIntegrity` just puts the
+      // deleted Marker back and the keypress does nothing.
+      Backspace: () => {
+        const { state, view } = this.editor;
+        const { $from, empty } = state.selection;
+        if (!empty) return false;
+        const paragraph = $from.parent;
+        if (paragraph.type.name !== DOC_NODE.paragraph) return false;
+        if (paragraph.firstChild?.type.name !== DOC_NODE.listMarker) return false;
+        if ($from.parentOffset > paragraph.firstChild.nodeSize) return false;
+        if ($from.node(-1)?.type.name !== DOC_NODE.listItem) return false;
+        const itemType = state.schema.nodes[DOC_NODE.listItem];
+        return liftListItem(itemType)(state, (tr) => view.dispatch(tr.setMeta(listSplitMetaKey, true)));
+      },
     };
   },
 });

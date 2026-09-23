@@ -55,11 +55,14 @@ function docJson(editor: Editor): Json {
  * straight through ProseMirror's real key handling, exactly like a keypress
  * in the browser — the same path meta survives on.
  */
-function pressEnter(editor: Editor): boolean {
-  const event = new KeyboardEvent("keydown", { key: "Enter", bubbles: true, cancelable: true });
+function pressKey(editor: Editor, key: string): boolean {
+  const event = new KeyboardEvent("keydown", { key, bubbles: true, cancelable: true });
   editor.view.dom.dispatchEvent(event);
   return event.defaultPrevented;
 }
+
+const pressEnter = (editor: Editor) => pressKey(editor, "Enter");
+const pressBackspace = (editor: Editor) => pressKey(editor, "Backspace");
 
 function markerOf(listNode: Json, itemIndex: number) {
   const item = listNode.content?.[itemIndex];
@@ -206,6 +209,39 @@ describe("splitting a list with Enter (ADR 0005)", () => {
     const orderedLists = top.filter((n) => n.type === DOC_NODE.orderedList);
     expect(orderedLists).toHaveLength(2);
     expect(orderedLists[1]?.attrs?.start ?? 1).toBe(1);
+  });
+});
+
+describe("leaving a list with Backspace (ADR 0005)", () => {
+  it("takes a non-empty middle item out as a paragraph, and the second half continues the numbering", () => {
+    const editor = newEditor("<ol><li><p>нэг</p></li><li><p>хоёр</p></li><li><p>гурав</p></li></ol>");
+    editor.commands.setNodeSelection(0);
+    editor.commands.updateAttributes(DOC_NODE.orderedList, { background: "gray" });
+    // Caret right after the second item's Marker.
+    let markerEnd = -1;
+    let seen = 0;
+    editor.state.doc.descendants((node, pos) => {
+      if (node.type.name === DOC_NODE.listMarker && ++seen === 2) markerEnd = pos + node.nodeSize;
+    });
+    editor.commands.setTextSelection(markerEnd);
+    expect(pressBackspace(editor)).toBe(true);
+
+    const top = withoutTrailingEmptyParagraph(docJson(editor).content ?? []);
+    expect(top.map((n) => n.type)).toEqual([DOC_NODE.orderedList, DOC_NODE.paragraph, DOC_NODE.orderedList]);
+    expect(top[1]?.content?.map((c) => c.text)).toEqual(["хоёр"]);
+    expect(top[2]?.attrs?.start).toBe(2);
+    expect(top[2]?.attrs?.background).toBeNull();
+  });
+
+  it("takes the first item out above the list, leaving numbering from 1", () => {
+    const editor = newEditor("<ol><li><p>нэг</p></li><li><p>хоёр</p></li></ol>");
+    editor.commands.setNodeSelection(0);
+    editor.commands.updateAttributes(DOC_NODE.orderedList, { background: "gray" }); // dispatches, so markers get inserted
+    editor.commands.setTextSelection(4); // right after the first item's Marker
+    expect(pressBackspace(editor)).toBe(true);
+    const top = withoutTrailingEmptyParagraph(docJson(editor).content ?? []);
+    expect(top.map((n) => n.type)).toEqual([DOC_NODE.paragraph, DOC_NODE.orderedList]);
+    expect(top[1]?.attrs?.start ?? 1).toBe(1);
   });
 });
 
