@@ -261,13 +261,19 @@ const Callout = Node.create({
   parseHTML() {
     return [{ tag: "aside[data-callout]" }];
   },
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }) {
+    const background = node.attrs.background;
+    const borderAttrs = isColorValue(background) ? { style: `border-color: ${colorCss(background)}` } : {};
     return [
       "aside",
-      mergeAttributes(HTMLAttributes, {
-        "data-callout": "",
-        class: "my-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3",
-      }),
+      mergeAttributes(
+        HTMLAttributes,
+        {
+          "data-callout": "",
+          class: "my-4 rounded-lg border border-amber-500/40 bg-amber-500/10 px-4 py-3",
+        },
+        borderAttrs,
+      ),
       0,
     ];
   },

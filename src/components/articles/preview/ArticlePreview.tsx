@@ -141,11 +141,14 @@ function Quote({ block }: { block: QuoteBlock }) {
 }
 
 function Callout({ block }: { block: CalloutBlock }) {
+  const style: { backgroundColor: string; borderColor?: string } = block.background
+    ? { backgroundColor: tintCss(block.background), borderColor: colorCss(block.background) }
+    : { backgroundColor: "#f7f9fc" };
   return (
     <div
       role="note"
       className={cn(BODY_TEXT_CLASS, "rounded-2xl border border-[#e8eef7] px-5 py-4", alignmentClass(block.alignment))}
-      style={backgroundStyle(block.background) ?? { backgroundColor: "#f7f9fc" }}
+      style={style}
     >
       <InlineSpans spans={block.content} />
     </div>

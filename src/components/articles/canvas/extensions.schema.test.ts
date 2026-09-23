@@ -58,4 +58,22 @@ describe("articleCanvasExtensions schema", () => {
     const paragraph = s.nodes[DOC_NODE.paragraph].create({ alignment: "center" }, s.text("төвд"));
     expect(paragraph.attrs.alignment).toBe("center");
   });
+
+  it("a callout's rendered border-color tracks its background, but keeps the default amber frame when unset", () => {
+    const s = schema();
+    const spec = s.nodes[DOC_NODE.callout].spec;
+    const unset = spec.toDOM?.(s.nodes[DOC_NODE.callout].create({}));
+    const attrsUnset = (unset as [string, Record<string, string>, number])[1];
+    expect(attrsUnset.class).toContain("border-amber-500/40");
+    expect(attrsUnset.style).toBeUndefined();
+
+    const palette = spec.toDOM?.(s.nodes[DOC_NODE.callout].create({ background: "brand-blue" }));
+    const attrsPalette = (palette as [string, Record<string, string>, number])[1];
+    expect(attrsPalette.style).toContain("background-color: var(--color-palette-brand-blue-tint)");
+    expect(attrsPalette.style).toContain("border-color: var(--color-palette-brand-blue)");
+
+    const custom = spec.toDOM?.(s.nodes[DOC_NODE.callout].create({ background: "#112233" }));
+    const attrsCustom = (custom as [string, Record<string, string>, number])[1];
+    expect(attrsCustom.style).toContain("border-color: #112233");
+  });
 });
