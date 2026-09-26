@@ -1,29 +1,13 @@
-import { Nunito } from "next/font/google";
 import { Link2 } from "lucide-react";
 import { colorCss, tintCss } from "@/lib/article-colors";
 import { cn } from "@/lib/utils";
 import type { ArticleBlock, CalloutBlock, ColorValue, HeadingBlock, ImageBlock, InlineSpan, LinkCardBlock, ListBlock, ParagraphBlock, QuoteBlock, VideoBlock } from "@/lib/article-types";
 import { alignmentClass } from "./alignment";
+import { SITE_CLASS, SITE_FONT_CLASS, SITE_SURFACE_HEX, SITE_SURFACE_STYLE } from "../site-look";
 
-// Same font + subsets as `Alpha/web/app/layout.tsx` — full Cyrillic Extended
-// coverage so Өө/Үү render correctly. Loaded only here (not the admin app's
-// own `layout.tsx`), since this is the one surface meant to look like the
-// site rather than the admin panel.
-const nunito = Nunito({
-  variable: "--font-nunito-preview",
-  subsets: ["latin", "cyrillic"],
-  weight: ["400", "600", "700", "800", "900"],
-  display: "swap",
-});
-
-// Hex values copied from `Alpha/web/app/globals.css`'s `@theme` tokens
-// (color-text-nav-strong, color-text-navy, color-text-nav, color-brand-blue,
-// color-border-card, color-border-soft, color-surface-page,
-// color-article-title) — this repo can't import that file or its Tailwind
-// config, so the values are mirrored by hand for this one read-only surface.
-const BODY_TEXT_CLASS = "text-base leading-relaxed text-[#101828]";
-const HEADING_TEXT_CLASS = "font-extrabold text-[#24428f]";
-const MUTED_TEXT_CLASS = "text-[#667085]";
+const BODY_TEXT_CLASS = SITE_CLASS.body;
+const HEADING_TEXT_CLASS = SITE_CLASS.heading;
+const MUTED_TEXT_CLASS = SITE_CLASS.muted;
 
 // A click never navigates the admin tab away — this is a read-only preview, not a real
 // page, the same intent as the canvas's own Tiptap Link mark (`openOnClick: false`).
@@ -38,7 +22,7 @@ function Span({ span }: { span: InlineSpan }) {
       <a
         href={span.href}
         onClick={preventNavigation}
-        className={cn(weight, "text-[#2f5be4] underline underline-offset-2")}
+        className={cn(weight, SITE_CLASS.link)}
       >
         {span.text}
       </a>
@@ -140,7 +124,7 @@ function Quote({ block }: { block: QuoteBlock }) {
     <blockquote
       className={cn(
         BODY_TEXT_CLASS,
-        "border-l-4 border-[#e4e7ec] pl-4 italic",
+        SITE_CLASS.quote,
         alignmentClass(block.alignment),
         block.background && "rounded-2xl py-3 pr-4",
       )}
@@ -157,11 +141,11 @@ function Quote({ block }: { block: QuoteBlock }) {
 function Callout({ block }: { block: CalloutBlock }) {
   const style: { backgroundColor: string; borderColor?: string } = block.background
     ? { backgroundColor: tintCss(block.background), borderColor: colorCss(block.background) }
-    : { backgroundColor: "#f7f9fc" };
+    : { backgroundColor: SITE_SURFACE_HEX };
   return (
     <div
       role="note"
-      className={cn(BODY_TEXT_CLASS, "rounded-2xl border border-[#e8eef7] px-5 py-4", alignmentClass(block.alignment))}
+      className={cn(BODY_TEXT_CLASS, SITE_CLASS.callout, alignmentClass(block.alignment))}
       style={style}
     >
       <InlineSpans spans={block.content} />
@@ -170,7 +154,7 @@ function Callout({ block }: { block: CalloutBlock }) {
 }
 
 function Divider() {
-  return <hr className="border-[#e4e7ec]" />;
+  return <hr className={SITE_CLASS.divider} />;
 }
 
 function ImageBlockView({ block }: { block: ImageBlock }) {
@@ -208,18 +192,18 @@ function LinkCardView({ block }: { block: LinkCardBlock }) {
     <a
       href={block.url}
       onClick={preventNavigation}
-      className="flex gap-4 rounded-2xl border border-[#e4e7ec] p-4 transition-colors hover:bg-[#f7f9fc]"
+      className={SITE_CLASS.linkCard}
     >
       {block.image ? (
         // eslint-disable-next-line @next/next/no-img-element -- R2 asset of arbitrary origin/size, matching the site's own rendering
         <img src={block.image.url} alt={block.image.alt} className="h-20 w-28 shrink-0 rounded-xl object-cover" />
       ) : (
-        <div className="flex h-20 w-28 shrink-0 items-center justify-center rounded-xl bg-[#f7f9fc]">
+        <div className={SITE_CLASS.linkCardPlaceholder}>
           <Link2 className={cn("size-5", MUTED_TEXT_CLASS)} />
         </div>
       )}
       <div className="flex flex-col gap-1">
-        <p className="font-bold text-[#0f1f4d]">{block.title}</p>
+        <p className={SITE_CLASS.linkCardTitle}>{block.title}</p>
         {block.description && <p className={cn("text-sm", MUTED_TEXT_CLASS)}>{block.description}</p>}
         <p className={cn("text-xs", MUTED_TEXT_CLASS)}>{block.url}</p>
       </div>
@@ -272,8 +256,8 @@ function BlockView({ block }: { block: ArticleBlock }) {
 export function ArticlePreview({ blocks }: { blocks: ArticleBlock[] }) {
   return (
     <div
-      className={cn(nunito.variable, "min-h-80 rounded-xl border border-border bg-white px-6 py-5")}
-      style={{ fontFamily: "var(--font-nunito-preview), sans-serif" }}
+      className={cn(SITE_FONT_CLASS, "min-h-80 rounded-xl border border-border bg-white px-6 py-5")}
+      style={SITE_SURFACE_STYLE}
     >
       {blocks.length === 0 ? (
         <p className={cn("text-sm italic", MUTED_TEXT_CLASS)}>Агуулга хоосон байна.</p>
