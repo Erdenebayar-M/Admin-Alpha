@@ -224,6 +224,52 @@ const BlockErrors = Extension.create({
   },
 });
 
+// ── Quote edge marks (Admin-Alpha#13) ────────────────────────────────────
+
+const quoteEdgeMetaKey = "quoteEdgeMarks";
+const LEADING_QUOTE_MARK = /^\s*[“„«"']\s*/;
+const TRAILING_QUOTE_MARK = /\s*[”»"']\s*$/;
+
+/**
+ * The site draws a Quote's quotation marks, so none are ever saved: after any
+ * change, one opening mark at the start and one closing mark at the end of
+ * each Quote (with surrounding whitespace) are deleted. Interior marks and
+ * inline marks on the remaining text are untouched. Runs on every doc change,
+ * so typing, pasting, converting a Block and the first edit of a stored Quote
+ * are all covered; a pass never re-triggers itself, so a doubled mark loses
+ * one pair per edit.
+ */
+const QuoteEdgeMarks = Extension.create({
+  name: "quoteEdgeMarks",
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey("quoteEdgeMarks"),
+        appendTransaction(transactions, _old, state) {
+          if (!transactions.some((t) => t.docChanged) || transactions.some((t) => t.getMeta(quoteEdgeMetaKey))) return null;
+          const tr = state.tr;
+          state.doc.descendants((node, pos) => {
+            if (node.type.name !== DOC_NODE.quote) return false;
+            // A Quote holds inline text only, so a text offset is a position offset.
+            const text = node.textContent;
+            const lead = LEADING_QUOTE_MARK.exec(text)?.[0].length ?? 0;
+            const trail = TRAILING_QUOTE_MARK.exec(text.slice(lead))?.[0].length ?? 0;
+            const start = pos + 1;
+            // Positions come from the original doc; earlier Quotes' deletions have shifted them.
+            const at = (offset: number) => tr.mapping.map(start + offset);
+            // Later range first, so the earlier positions stay valid.
+            if (trail) tr.delete(at(text.length - trail), at(text.length));
+            if (lead) tr.delete(at(0), at(lead));
+            return false;
+          });
+          if (!tr.docChanged) return null;
+          return tr.setMeta(quoteEdgeMetaKey, true);
+        },
+      }),
+    ];
+  },
+});
+
 // ── Block nodes ───────────────────────────────────────────────────────────
 
 const Quote = Node.create({
@@ -676,6 +722,7 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
     // it must be listed before `BlockIds` here to run after it each pass.
     ListMarkerIntegrity,
     ListSplitDefaults,
+    QuoteEdgeMarks,
     BlockIds,
     BlockBackground,
     TextColorMark,
