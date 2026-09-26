@@ -13,7 +13,7 @@ import type { ArticleBlock } from "@/lib/article-types";
 // (`@container`) — 1024px viewport minus the card's padding ≈ 944px.
 
 /** Outer card: width cap plus the container the hang breakpoint measures. */
-export const SITE_CARD_CLASS = "@container mx-auto w-full max-w-[1000px] rounded-3xl bg-white p-6 sm:p-10";
+export const SITE_CARD_CLASS = "@container mx-auto w-full max-w-[1000px] rounded-3xl bg-white p-6 text-[color:var(--site-ink)] sm:p-10";
 
 const READING_COLUMN_CLASS = "mx-auto w-full max-w-[775px]";
 const HANGING_CLASS = "w-full @[944px]:pl-[60px] @[944px]:pr-[calc((100%-775px)/2)]";

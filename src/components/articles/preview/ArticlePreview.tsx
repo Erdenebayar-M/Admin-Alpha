@@ -256,7 +256,7 @@ function BlockView({ block }: { block: ArticleBlock }) {
  */
 export function ArticlePreview({ title, blocks }: { title: string; blocks: ArticleBlock[] }) {
   return (
-    <div className={cn(SITE_FONT_CLASS, "min-h-80 rounded-xl border border-border bg-[color:var(--site-surface)] p-4")} style={SITE_SURFACE_STYLE}>
+    <div className={cn(SITE_FONT_CLASS, "site-light min-h-80 rounded-xl border border-border bg-[color:var(--site-surface)] p-4")} style={SITE_SURFACE_STYLE}>
       <article className={cn(SITE_CARD_CLASS, "flex flex-col gap-6")}>
         <h1 className={SITE_CLASS.title}>{title.trim() || "Гарчиггүй нийтлэл"}</h1>
         {blocks.length === 0 ? (
