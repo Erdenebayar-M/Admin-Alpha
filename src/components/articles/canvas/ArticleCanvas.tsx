@@ -9,6 +9,8 @@ import { blocksToDoc, docToBlocks, DOC_MARK, DOC_NODE, generateBlockId } from "@
 import { usedCustomColors } from "@/lib/article-colors";
 import { cleanPastedContent } from "@/lib/article-paste";
 import type { ArticleBlock, ImageBlock } from "@/lib/article-types";
+import { cn } from "@/lib/utils";
+import { SITE_CARD_CLASS, SITE_FONT_CLASS, SITE_SURFACE_STYLE } from "../site-look";
 import { articleCanvasExtensions, blockErrorsKey } from "./extensions";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { createColorMenuStore } from "./color/color-menu-store";
@@ -73,7 +75,7 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
     content: blocksToDoc(initialBody),
     editorProps: {
       attributes: {
-        class: "article-canvas min-h-80 px-6 py-5 outline-none",
+        class: "article-canvas min-h-80 outline-none",
         "aria-label": "Нийтлэлийн агуулга",
       },
       transformPastedHTML: (html) => {
@@ -159,27 +161,37 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
   }
 
   return (
-    <div className="relative rounded-xl border border-border bg-card">
+    <div className="relative">
       {editor && <CanvasToolbar editor={editor} onLink={openLinkDialog} colorMenu={colorMenu} usedColors={usedColors} />}
-      {pasteNotice && (
-        <div
-          role="status"
-          className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-800 dark:text-sky-200"
-        >
-          <Info className="size-3.5 shrink-0" />
-          Зарим формат хасагдлаа
+      <div className="space-y-2 empty:hidden">
+        {pasteNotice && (
+          <div
+            role="status"
+            className="mt-3 flex items-center gap-2 rounded-lg border border-sky-500/30 bg-sky-500/10 px-3 py-2 text-xs text-sky-800 dark:text-sky-200"
+          >
+            <Info className="size-3.5 shrink-0" />
+            Зарим формат хасагдлаа
+          </div>
+        )}
+        {mediaError && (
+          <div
+            role="alert"
+            className="mt-3 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
+          >
+            <Info className="size-3.5 shrink-0" />
+            {mediaError}
+          </div>
+        )}
+      </div>
+      {/* The site reading card: light in the admin's dark mode, capped and centered like the Preview's. */}
+      <div
+        className={cn(SITE_FONT_CLASS, "site-light mt-3 min-h-80 rounded-xl border border-border bg-[color:var(--site-surface)] p-4")}
+        style={SITE_SURFACE_STYLE}
+      >
+        <div className={SITE_CARD_CLASS}>
+          <EditorContent editor={editor} />
         </div>
-      )}
-      {mediaError && (
-        <div
-          role="alert"
-          className="mx-4 mt-3 flex items-center gap-2 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-xs text-destructive"
-        >
-          <Info className="size-3.5 shrink-0" />
-          {mediaError}
-        </div>
-      )}
-      <EditorContent editor={editor} />
+      </div>
       <SlashMenu store={slashMenu} />
       <LinkDialog
         initialHref={linkHref}

@@ -54,7 +54,8 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-:root {
+:root,
+.site-light {
   /* Jira deep-blue on cool slate chrome */
   --background: oklch(0.982 0.003 250);
   --foreground: oklch(0.17 0.012 258);
@@ -181,22 +182,43 @@
     cursor: not-allowed;
   }
 }
-/* Article canvas (Tiptap) — Tailwind's preflight resets headings/lists, so the
-   writing surface gets its own minimal typography here. */
+/* Article canvas (Tiptap) — the writing surface is the site's reading card
+   (WYSIWYG): site ink/heading colours, the Preview's per-Block-kind sizes, and
+   the reading column with hanging subheadings/Quotes (same numbers as
+   `site-reading-layout.ts`; the hang is a container query on the card, which is
+   an `@container`). Tailwind's preflight resets headings/lists, so the
+   typography is spelled out here. `.site-light` pins the admin tokens to their
+   light values so node-view chrome stays readable in the admin's dark mode. */
 @layer components {
   .article-canvas {
-    @apply text-base leading-7 text-foreground;
+    @apply text-base leading-relaxed;
+    color: var(--site-ink);
   }
-  .article-canvas > p,
-  .article-canvas > ul,
-  .article-canvas > ol {
-    @apply my-3;
+  .article-canvas > * {
+    @apply mx-auto w-full;
+    max-width: 775px;
+    margin-block: 0.75rem;
+  }
+  .article-canvas > h2,
+  .article-canvas > h3,
+  .article-canvas > blockquote {
+    max-width: none;
+  }
+  @container (min-width: 944px) {
+    .article-canvas > h2,
+    .article-canvas > h3,
+    .article-canvas > blockquote {
+      padding-left: 60px;
+      padding-right: calc((100% - 775px) / 2);
+    }
   }
   .article-canvas h2 {
-    @apply mt-8 mb-3 text-2xl font-semibold tracking-tight;
+    @apply text-2xl font-extrabold;
+    color: var(--site-heading);
   }
   .article-canvas h3 {
-    @apply mt-6 mb-2 text-xl font-semibold;
+    @apply text-xl font-extrabold;
+    color: var(--site-heading);
   }
   .article-canvas ul {
     @apply list-none pl-6;
@@ -208,13 +230,15 @@
     @apply my-1;
   }
   .article-canvas a {
-    @apply text-primary underline underline-offset-2;
+    @apply underline underline-offset-2;
+    color: var(--site-link);
   }
   .article-canvas hr {
-    @apply my-6 border-t-2 border-border;
+    @apply my-6 border-t;
+    border-color: var(--site-border);
   }
   .article-canvas [data-background] {
-    @apply rounded-lg px-4 py-3;
+    @apply rounded-2xl px-4 py-3;
   }
   .article-canvas [data-highlight] {
     @apply rounded px-0.5;
@@ -225,6 +249,8 @@
   }
   .article-canvas p.is-editor-empty:first-child::before {
     content: attr(data-placeholder);
-    @apply pointer-events-none float-left h-0 text-muted-foreground/60;
+    @apply pointer-events-none float-left h-0;
+    color: var(--site-muted);
+    opacity: 0.6;
   }
 }

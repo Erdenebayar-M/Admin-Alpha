@@ -114,7 +114,7 @@ export function CanvasToolbar({
       role="toolbar"
       aria-label="Засварлах хэрэгсэл"
       // top-14 matches the app header's h-14 (src/app/admin/layout.tsx) so this sticks just below it, not behind it.
-      className="sticky top-14 z-10 flex flex-wrap items-center gap-0.5 rounded-t-xl border-b border-border bg-card/95 px-2 py-1.5 backdrop-blur"
+      className="sticky top-14 z-10 flex flex-wrap items-center gap-0.5 rounded-xl border border-border bg-card/95 px-2 py-1.5 backdrop-blur"
     >
       <ToolbarButton label="Тод (Ctrl+B)" active={active.bold} onClick={() => editor.chain().focus().toggleBold().run()}>
         <Bold />
