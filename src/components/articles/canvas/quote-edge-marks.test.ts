@@ -103,3 +103,20 @@ describe("Quote edge quotation marks", () => {
     expect(quotes.map(textOf)).toEqual(["a", "bc"]);
   });
 });
+
+describe("Quote decorative marks and attribution", () => {
+  it("never puts drawn quotation marks into the saved Body", () => {
+    const editor = newEditor('<blockquote data-attribution="Б. Дорж"><p>text</p></blockquote>');
+    expect(textOf(first(editor))).toBe("text");
+    expect(editor.getText()).not.toMatch(/[“”]/);
+  });
+
+  it("saves an edited attribution", () => {
+    const editor = newEditor("<blockquote><p>text</p></blockquote>");
+    editor.commands.command(({ tr }) => {
+      tr.setNodeMarkup(0, undefined, { ...editor.state.doc.child(0).attrs, attribution: "Н. Бат" });
+      return true;
+    });
+    expect(first(editor).attrs?.attribution).toBe("Н. Бат");
+  });
+});
