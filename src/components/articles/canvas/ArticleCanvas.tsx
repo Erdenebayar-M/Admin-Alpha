@@ -10,7 +10,7 @@ import { usedCustomColors } from "@/lib/article-colors";
 import { cleanPastedContent } from "@/lib/article-paste";
 import type { ArticleBlock, ImageBlock } from "@/lib/article-types";
 import { cn } from "@/lib/utils";
-import { SITE_CARD_CLASS, SITE_FONT_CLASS, SITE_SURFACE_STYLE } from "../site-look";
+import { SITE_CARD_CLASS, SITE_CLASS, SITE_FONT_CLASS, SITE_SURFACE_STYLE } from "../site-look";
 import { articleCanvasExtensions, blockErrorsKey } from "./extensions";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { createColorMenuStore } from "./color/color-menu-store";
@@ -29,10 +29,16 @@ interface ArticleCanvasProps {
   onChange: (body: ArticleBlock[]) => void;
   /** Server messages keyed by Block id, outlined on the matching Block. */
   blockErrors: Record<string, string>;
+  /** The Article's title — bound to the Article, never a Block. */
+  title: string;
+  onTitleChange: (title: string) => void;
+  titleError?: string;
+  autoFocusTitle?: boolean;
 }
 
 /** The continuous writing surface for an Article's Body: toolbar, `/` menu and paste clean-up around a Tiptap editor. */
-export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCanvasProps) {
+export function ArticleCanvas({ initialBody, onChange, blockErrors, title, onTitleChange, titleError, autoFocusTitle }: ArticleCanvasProps) {
+  const titleRef = useRef<HTMLTextAreaElement>(null);
   const onChangeRef = useRef(onChange);
   useEffect(() => {
     onChangeRef.current = onChange;
@@ -105,6 +111,14 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
       setUsedColors(usedCustomColors(blocks));
     },
   });
+
+  // Grow the title field to fit its wrapped lines (also on first render and remount).
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${el.scrollHeight}px`;
+  }, [title]);
 
   useEffect(() => {
     editorRef.current = editor ?? null;
@@ -189,6 +203,27 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors }: ArticleCan
         style={SITE_SURFACE_STYLE}
       >
         <div className={SITE_CARD_CLASS}>
+          <div className="mb-6">
+            <textarea
+              ref={titleRef}
+              rows={1}
+              value={title}
+              onChange={(e) => onTitleChange(e.target.value.replace(/\n/g, " "))}
+              onKeyDown={(e) => {
+                // Enter is "done with the title" — never a line break; hand focus to the Body.
+                if (e.key === "Enter" && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  editor?.commands.focus("start");
+                }
+              }}
+              placeholder="Гарчиг"
+              aria-label="Гарчиг"
+              aria-invalid={!!titleError}
+              autoFocus={autoFocusTitle}
+              className={cn(SITE_CLASS.title, "block w-full resize-none overflow-hidden border-0 bg-transparent outline-none placeholder:text-[color:var(--site-heading)]/30")}
+            />
+            {titleError && <p className="mt-1 text-center text-xs text-destructive">{titleError}</p>}
+          </div>
           <EditorContent editor={editor} />
         </div>
       </div>

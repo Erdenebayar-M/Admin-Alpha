@@ -51,6 +51,13 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
     if (Object.keys(editor.blockErrors).length > 0) setPreview(false);
   }
 
+  // The title now lives inside the canvas too, so its error is equally hidden behind Preview.
+  const [seenTitleError, setSeenTitleError] = useState(fieldErrors.title);
+  if (fieldErrors.title !== seenTitleError) {
+    setSeenTitleError(fieldErrors.title);
+    if (fieldErrors.title) setPreview(false);
+  }
+
   useUnsavedChangesGuard(editor.dirty, UNSAVED_MESSAGE);
 
   // Ctrl/⌘+S saves from anywhere on the page — including while typing in a field.
@@ -198,19 +205,6 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
 
       <div className="grid gap-6 px-4 py-6 sm:px-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
         <main className="min-w-0 space-y-4">
-          <div className="space-y-1">
-            <input
-              value={form.title}
-              onChange={(e) => editor.setTitle(e.target.value)}
-              placeholder="Гарчиг"
-              aria-label="Гарчиг"
-              aria-invalid={!!fieldErrors.title}
-              className="w-full border-0 bg-transparent text-3xl font-bold tracking-tight text-foreground outline-none placeholder:text-muted-foreground/50"
-              autoFocus={!articleId}
-            />
-            {fieldErrors.title && <p className="text-xs text-destructive">{fieldErrors.title}</p>}
-          </div>
-
           <div role="tablist" aria-label="Горим" className="inline-flex w-fit gap-0.5 rounded-lg bg-muted p-0.5">
             <Button
               type="button"
@@ -245,6 +239,10 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
               initialBody={form.body}
               onChange={editor.setBody}
               blockErrors={editor.blockErrors}
+              title={form.title}
+              onTitleChange={editor.setTitle}
+              titleError={fieldErrors.title}
+              autoFocusTitle={!articleId}
             />
           </div>
           <div className={cn(!preview && "hidden")}>
