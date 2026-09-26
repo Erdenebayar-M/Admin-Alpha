@@ -3,7 +3,7 @@ import { colorCss, tintCss } from "@/lib/article-colors";
 import { cn } from "@/lib/utils";
 import type { ArticleBlock, CalloutBlock, ColorValue, HeadingBlock, ImageBlock, InlineSpan, LinkCardBlock, ListBlock, ParagraphBlock, QuoteBlock, VideoBlock } from "@/lib/article-types";
 import { alignmentClass } from "./alignment";
-import { SITE_CLASS, SITE_FONT_CLASS, SITE_SURFACE_HEX, SITE_SURFACE_STYLE } from "../site-look";
+import { SITE_CARD_CLASS, SITE_CLASS, SITE_FONT_CLASS, SITE_SURFACE_HEX, SITE_SURFACE_STYLE, readingLayoutClass } from "../site-look";
 
 const BODY_TEXT_CLASS = SITE_CLASS.body;
 const HEADING_TEXT_CLASS = SITE_CLASS.heading;
@@ -123,15 +123,16 @@ function Quote({ block }: { block: QuoteBlock }) {
   return (
     <blockquote
       className={cn(
-        BODY_TEXT_CLASS,
         SITE_CLASS.quote,
         alignmentClass(block.alignment),
-        block.background && "rounded-2xl py-3 pr-4",
+        block.background && "rounded-2xl px-4 py-3",
       )}
       style={backgroundStyle(block.background)}
     >
       <p>
+        <span aria-hidden="true">“</span>
         <InlineSpans spans={block.content} />
+        <span aria-hidden="true">”</span>
       </p>
       {block.attribution && <footer className={cn("mt-2 text-sm not-italic", MUTED_TEXT_CLASS)}>— {block.attribution}</footer>}
     </blockquote>
@@ -253,21 +254,23 @@ function BlockView({ block }: { block: ArticleBlock }) {
  * light/dark theme: the site itself has no dark mode for these colours, so a
  * dark admin theme must not carry into this one surface meant to preview it.
  */
-export function ArticlePreview({ blocks }: { blocks: ArticleBlock[] }) {
+export function ArticlePreview({ title, blocks }: { title: string; blocks: ArticleBlock[] }) {
   return (
-    <div
-      className={cn(SITE_FONT_CLASS, "min-h-80 rounded-xl border border-border bg-white px-6 py-5")}
-      style={SITE_SURFACE_STYLE}
-    >
-      {blocks.length === 0 ? (
-        <p className={cn("text-sm italic", MUTED_TEXT_CLASS)}>Агуулга хоосон байна.</p>
-      ) : (
-        <div className="flex flex-col gap-6">
-          {blocks.map((block) => (
-            <BlockView key={block.id} block={block} />
-          ))}
-        </div>
-      )}
+    <div className={cn(SITE_FONT_CLASS, "min-h-80 rounded-xl border border-border bg-[color:var(--site-surface)] p-4")} style={SITE_SURFACE_STYLE}>
+      <article className={cn(SITE_CARD_CLASS, "flex flex-col gap-6")}>
+        <h1 className={SITE_CLASS.title}>{title.trim() || "Гарчиггүй нийтлэл"}</h1>
+        {blocks.length === 0 ? (
+          <p className={cn("text-sm italic", MUTED_TEXT_CLASS)}>Агуулга хоосон байна.</p>
+        ) : (
+          <div className="flex flex-col gap-6">
+            {blocks.map((block) => (
+              <div key={block.id} className={readingLayoutClass(block.type)}>
+                <BlockView block={block} />
+              </div>
+            ))}
+          </div>
+        )}
+      </article>
     </div>
   );
 }

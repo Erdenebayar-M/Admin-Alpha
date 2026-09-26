@@ -1,6 +1,8 @@
 import { Nunito } from "next/font/google";
 import type { CSSProperties } from "react";
 
+export { SITE_CARD_CLASS, readingLayoutClass } from "./site-reading-layout";
+
 // The one place the admin mirrors the site's look (font, colour tokens,
 // per-Block-kind styles). The article Preview renders from here; a site
 // retune is a single-place change.
@@ -59,7 +61,10 @@ export const SITE_CLASS = {
   heading: "font-extrabold text-[color:var(--site-heading)]",
   muted: "text-[color:var(--site-muted)]",
   link: "text-[color:var(--site-link)] underline underline-offset-2",
-  quote: "border-l-4 border-[color:var(--site-border)] pl-4 italic",
+  // Site pull-quote: large italic navy, no left border; the “ ” are drawn in the Preview.
+  quote: "text-2xl italic leading-snug text-[color:var(--site-heading)]",
+  // Article title at the top of the card (site: text-3xl font-extrabold text-text-navy).
+  title: "text-center text-3xl font-extrabold text-[color:var(--site-heading)]",
   callout: "rounded-2xl border border-[color:var(--site-border-soft)] px-5 py-4",
   divider: "border-[color:var(--site-border)]",
   linkCard: "flex gap-4 rounded-2xl border border-[color:var(--site-border)] p-4 transition-colors hover:bg-[color:var(--site-surface)]",

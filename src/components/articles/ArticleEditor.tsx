@@ -248,7 +248,7 @@ export function ArticleEditor({ articleId }: { articleId?: string }) {
             />
           </div>
           <div className={cn(!preview && "hidden")}>
-            <ArticlePreview blocks={form.body} />
+            <ArticlePreview title={form.title} blocks={form.body} />
           </div>
         </main>
 
