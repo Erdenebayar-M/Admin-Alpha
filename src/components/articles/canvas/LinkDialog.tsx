@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import type { LinkDialogRequest } from "./link-dialog-store";
 import { isAllowedHref } from "@/lib/article-types";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogBody, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -8,26 +9,27 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 interface LinkDialogProps {
-  /** `null` = closed; otherwise the href to start from ("" for a new link). */
-  initialHref: string | null;
+  /** `null` = closed; otherwise what to ask for and the href to start from ("" for a new link). */
+  request: LinkDialogRequest | null;
   onOpenChange: (open: boolean) => void;
-  onSubmit: (href: string) => void;
+  onSubmit: (value: { href: string; text: string }) => void;
   onRemove: () => void;
 }
 
 /** Insert or edit an inline link. Only hrefs the backend's `inlineHrefSchema` accepts can be submitted. */
-export function LinkDialog({ initialHref, onOpenChange, onSubmit, onRemove }: LinkDialogProps) {
+export function LinkDialog({ request, onOpenChange, onSubmit, onRemove }: LinkDialogProps) {
   return (
-    <Dialog open={initialHref !== null} onOpenChange={onOpenChange}>
+    <Dialog open={request !== null} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Холбоос</DialogTitle>
         </DialogHeader>
         {/* Keyed so the field resets to the link being edited each time the dialog opens. */}
-        {initialHref !== null && (
+        {request !== null && (
           <LinkForm
-            key={initialHref}
-            initialHref={initialHref}
+            key={`${request.askText}:${request.href}`}
+            askText={request.askText}
+            initialHref={request.href}
             onCancel={() => onOpenChange(false)}
             onSubmit={onSubmit}
             onRemove={onRemove}
@@ -39,16 +41,19 @@ export function LinkDialog({ initialHref, onOpenChange, onSubmit, onRemove }: Li
 }
 
 function LinkForm({
+  askText,
   initialHref,
   onCancel,
   onSubmit,
   onRemove,
 }: {
+  askText: boolean;
   initialHref: string;
   onCancel: () => void;
-  onSubmit: (href: string) => void;
+  onSubmit: (value: { href: string; text: string }) => void;
   onRemove: () => void;
 }) {
+  const [text, setText] = useState("");
   const [href, setHref] = useState(initialHref);
   const [touched, setTouched] = useState(false);
   const value = href.trim();
@@ -61,9 +66,15 @@ function LinkForm({
         onSubmit={(e) => {
           e.preventDefault();
           setTouched(true);
-          if (valid) onSubmit(value);
+          if (valid) onSubmit({ href: value, text });
         }}
       >
+        {askText && (
+          <div className="space-y-2">
+            <Label htmlFor="article-link-text">Текст</Label>
+            <Input id="article-link-text" value={text} onChange={(e) => setText(e.target.value)} placeholder="Холбоосын текст" autoFocus />
+          </div>
+        )}
         <div className="space-y-2">
           <Label htmlFor="article-link-href">URL</Label>
           <Input
@@ -73,7 +84,7 @@ function LinkForm({
             onBlur={() => setTouched(true)}
             placeholder="https://…"
             aria-invalid={touched && !valid}
-            autoFocus
+            autoFocus={!askText}
           />
           {touched && !valid ? (
             <p className="text-xs text-destructive">

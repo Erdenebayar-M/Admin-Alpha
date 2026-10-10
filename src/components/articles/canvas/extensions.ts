@@ -15,6 +15,8 @@ import { BACKGROUND_NODES, DOC_MARK, DOC_NODE, generateBlockId, type PreservedBl
 import { isAllowedHref, isColorValue } from "@/lib/article-types";
 import { SITE_CLASS } from "../site-tokens";
 import { filterBlockCommands, type BlockCommand } from "./block-commands";
+import { openLinkDialog } from "./link-commands";
+import { LINK_DIALOG_STORAGE_KEY, getLinkDialog, createLinkDialogStore, type LinkDialogStore } from "./link-dialog-store";
 import { COLOR_MENU_STORAGE_KEY, type ColorMenuStore } from "./color/color-menu-store";
 import { FirstLineIndent } from "./first-line-indent";
 import { ListMarkerView } from "./ListMarkerView";
@@ -678,9 +680,29 @@ const ColorMenuAccess = Extension.create<{ store: ColorMenuStore | null }>({
   },
 });
 
+/** Exposes the `linkDialogStore` on `editor.storage` and binds ⌘K / Ctrl+K to open the Link dialog — the same entry the toolbar 🔗 and the `/` menu use. */
+const LinkDialogAccess = Extension.create<{ store: LinkDialogStore | null }>({
+  name: LINK_DIALOG_STORAGE_KEY,
+  addOptions() {
+    return { store: null };
+  },
+  addStorage() {
+    return { store: this.options.store };
+  },
+  addKeyboardShortcuts() {
+    return {
+      "Mod-k": ({ editor }) => {
+        if (!getLinkDialog(editor)) return false;
+        openLinkDialog(editor);
+        return true;
+      },
+    };
+  },
+});
+
 // ── Assembly ──────────────────────────────────────────────────────────────
 
-export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: MediaDialogStore, colorMenu: ColorMenuStore): Extensions {
+export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: MediaDialogStore, colorMenu: ColorMenuStore, linkDialog: LinkDialogStore = createLinkDialogStore()): Extensions {
   return [
     StarterKit.configure({
       blockquote: false,
@@ -750,6 +772,7 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
     FirstLineIndent,
     SlashCommand.configure({ store: slashMenu }),
     ColorMenuAccess.configure({ store: colorMenu }),
+    LinkDialogAccess.configure({ store: linkDialog }),
     Placeholder.configure({ placeholder: "Бичиж эхлэх, эсвэл «/» дарж блок нэмэх…" }),
   ];
 }

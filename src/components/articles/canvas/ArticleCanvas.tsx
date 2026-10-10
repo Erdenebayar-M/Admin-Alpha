@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import type { Editor } from "@tiptap/core";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { Info } from "lucide-react";
 import { uploadArticleImage } from "@/lib/api";
-import { blocksToDoc, docToBlocks, DOC_MARK, DOC_NODE, generateBlockId } from "@/lib/article-body";
+import { blocksToDoc, docToBlocks, DOC_NODE, generateBlockId } from "@/lib/article-body";
 import { usedCustomColors } from "@/lib/article-colors";
 import { cleanPastedContent } from "@/lib/article-paste";
 import type { ArticleBlock, ImageBlock } from "@/lib/article-types";
@@ -15,6 +15,8 @@ import { articleCanvasExtensions, blockErrorsKey } from "./extensions";
 import { CanvasToolbar } from "./CanvasToolbar";
 import { createColorMenuStore } from "./color/color-menu-store";
 import { LinkDialog } from "./LinkDialog";
+import { applyLink, openLinkDialog, removeLink } from "./link-commands";
+import { createLinkDialogStore } from "./link-dialog-store";
 import { createMediaDialogStore } from "./media-dialog-store";
 import { MediaDialogs } from "./MediaDialogs";
 import { SlashMenu } from "./SlashMenu";
@@ -47,7 +49,7 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors, title, onTit
   const [mediaDialog] = useState(createMediaDialogStore);
   const [colorMenu] = useState(createColorMenuStore);
   const [pasteNotice, setPasteNotice] = useState(false);
-  const [linkHref, setLinkHref] = useState<string | null>(null);
+  const [linkDialog] = useState(createLinkDialogStore);
   const [mediaError, setMediaError] = useState<string | null>(null);
   const [usedColors, setUsedColors] = useState<string[]>(() => usedCustomColors(initialBody));
   const editorRef = useRef<Editor | null>(null);
@@ -75,9 +77,11 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors, title, onTit
       .catch((err: unknown) => setMediaError(err instanceof Error ? err.message : "Зураг байршуулж чадсангүй"));
   }
 
+  const linkRequest = useSyncExternalStore(linkDialog.subscribe, linkDialog.getSnapshot, () => null);
+
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: articleCanvasExtensions(slashMenu, mediaDialog, colorMenu),
+    extensions: articleCanvasExtensions(slashMenu, mediaDialog, colorMenu, linkDialog),
     content: blocksToDoc(initialBody),
     editorProps: {
       attributes: {
@@ -144,39 +148,9 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors, title, onTit
     }
   }, [editor, blockErrors]);
 
-  function openLinkDialog() {
-    if (!editor) return;
-    const href = editor.getAttributes(DOC_MARK.link).href;
-    setLinkHref(typeof href === "string" ? href : "");
-  }
-
-  function applyLink(href: string) {
-    if (!editor) return;
-    setLinkHref(null);
-    const chain = editor.chain().focus().extendMarkRange(DOC_MARK.link);
-    if (editor.state.selection.empty && !editor.isActive(DOC_MARK.link)) {
-      // Nothing selected: insert the URL itself as the link text. The link mark is
-      // inclusive (autolink), so drop it from the stored marks — text typed next isn't part of the link.
-      chain
-        .insertContent({ type: "text", text: href, marks: [{ type: DOC_MARK.link, attrs: { href } }] })
-        .unsetMark(DOC_MARK.link)
-        .run();
-    } else {
-      // A link is never coloured (the converter sends a link span uncoloured regardless) —
-      // strip any colour/highlight already on the selection so the canvas doesn't keep
-      // showing a colour the next save would drop.
-      chain.unsetMark(DOC_MARK.color).unsetMark(DOC_MARK.highlight).setLink({ href }).run();
-    }
-  }
-
-  function removeLink() {
-    setLinkHref(null);
-    editor?.chain().focus().extendMarkRange(DOC_MARK.link).unsetLink().run();
-  }
-
   return (
     <div className="relative">
-      {editor && <CanvasToolbar editor={editor} onLink={openLinkDialog} colorMenu={colorMenu} usedColors={usedColors} />}
+      {editor && <CanvasToolbar editor={editor} onLink={() => openLinkDialog(editor)} colorMenu={colorMenu} usedColors={usedColors} />}
       <div className="space-y-2 empty:hidden">
         {pasteNotice && (
           <div
@@ -229,10 +203,16 @@ export function ArticleCanvas({ initialBody, onChange, blockErrors, title, onTit
       </div>
       <SlashMenu store={slashMenu} />
       <LinkDialog
-        initialHref={linkHref}
-        onOpenChange={(open) => !open && setLinkHref(null)}
-        onSubmit={applyLink}
-        onRemove={removeLink}
+        request={linkRequest}
+        onOpenChange={(open) => !open && linkDialog.close()}
+        onSubmit={(value) => {
+          linkDialog.close();
+          if (editor) applyLink(editor, value);
+        }}
+        onRemove={() => {
+          linkDialog.close();
+          if (editor) removeLink(editor);
+        }}
       />
       <MediaDialogs store={mediaDialog} />
     </div>

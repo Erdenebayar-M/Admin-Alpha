@@ -5,6 +5,7 @@ import {
   Image as ImageIcon,
   Info,
   Link as LinkIcon,
+  Link2,
   List,
   ListOrdered,
   Minus,
@@ -15,6 +16,7 @@ import {
 } from "lucide-react";
 import { DOC_NODE, type PreservedBlock } from "@/lib/article-body";
 import { getColorMenu } from "./color/color-menu-store";
+import { openLinkDialog } from "./link-commands";
 import { toggleList } from "./list-commands";
 import { getMediaDialog, type MediaBlockKind } from "./media-dialog-store";
 
@@ -134,7 +136,7 @@ export const BLOCK_COMMANDS: BlockCommand[] = [
 ];
 
 /**
- * Slash-menu-only actions: not an insertable Block kind, so the toolbar
+ * Slash-menu-only actions: not an insertable Block kind (a text Link is a mark, not a Block), so the toolbar
  * offers this through its own dedicated colour button instead of the
  * per-kind icon row `BLOCK_COMMANDS` drives — kept out of that list so the
  * two stay in sync as a set of Block kinds.
@@ -146,6 +148,14 @@ const SLASH_ONLY_COMMANDS: BlockCommand[] = [
     icon: Palette,
     keywords: ["color", "colour", "background", "өнгө", "дэвсгэр"],
     run: (e) => getColorMenu(e)?.open({ scope: "background" }),
+    isActive: () => false,
+  },
+  {
+    key: "text_link",
+    label: "Текст холбоос",
+    icon: Link2,
+    keywords: ["link", "url", "холбоос"],
+    run: (e) => openLinkDialog(e),
     isActive: () => false,
   },
 ];
