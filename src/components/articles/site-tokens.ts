@@ -37,6 +37,8 @@ export const SITE_CLASS = {
   body: "text-base leading-relaxed text-[color:var(--site-ink)]",
   heading: "font-extrabold text-[color:var(--site-heading)]",
   muted: "text-[color:var(--site-muted)]",
+  // First-line indent (ADR 0006); same width as the site's paragraph `indent-[2em]`.
+  indent: "indent-[2em]",
   link: "text-[color:var(--site-link)] underline underline-offset-2",
   // Site pull-quote: large italic navy, no left border; the “ ” are drawn in the Preview.
   quote: "text-2xl italic leading-snug text-[color:var(--site-heading)]",

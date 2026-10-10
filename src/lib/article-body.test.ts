@@ -202,6 +202,26 @@ describe("blocksToDoc / docToBlocks round trip", () => {
     for (const block of result) expect(block).not.toHaveProperty("alignment");
   });
 
+  it("keeps a paragraph's First-line indent, and leaves it absent on one without (ADR 0006)", () => {
+    const blocks: ArticleBlock[] = [
+      { id: "p1", type: "paragraph", content: [{ text: "догол мөр" }], indent: true },
+      { id: "p2", type: "paragraph", content: [{ text: "энгийн" }] },
+    ];
+    const result = roundTrip(blocks);
+    expect(result).toEqual(blocks);
+    expect(result[1]).not.toHaveProperty("indent");
+  });
+
+  it("sends no indent alongside a center or right alignment the schema would reject", () => {
+    const doc = {
+      type: "doc",
+      content: [
+        { type: "paragraph", attrs: { blockId: "p1", alignment: "center", indent: true }, content: [{ type: "text", text: "төвд" }] },
+      ],
+    } as TiptapDocument;
+    expect(docToBlocks(doc)).toEqual([{ id: "p1", type: "paragraph", content: [{ text: "төвд" }], alignment: "center" }]);
+  });
+
   it("sends no alignment for an image, video, link card or divider Block", () => {
     const blocks: ArticleBlock[] = [
       { id: "i1", type: "image", url: "https://cdn.example.com/a.jpg", alt: "a" },

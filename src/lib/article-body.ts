@@ -107,7 +107,10 @@ function blockToNode(block: ArticleBlock): JSONContent {
   switch (block.type) {
     case "paragraph":
       return withContent(
-        { type: DOC_NODE.paragraph, attrs: { blockId, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment) } },
+        {
+          type: DOC_NODE.paragraph,
+          attrs: { blockId, ...backgroundAttrs(block.background), ...alignmentAttrs(block.alignment), indent: block.indent === true && !block.alignment },
+        },
         spansToNodes(block.content),
       );
     case "heading":
@@ -233,7 +236,11 @@ function nodeToBlock(node: JSONContent): BlockWithoutId | null {
   switch (node.type) {
     case DOC_NODE.paragraph: {
       const content = nodeToSpans(node);
-      return content && { type: "paragraph", content, ...backgroundFromNode(node), ...alignmentFromNode(node) };
+      if (!content) return null;
+      const alignment = alignmentFromNode(node);
+      // A First-line indent only ever goes with left alignment (ADR 0006); the schema rejects the pair.
+      const indent = node.attrs?.indent === true && !alignment.alignment ? { indent: true as const } : {};
+      return { type: "paragraph", content, ...backgroundFromNode(node), ...alignment, ...indent };
     }
     case DOC_NODE.heading: {
       const spans = nodeToSpans(node);

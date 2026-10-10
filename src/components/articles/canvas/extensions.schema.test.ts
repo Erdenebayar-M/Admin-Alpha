@@ -1,6 +1,7 @@
 import { getSchema } from "@tiptap/core";
 import { describe, expect, it } from "vitest";
 import { DOC_MARK, DOC_NODE } from "@/lib/article-body";
+import { SITE_CLASS } from "../site-tokens";
 import { createColorMenuStore } from "./color/color-menu-store";
 import { articleCanvasExtensions } from "./extensions";
 import { createMediaDialogStore } from "./media-dialog-store";
@@ -57,6 +58,19 @@ describe("articleCanvasExtensions schema", () => {
     const s = schema();
     const paragraph = s.nodes[DOC_NODE.paragraph].create({ alignment: "center" }, s.text("төвд"));
     expect(paragraph.attrs.alignment).toBe("center");
+  });
+
+  it("gives only the paragraph a First-line indent attr, rendered with the site's indent class (ADR 0006)", () => {
+    const s = schema();
+    expect(s.nodes[DOC_NODE.paragraph].spec.attrs).toHaveProperty("indent");
+    for (const type of [DOC_NODE.heading, DOC_NODE.bulletList, DOC_NODE.orderedList, DOC_NODE.quote, DOC_NODE.callout, DOC_NODE.divider, DOC_NODE.preserved]) {
+      expect(s.nodes[type].spec.attrs).not.toHaveProperty("indent");
+    }
+    const toDOM = s.nodes[DOC_NODE.paragraph].spec.toDOM;
+    const indented = (toDOM?.(s.nodes[DOC_NODE.paragraph].create({ indent: true })) as [string, Record<string, string>])[1];
+    expect(indented.class).toContain(SITE_CLASS.indent);
+    const plain = (toDOM?.(s.nodes[DOC_NODE.paragraph].create({})) as [string, Record<string, string>])[1];
+    expect(plain.class ?? "").not.toContain(SITE_CLASS.indent);
   });
 
   it("a callout's rendered border-color tracks its background, but keeps the default amber frame when unset", () => {

@@ -58,7 +58,12 @@ function InlineSpans({ spans }: { spans: InlineSpan[] }) {
 function Paragraph({ block }: { block: ParagraphBlock }) {
   return (
     <p
-      className={cn(BODY_TEXT_CLASS, alignmentClass(block.alignment), block.background && "rounded-2xl px-4 py-3")}
+      className={cn(
+        BODY_TEXT_CLASS,
+        alignmentClass(block.alignment),
+        block.indent && SITE_CLASS.indent,
+        block.background && "rounded-2xl px-4 py-3",
+      )}
       style={backgroundStyle(block.background)}
     >
       <InlineSpans spans={block.content} />

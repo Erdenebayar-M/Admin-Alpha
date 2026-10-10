@@ -13,8 +13,10 @@ import { shift, size } from "@floating-ui/dom";
 import { colorCss, tintCss } from "@/lib/article-colors";
 import { BACKGROUND_NODES, DOC_MARK, DOC_NODE, generateBlockId, type PreservedBlock } from "@/lib/article-body";
 import { isAllowedHref, isColorValue } from "@/lib/article-types";
+import { SITE_CLASS } from "../site-tokens";
 import { filterBlockCommands, type BlockCommand } from "./block-commands";
 import { COLOR_MENU_STORAGE_KEY, type ColorMenuStore } from "./color/color-menu-store";
+import { FirstLineIndent } from "./first-line-indent";
 import { ListMarkerView } from "./ListMarkerView";
 import { MediaBlockView } from "./MediaBlockView";
 import type { MediaDialogStore } from "./media-dialog-store";
@@ -169,6 +171,22 @@ function alignmentAttribute() {
         if (value !== "center" && value !== "right") return {};
         return { "data-alignment": value, style: `text-align: ${value}` };
       },
+    },
+  };
+}
+
+// ── First-line indent (ADR 0006) ───────────────────────────────────────────
+// Paragraph only. Kept when a paragraph is split (Enter), like `alignment`.
+// Never read from HTML, so a pasted `text-indent` doesn't come in; the
+// author sets it with Tab (`first-line-indent.ts`).
+
+function indentAttribute() {
+  return {
+    indent: {
+      default: false,
+      keepOnSplit: true,
+      parseHTML: () => false,
+      renderHTML: (attrs: Record<string, unknown>) => (attrs.indent === true ? { "data-indent": "", class: SITE_CLASS.indent } : {}),
     },
   };
 }
@@ -696,7 +714,7 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
     }).configure({ levels: [2, 3] }),
     Paragraph.extend({
       addAttributes() {
-        return { ...this.parent?.(), ...alignmentAttribute() };
+        return { ...this.parent?.(), ...alignmentAttribute(), ...indentAttribute() };
       },
     }),
     BulletList.extend({
@@ -728,6 +746,8 @@ export function articleCanvasExtensions(slashMenu: SlashMenuStore, mediaDialog: 
     TextColorMark,
     HighlightMark,
     BlockErrors,
+    // Before `SlashCommand` so the open `/` menu gets Tab first; after `ListItem` so its Shift+Tab never lifts an item.
+    FirstLineIndent,
     SlashCommand.configure({ store: slashMenu }),
     ColorMenuAccess.configure({ store: colorMenu }),
     Placeholder.configure({ placeholder: "Бичиж эхлэх, эсвэл «/» дарж блок нэмэх…" }),
