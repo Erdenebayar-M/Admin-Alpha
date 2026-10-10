@@ -46,6 +46,10 @@ export function setFirstLineIndent(editor: Editor, on: boolean): boolean {
  * get first refusal), so the open `/` menu's own Tab handling still wins,
  * and after `ListItem`, whose Shift+Tab would otherwise lift an item out.
  *
+ * Backspace at the very start of an indented paragraph clears the indent
+ * (and nothing else); with the `/` menu open the cursor is past a `/`, never
+ * at offset 0, so it never competes with the menu.
+ *
  * After every change, an indent left on a paragraph that can no longer carry
  * it (centred or right-aligned, or wrapped into a list) is cleared, so the
  * canvas never shows an indent the save would drop, and switching back to
@@ -62,6 +66,14 @@ export const FirstLineIndent = Extension.create({
       "Shift-Tab": () => {
         setFirstLineIndent(this.editor, false);
         return true;
+      },
+      // Backspace at the very start of an indented paragraph removes the indent first; the next one joins as usual.
+      Backspace: () => {
+        const { selection } = this.editor.state;
+        if (!selection.empty || selection.$from.parentOffset !== 0) return false;
+        const { $from } = selection;
+        if ($from.depth !== 1 || !$from.parent.attrs.indent) return false;
+        return setFirstLineIndent(this.editor, false);
       },
     };
   },

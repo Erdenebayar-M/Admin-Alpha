@@ -206,3 +206,49 @@ describe("an indent only ever stays on a top-level, left-aligned paragraph", () 
     expect(editor.getHTML()).not.toContain("data-indent");
   });
 });
+
+describe("Backspace at the start of an indented paragraph", () => {
+  const backspace = (editor: Editor) => press(editor, "Backspace");
+
+  it("removes the indent first, leaving the text; a second Backspace joins with the paragraph before", () => {
+    const editor = newEditor([paragraph("өмнө"), paragraph("догол мөр", { indent: true })]);
+    cursorIn(editor, "догол мөр", 0);
+    expect(backspace(editor)).toBe(true);
+    expect(body(editor)).toEqual([
+      { type: "paragraph", content: [{ text: "өмнө" }] },
+      { type: "paragraph", content: [{ text: "догол мөр" }] },
+    ]);
+    // The second press isn't ours: it falls through to Tiptap's core Backspace (join backward).
+    backspace(editor);
+    expect(body(editor)).toEqual([{ type: "paragraph", content: [{ text: "өмнөдогол мөр" }] }]);
+  });
+
+  it("does nothing special in the middle of an indented paragraph", () => {
+    const editor = newEditor([paragraph("догол мөр", { indent: true })]);
+    cursorIn(editor, "догол мөр", 3);
+    backspace(editor);
+    expect(body(editor)).toEqual([{ type: "paragraph", content: [{ text: "догол мөр" }], indent: true }]);
+  });
+
+  it("joins a non-indented paragraph as before", () => {
+    const editor = newEditor([paragraph("өмнө"), paragraph("мөр")]);
+    cursorIn(editor, "мөр", 0);
+    backspace(editor);
+    expect(body(editor)).toEqual([{ type: "paragraph", content: [{ text: "өмнөмөр" }] }]);
+  });
+});
+
+describe("pasting", () => {
+  it("drops a text-indent from pasted HTML", () => {
+    const editor = newEditor([paragraph("эхлэл")]);
+    cursorIn(editor, "эхлэл", "эхлэл".length);
+    const html = '<p style="text-indent: 36pt">буулгасан</p><p style="text-indent:2em;margin:0">хоёр</p>';
+    const event = new Event("paste", { bubbles: true, cancelable: true });
+    Object.defineProperty(event, "clipboardData", { value: { getData: (type: string) => (type === "text/html" ? html : ""), files: [], items: [], types: ["text/html"] } });
+    editor.view.dom.dispatchEvent(event);
+    const saved = body(editor);
+    expect(JSON.stringify(saved)).toContain("буулгасан");
+    expect(saved.some((b) => b.type === "paragraph" && b.indent)).toBe(false);
+    expect(editor.getHTML()).not.toContain("data-indent");
+  });
+});
