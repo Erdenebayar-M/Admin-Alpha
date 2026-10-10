@@ -433,6 +433,7 @@ export interface WordFilters {
   has_forms?: 'true' | 'all';
   scope?: 'roots' | 'all';
   needs_audio?: 'true';
+  has_image?: 'true';
   sort_by?:
     | 'word'
     | 'category'

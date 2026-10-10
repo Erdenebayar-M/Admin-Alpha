@@ -521,6 +521,7 @@ export function WordsTab() {
   const [activeFilter, setActiveFilter] = useState<"true" | "false" | "all">("true");
   const [hasForms, setHasForms] = useState<"all" | "true">("all");
   const [needsAudio, setNeedsAudio] = useState<"all" | "true">("all");
+  const [hasImage, setHasImage] = useState<"all" | "true">("all");
   const [scope, setScope] = useState<"roots" | "all">("roots");
   const [sortBy, setSortBy] = useState<SortableColumn>("word");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc");
@@ -562,11 +563,11 @@ export function WordsTab() {
 
   useEffect(() => {
     setPage(1);
-  }, [grade, category, appLevel, activeFilter, hasForms, needsAudio, scope, sortBy, sortDir, debouncedSearch]);
+  }, [grade, category, appLevel, activeFilter, hasForms, needsAudio, hasImage, scope, sortBy, sortDir, debouncedSearch]);
 
   useEffect(() => {
     setSelectedIds(new Set());
-  }, [grade, category, appLevel, activeFilter, hasForms, needsAudio, scope, sortBy, sortDir, debouncedSearch, page]);
+  }, [grade, category, appLevel, activeFilter, hasForms, needsAudio, hasImage, scope, sortBy, sortDir, debouncedSearch, page]);
 
   const { data: facets } = useQuery({
     queryKey: ["word-facets"],
@@ -581,6 +582,7 @@ export function WordsTab() {
     ...(debouncedSearch ? { q: debouncedSearch } : {}),
     ...(hasForms === "true" ? { has_forms: "true" as const } : {}),
     ...(needsAudio === "true" ? { needs_audio: "true" as const } : {}),
+    ...(hasImage === "true" ? { has_image: "true" as const } : {}),
     scope,
     sort_by: sortBy,
     sort_dir: sortDir,
@@ -826,6 +828,28 @@ export function WordsTab() {
                   )}
                 >
                   {v === "all" ? "Бүгд" : "Аудио хэрэгтэй"}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Has-image filter — words whose own image_url is set (image_ok not consulted) */}
+          <div className="flex flex-col gap-2">
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Зураг</span>
+            <div className="flex gap-1.5">
+              {(["all", "true"] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  onClick={() => setHasImage(v)}
+                  className={cn(
+                    "rounded-lg border px-3 py-2 text-sm font-medium transition-colors",
+                    hasImage === v
+                      ? "border-primary bg-primary text-primary-foreground shadow-sm"
+                      : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground",
+                  )}
+                >
+                  {v === "all" ? "Бүгд" : "Зурагтай"}
                 </button>
               ))}
             </div>
