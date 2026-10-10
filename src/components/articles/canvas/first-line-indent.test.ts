@@ -4,6 +4,7 @@ import { NodeSelection } from "@tiptap/pm/state";
 import { describe, expect, it } from "vitest";
 import { blocksToDoc, docToBlocks, type TiptapDocument } from "@/lib/article-body";
 import type { ArticleBlock } from "@/lib/article-types";
+import { firstLineIndentState, toggleFirstLineIndent } from "./first-line-indent";
 import { createColorMenuStore } from "./color/color-menu-store";
 import { articleCanvasExtensions } from "./extensions";
 import { applyBlockAttrs } from "./color/color-commands";
@@ -250,5 +251,53 @@ describe("pasting", () => {
     expect(JSON.stringify(saved)).toContain("буулгасан");
     expect(saved.some((b) => b.type === "paragraph" && b.indent)).toBe(false);
     expect(editor.getHTML()).not.toContain("data-indent");
+  });
+});
+
+describe("First-line indent toolbar toggle", () => {
+  it("turns the indent on, shows active, and turns it off again", () => {
+    const editor = newEditor([paragraph("догол мөр")]);
+    cursorIn(editor, "мөр");
+    expect(firstLineIndentState(editor)).toEqual({ available: true, on: false });
+    expect(toggleFirstLineIndent(editor)).toBe(true);
+    expect(firstLineIndentState(editor)).toEqual({ available: true, on: true });
+    expect(body(editor)).toEqual([{ type: "paragraph", content: [{ text: "догол мөр" }], indent: true }]);
+    toggleFirstLineIndent(editor);
+    expect(firstLineIndentState(editor).on).toBe(false);
+    expect(body(editor)).toEqual([{ type: "paragraph", content: [{ text: "догол мөр" }] }]);
+  });
+
+  it.each<[string, ArticleBlock]>([
+    ["a subheading", { id: "h", type: "heading", level: 2, text: "гарчиг" }],
+    ["a centred paragraph", paragraph("гарчиг", { alignment: "center" })],
+    ["a right-aligned paragraph", paragraph("гарчиг", { alignment: "right" })],
+    ["a quote", { id: "q", type: "quote", content: [{ text: "гарчиг" }] }],
+  ])("is unavailable and inert in %s", (_label, block) => {
+    const editor = newEditor([block]);
+    cursorIn(editor, "гарчиг");
+    const before = editor.getJSON();
+    expect(firstLineIndentState(editor)).toEqual({ available: false, on: false });
+    expect(toggleFirstLineIndent(editor)).toBe(false);
+    expect(editor.getJSON()).toEqual(before);
+  });
+
+  it("is unavailable in a list item", () => {
+    const editor = newEditor([paragraph("жагсаалт")]);
+    cursorIn(editor, "жагсаалт");
+    toggleList(editor, "bulletList");
+    expect(firstLineIndentState(editor).available).toBe(false);
+  });
+
+  it("is unavailable on a selected media Block", () => {
+    const editor = newEditor([paragraph("нэг"), { id: "d", type: "divider" } as ArticleBlock]);
+    let pos = -1;
+    editor.state.doc.descendants((node, p) => {
+      if (node.type.name !== "paragraph") pos = p;
+      return false;
+    });
+    editor.view.dispatch(editor.state.tr.setSelection(NodeSelection.create(editor.state.doc, pos)));
+    expect(pos).not.toBe(-1);
+    expect(firstLineIndentState(editor).available).toBe(false);
+    expect(toggleFirstLineIndent(editor)).toBe(false);
   });
 });

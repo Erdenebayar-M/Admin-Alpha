@@ -38,6 +38,22 @@ export function setFirstLineIndent(editor: Editor, on: boolean): boolean {
   return true;
 }
 
+/** What the toolbar toggle shows: whether Tab would act here, and whether every paragraph it would act on is already indented. */
+export function firstLineIndentState(editor: Editor): { available: boolean; on: boolean } {
+  const { state } = editor;
+  const positions = indentablePositions(state);
+  return {
+    available: positions.length > 0,
+    on: positions.length > 0 && positions.every((pos) => state.doc.nodeAt(pos)?.attrs.indent === true),
+  };
+}
+
+/** The toolbar toggle: turns the indent off if it's already on, otherwise on. Does nothing where Tab does nothing. */
+export function toggleFirstLineIndent(editor: Editor): boolean {
+  const { available, on } = firstLineIndentState(editor);
+  return available && setFirstLineIndent(editor, !on);
+}
+
 /**
  * Tab / Shift+Tab. Both are always consumed, so Tab never moves focus out of
  * the canvas, even where it does nothing (lists, subheadings, quotes,

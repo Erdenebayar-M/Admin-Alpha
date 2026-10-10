@@ -3,13 +3,14 @@
 import { useEffect, useRef, useSyncExternalStore, type ReactNode } from "react";
 import type { Editor } from "@tiptap/core";
 import { useEditorState } from "@tiptap/react";
-import { AlignCenter, AlignLeft, AlignRight, Bold, Italic, Link2, Palette } from "lucide-react";
+import { AlignCenter, AlignLeft, AlignRight, Bold, IndentIncrease, Italic, Link2, Palette } from "lucide-react";
 import { DOC_MARK } from "@/lib/article-body";
 import type { TextAlignment } from "@/lib/article-types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { BLOCK_COMMANDS } from "./block-commands";
 import { activeBackgroundNode, applyBlockAttrs } from "./color/color-commands";
+import { firstLineIndentState, toggleFirstLineIndent } from "./first-line-indent";
 import { ColorMenu } from "./color/ColorMenu";
 import type { ColorMenuStore } from "./color/color-menu-store";
 
@@ -100,6 +101,7 @@ export function CanvasToolbar({
         link: e.isActive(DOC_MARK.link),
         blocks: Object.fromEntries(BLOCK_COMMANDS.map((c) => [c.key, c.isActive(e)])),
         alignmentNode,
+        indent: firstLineIndentState(e),
         // `null` (no button lit) when the selection isn't in an alignment-eligible Block at
         // all — not "left", which would light the Left button while every button is disabled.
         alignment: alignmentNode
@@ -151,6 +153,14 @@ export function CanvasToolbar({
           <Icon />
         </ToolbarButton>
       ))}
+      <ToolbarButton
+        label="Догол мөр"
+        active={active.indent.on}
+        disabled={!active.indent.available}
+        onClick={() => toggleFirstLineIndent(editor)}
+      >
+        <IndentIncrease />
+      </ToolbarButton>
       {BLOCK_COMMANDS.map((command, i) => (
         <span key={command.key} className="contents">
           {(i === 0 || command.key === "bullet" || command.key === "quote" || command.key === "image") && <Separator />}
